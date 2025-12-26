@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Search, Target, Layers, User, Zap } from 'lucide-react'
+import confetti from 'canvas-confetti'
 import { getTasks, updateTaskStatus } from './actions'
 import { TaskDetailDrawer } from '@/app/(dashboard)/admin/pipeline/task-detail-drawer'
 
@@ -97,12 +98,23 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
         }
     }, [quests, selectedQuestId])
 
-    // Filter tasks by search and analyst role
+    const [selectedAssignee, setSelectedAssignee] = useState<string>('all')
+
+    // Filter tasks by search, analyst role, and assignee
     const filteredTasks = tasks.filter(task => {
+        // 1. Analyst Restriction
         if (isAnalyst && task.assigned_to !== userId) {
             return false
         }
-        return task.title.toLowerCase().includes(searchQuery.toLowerCase())
+
+        // 2. Search
+        const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase())
+        if (!matchesSearch) return false
+
+        // 3. Assignee Filter
+        if (selectedAssignee === 'all') return true
+        if (selectedAssignee === 'unassigned') return !task.assigned_to
+        return task.assigned_to === selectedAssignee
     })
 
     // Group tasks by status
@@ -119,6 +131,19 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
         e.preventDefault()
         const taskId = e.dataTransfer.getData('taskId')
         if (!taskId) return
+
+        // Confetti Check
+        const targetStatus = statuses.find(s => s.id === statusId)
+        console.log('🎊 Drop Debug:', { taskId, statusId, targetCategory: targetStatus?.category })
+
+        if (targetStatus?.category === 'done') {
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#22c55e', '#ffffff', '#fbbf24']
+            })
+        }
 
         // Optimistic update
         setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status_id: statusId } : t))
@@ -177,6 +202,25 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
                             className="pl-10 w-64 bg-white border-slate-300 text-slate-900"
                         />
                     </div>
+
+                    {/* Assignee Filter */}
+                    <Select value={selectedAssignee} onValueChange={setSelectedAssignee}>
+                        <SelectTrigger className="w-[180px] bg-white border-slate-300 text-slate-900">
+                            <div className="flex items-center gap-2">
+                                <User className="h-4 w-4 text-slate-500" />
+                                <SelectValue placeholder="All Crew" />
+                            </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Crew</SelectItem>
+                            <SelectItem value="unassigned">Unassigned</SelectItem>
+                            {crew.map(member => (
+                                <SelectItem key={member.id} value={member.id}>
+                                    {member.first_name || 'Unknown'} {member.last_name || ''}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
 
                     {/* Quest Filter */}
                     <Select value={selectedQuestId} onValueChange={setSelectedQuestId}>

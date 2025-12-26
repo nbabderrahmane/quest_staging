@@ -184,6 +184,7 @@ export async function updateTask(
         urgency_id: string
         assigned_to: string | null
         needs_info?: boolean
+        was_dropped?: boolean
     }>
 ) {
     const ctx = await getRoleContext(teamId)
@@ -385,6 +386,68 @@ export async function updateTaskDescription(taskId: string, teamId: string, desc
     if (error) {
         console.error('updateTaskDescription: Failed', error)
         return { success: false, error: `UPDATE FAILED: ${error.message}` }
+    }
+
+    revalidatePath('/admin/pipeline')
+    return { success: true }
+}
+
+// Abort a task (Drop)
+export async function abortTask(taskId: string, teamId: string) {
+    const ctx = await getRoleContext(teamId)
+    // Assuming only Manager+ can abort? Or anyone can abort tasks they own?
+    // "Task Detail Drawer : Add a button 'ABORT MISSION'"
+    // Let's assume Manager+ for now as it's a destructive action like delete.
+    if (!ctx || !ctx.canManageForge) {
+        return { success: false, error: 'SECURITY BREACH: Only commanders can abort missions.' }
+    }
+
+    const { createClient: createAdminClient } = await import('@supabase/supabase-js')
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+
+    const { error } = await supabaseAdmin
+        .from('tasks')
+        .update({ was_dropped: true, updated_at: new Date().toISOString() })
+        .eq('id', taskId)
+        .eq('team_id', teamId)
+
+    if (error) {
+        console.error('abortTask: Failed', error)
+        return { success: false, error: `ABORT FAILED: ${error.message}` }
+    }
+
+    revalidatePath('/admin/pipeline')
+    return { success: true }
+}
+
+// Reactivate a task (Undrop)
+export async function reactivateTask(taskId: string, teamId: string) {
+    const ctx = await getRoleContext(teamId)
+    // Same security as abort/update
+    if (!ctx || !ctx.canManageForge) {
+        return { success: false, error: 'SECURITY BREACH: Only commanders can reactivate missions.' }
+    }
+
+    const { createClient: createAdminClient } = await import('@supabase/supabase-js')
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+
+    const { error } = await supabaseAdmin
+        .from('tasks')
+        .update({ was_dropped: false, updated_at: new Date().toISOString() })
+        .eq('id', taskId)
+        .eq('team_id', teamId)
+
+    if (error) {
+        console.error('reactivateTask: Failed', error)
+        return { success: false, error: `REACTIVATION FAILED: ${error.message}` }
     }
 
     revalidatePath('/admin/pipeline')

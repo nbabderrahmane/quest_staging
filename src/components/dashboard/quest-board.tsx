@@ -1,6 +1,7 @@
 'use client'
 
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
+import confetti from 'canvas-confetti'
 import { useState, useOptimistic, startTransition } from "react"
 import { Quest, Status, Task, Size, Urgency } from "@/lib/types"
 import { BoardColumn } from "./board-column"
@@ -15,9 +16,13 @@ interface QuestBoardProps {
     sizes: Size[]
     urgencies: Urgency[]
     teamId: string
+    crew: any[]
+    canEdit: boolean
+    userId: string
+    userRole: string
 }
 
-export function QuestBoard({ quest, initialTasks, statuses, sizes, urgencies, teamId }: QuestBoardProps) {
+export function QuestBoard({ quest, initialTasks, statuses, sizes, urgencies, teamId, crew }: QuestBoardProps) {
     const [tasks, setTasks] = useState(initialTasks)
     const [activeId, setActiveId] = useState<string | null>(null)
 
@@ -28,6 +33,8 @@ export function QuestBoard({ quest, initialTasks, statuses, sizes, urgencies, te
             },
         })
     )
+
+    const [selectedAssignee, setSelectedAssignee] = useState<string>('all')
 
     function handleDragStart(event: DragStartEvent) {
         setActiveId(event.active.id as string)
@@ -45,6 +52,26 @@ export function QuestBoard({ quest, initialTasks, statuses, sizes, urgencies, te
         const currentTask = tasks.find(t => t.id === taskId)
         if (!currentTask || currentTask.status_id === newStatusId) return
 
+        // Check if target is 'done'
+        const targetStatus = statuses.find(s => s.id === newStatusId)
+
+        console.log('🎊 Confetti Debug Check:', {
+            taskId,
+            newStatusId,
+            targetStatusName: targetStatus?.name,
+            targetCategory: targetStatus?.category
+        })
+
+        if (targetStatus?.category === 'done') {
+            console.log('🎊 TRIGGERING CONFETTI!')
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#22c55e', '#ffffff', '#fbbf24'] // Green, White, Gold
+            })
+        }
+
         // Optimistic Update
         const updatedTasks = tasks.map(t =>
             t.id === taskId ? { ...t, status_id: newStatusId } : t
@@ -59,6 +86,13 @@ export function QuestBoard({ quest, initialTasks, statuses, sizes, urgencies, te
 
     const activeTask = tasks.find(t => t.id === activeId)
 
+    // Filter Tasks
+    const filteredTasks = tasks.filter(t => {
+        if (selectedAssignee === 'all') return true
+        if (selectedAssignee === 'unassigned') return !t.assigned_to
+        return t.assigned_to === selectedAssignee
+    })
+
     return (
         <DndContext
             sensors={sensors}
@@ -69,8 +103,26 @@ export function QuestBoard({ quest, initialTasks, statuses, sizes, urgencies, te
                 {/* Board Header / Controls */}
                 <div className="flex items-center justify-between mb-4 bg-muted/5 p-4 border border-border/50">
                     <div className="flex items-center gap-4">
-                        <div className="text-xs font-mono text-muted-foreground">
+                        <div className="text-xs font-mono text-muted-foreground mr-2">
                             PROTOCOL: <span className="text-primary font-bold">{quest.name}</span>
+                        </div>
+
+                        {/* Assignee Filter */}
+                        <div className="relative">
+                            <select
+                                value={selectedAssignee}
+                                onChange={(e) => setSelectedAssignee(e.target.value)}
+                                className="bg-background text-xs font-bold border border-border rounded px-2 py-1 focus:ring-1 focus:ring-primary outline-none"
+                            >
+                                <option value="all">ALL CREW</option>
+                                <option value="unassigned">UNASSIGNED</option>
+                                <hr />
+                                {(crew || []).map((member: any) => (
+                                    <option key={member.user_id} value={member.user_id}>
+                                        {member.first_name} {member.last_name}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                     </div>
 
@@ -106,7 +158,7 @@ export function QuestBoard({ quest, initialTasks, statuses, sizes, urgencies, te
                         <BoardColumn
                             key={status.id}
                             status={status}
-                            tasks={tasks.filter(t => t.status_id === status.id)}
+                            tasks={filteredTasks.filter(t => t.status_id === status.id)}
                         />
                     ))}
                 </div>

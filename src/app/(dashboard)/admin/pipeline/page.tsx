@@ -22,6 +22,7 @@ interface Task {
     urgency?: { id: string; name: string; color: string } | null
     assignee?: { id: string; email: string; first_name: string | null; last_name: string | null } | null
     quest?: { id: string; name: string } | null
+    was_dropped?: boolean
 }
 
 interface CrewMember {
@@ -279,7 +280,7 @@ export default function PipelinePage() {
 
     // Calculate Potential XP (Sum of XP from all visible tasks that are NOT done/archived)
     const potentialXP = filteredTasks
-        .filter(t => t.status?.category !== 'done' && t.status?.category !== 'archived')
+        .filter(t => t.status?.category !== 'done' && t.status?.category !== 'archived' && !t.was_dropped)
         .reduce((sum, t) => sum + (t.size?.xp_points || 0), 0)
 
     return (
@@ -427,6 +428,11 @@ export default function PipelinePage() {
                                             </div>
                                             {task.description && (
                                                 <p className="text-xs text-slate-500 truncate">{task.description}</p>
+                                            )}
+                                            {task.was_dropped && (
+                                                <span className="inline-block mt-1 px-1.5 py-0.5 bg-red-100 text-red-600 text-[9px] font-bold uppercase rounded border border-red-200">
+                                                    Aborted
+                                                </span>
                                             )}
                                         </div>
                                     </div>

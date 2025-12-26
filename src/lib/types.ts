@@ -72,7 +72,8 @@ export interface Task {
     status_id: string
     size_id: string
     urgency_id: string
-    assignee_id?: string | null
+    assigned_to?: string | null // DB Column
+    assignee_id?: string | null // Legacy Type compatibility
     xp_points: number
     created_at: string
     updated_at: string

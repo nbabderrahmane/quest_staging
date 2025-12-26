@@ -10,6 +10,7 @@ import { NavItem } from '@/components/ui/nav-item'
 import { LayoutDashboard, ScrollText, BarChart3, Settings, Flag, List } from 'lucide-react'
 import DbDoctor from '@/components/debug/db-doctor'
 import { CockpitInitializer } from '@/components/dashboard/cockpit-initializer'
+import { QuestBossBar } from '@/components/dashboard/quest-boss-bar'
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
     const supabase = await createClient()
@@ -21,9 +22,6 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
     try {
         const teams = await getUserTeams()
-
-        // If no teams, user needs to create one (handled by TeamSwitcher or redirects ideally)
-        // For now, let's assume they have at least one team due to flow.
 
         // Determine Active Team
         const cookieStore = await cookies()
@@ -49,7 +47,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
                 isInitialized = true
             }
 
-            // Get User Role for this specific team to gate the Initializer button
+            // Get User Role
             const { data: memberData } = await supabase
                 .from('team_members')
                 .select('role')
@@ -95,6 +93,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
                         <NavItem href="/admin/quests" icon={<Flag className="h-4 w-4" />}>Quest Factory</NavItem>
                         <NavItem href="/admin/pipeline" icon={<List className="h-4 w-4" />}>Mission Pipeline</NavItem>
                         <NavItem href="/admin/analytics" icon={<BarChart3 className="h-4 w-4" />}>Analytics</NavItem>
+                        <NavItem href="/admin/reporting" icon={<ScrollText className="h-4 w-4" />}>Reporting</NavItem>
 
                         <div className="my-4 px-4">
                             <div className="h-px bg-sidebar-border/50" />
@@ -120,11 +119,14 @@ export default async function DashboardLayout({ children }: { children: ReactNod
                     </div>
                 </aside>
 
-                <main className="flex-1 overflow-auto relative">
-                    {/* Scanline effect overlay (optional, extremely subtle) */}
+                <main className="flex-1 overflow-auto relative flex flex-col">
+                    {/* Scanline effect overlay */}
                     <div className="fixed inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.05)_50%),linear-gradient(90deg,rgba(255,0,0,0.01),rgba(0,255,0,0.01),rgba(0,0,255,0.01))] z-50 bg-[length:100%_2px,3px_100%] opacity-20" />
 
-                    <div className="p-8 max-w-7xl mx-auto pb-20">
+                    {/* Boss Bar */}
+                    {activeTeam && <QuestBossBar teamId={activeTeam.id} />}
+
+                    <div className="p-8 max-w-7xl mx-auto pb-20 w-full flex-1">
                         {children}
                     </div>
                     <DbDoctor />

@@ -4,8 +4,8 @@ import { useState, useEffect, useRef } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { Crown, Shield, Sword, User, Send, MessageSquare, FileText, Clock, Settings, AlertTriangle } from 'lucide-react'
-import { getTaskWithComments, addTaskComment, updateTaskDescription, updateTask } from './actions'
+import { Crown, Shield, Sword, User, Send, MessageSquare, FileText, Clock, Settings, AlertTriangle, AlertOctagon, Zap } from 'lucide-react'
+import { getTaskWithComments, addTaskComment, updateTaskDescription, updateTask, abortTask, reactivateTask } from './actions'
 
 interface TaskDetailDrawerProps {
     taskId: string | null
@@ -37,6 +37,7 @@ interface TaskDetail {
     urgency_id?: string | null
     assigned_to?: string | null
     needs_info?: boolean
+    was_dropped?: boolean
     quest?: { id: string; name: string } | null
     size?: { id: string; name: string; xp_points: number } | null
     urgency?: { id: string; name: string; color: string } | null
@@ -180,9 +181,31 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
             updateData[key] = value
         }
 
-        // Map UI keys to DB keys if needed, though here they match mostly or we handle logic
-        // For Selects, we pass ID directly.
         await updateTask(taskId, teamId, updateData)
+    }
+
+    const handleAbort = async () => {
+        if (!taskId || !task) return
+        if (!confirm('WARNING: Are you sure you want to ABORT this mission? This action will mark the task as dropped.')) return
+
+        const result = await abortTask(taskId, teamId)
+        if (result.success) {
+            setTask(prev => prev ? { ...prev, was_dropped: true } : null)
+        } else {
+            alert('Failed to abort mission.')
+        }
+    }
+
+    const handleReactivate = async () => {
+        if (!taskId || !task) return
+        if (!confirm('CONFIRM: Reactivate this mission?')) return
+
+        const result = await reactivateTask(taskId, teamId)
+        if (result.success) {
+            setTask(prev => prev ? { ...prev, was_dropped: false } : null)
+        } else {
+            alert('Failed to reactivate mission.')
+        }
     }
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -202,14 +225,23 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                     <div className="w-[60%] flex flex-col border-r border-slate-200">
                         {/* Header */}
                         <DialogHeader className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex-shrink-0">
-                            <DialogTitle className="text-lg font-bold text-slate-900 pr-8">
-                                {task?.title || 'Loading...'}
-                            </DialogTitle>
-                            {task?.quest && (
-                                <p className="text-xs font-mono text-blue-600 mt-1">
-                                    Quest: {task.quest.name}
-                                </p>
-                            )}
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <DialogTitle className="text-lg font-bold text-slate-900 pr-2">
+                                        {task?.title || 'Loading...'}
+                                    </DialogTitle>
+                                    {task?.was_dropped && (
+                                        <span className="inline-block mt-1 px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold uppercase rounded border border-red-200">
+                                            Mission Aborted
+                                        </span>
+                                    )}
+                                    {task?.quest && (
+                                        <p className="text-xs font-mono text-blue-600 mt-1">
+                                            Quest: {task.quest.name}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
                         </DialogHeader>
 
                         {isLoading ? (
@@ -449,6 +481,29 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                                     </SelectContent>
                                 </Select>
                             </div>
+
+                            {/* Abort / Reactivate Mission Button */}
+                            {canEdit && (
+                                <div className="pt-4 border-t border-slate-200 mt-4">
+                                    {task?.was_dropped ? (
+                                        <button
+                                            onClick={handleReactivate}
+                                            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 hover:text-emerald-700 hover:border-emerald-300 rounded-md text-xs font-bold uppercase transition-colors"
+                                        >
+                                            <Zap className="h-4 w-4" />
+                                            Reactivate Mission
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={handleAbort}
+                                            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 hover:text-red-700 hover:border-red-300 rounded-md text-xs font-bold uppercase transition-colors"
+                                        >
+                                            <AlertOctagon className="h-4 w-4" />
+                                            Abort Mission
+                                        </button>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Read-only Info */}
                             <div className="pt-8 mt-auto">

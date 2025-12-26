@@ -17,7 +17,14 @@ export async function getQuestObjectives(teamId: string) {
         .from('quests')
         .select(`
             *,
-            creator:profiles!created_by(id, email, first_name, last_name)
+            creator:profiles!created_by(id, email, first_name, last_name),
+            tasks (
+                id,
+                title,
+                status:statuses!status_id(category, name),
+                assigned_to,
+                assignee:profiles!assigned_to(first_name, last_name, email)
+            )
         `)
         .eq('team_id', teamId)
         .order('start_date', { ascending: false, nullsFirst: false })
@@ -189,5 +196,63 @@ export async function deleteQuestObjective(questId: string, teamId: string) {
 
     revalidatePath('/admin/quests')
     return { success: true }
+}
+
+// Get Active Quest Progress for Boss Bar
+export async function getActiveQuestProgress(teamId: string) {
+    const { createClient: createAdminClient } = await import('@supabase/supabase-js')
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+
+    // 1. Fetch Active Quest
+    const { data: quest, error } = await supabaseAdmin
+        .from('quests')
+        .select(`
+            id, 
+            name, 
+            tasks (
+                id, 
+                status_id,
+                size:sizes!size_id(xp_points),
+                status:statuses!status_id(category)
+            )
+        `)
+        .eq('team_id', teamId)
+        .eq('is_active', true)
+        .maybeSingle()
+
+    if (error) {
+        console.error('❌ BossBar Error: Failed to fetch active quest', error)
+        return null
+    }
+
+    if (!quest) {
+        return null // No active quest
+    }
+
+    // 2. Calculate Progress
+    let totalXP = 0
+    let currentXP = 0
+
+    quest.tasks?.forEach((t: any) => {
+        const xp = t.size?.xp_points || 0
+        totalXP += xp
+        if (t.status?.category === 'done') {
+            currentXP += xp
+        }
+    })
+
+    const percentage = totalXP > 0 ? Math.round((currentXP / totalXP) * 100) : 0
+
+    return {
+        id: quest.id,
+        name: quest.name,
+        totalXP,
+        currentXP,
+        percentage
+    }
 }
 

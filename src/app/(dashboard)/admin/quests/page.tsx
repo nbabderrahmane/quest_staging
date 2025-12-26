@@ -16,6 +16,13 @@ interface Quest {
     is_active: boolean
     created_at: string
     creator?: { id: string; email: string; first_name: string | null; last_name: string | null } | null
+    tasks?: {
+        id: string
+        title: string
+        status?: { category: string, name: string }
+        assigned_to: string
+        assignee?: { first_name: string | null, last_name: string | null, email: string }
+    }[]
 }
 
 export default function QuestsPage() {
@@ -234,8 +241,8 @@ export default function QuestsPage() {
                     <Target className="h-4 w-4 text-slate-500" />
                     <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Objectives Registry</h3>
                 </div>
-                <div className="p-4 overflow-auto max-h-[600px]">
-                    <div className="space-y-3">
+                <div className="p-4 overflow-auto max-h-[800px]">
+                    <div className="space-y-4">
                         {quests.length === 0 ? (
                             <p className="text-slate-500 text-sm text-center py-12">
                                 No quests initiated. Create an objective to organize your tasks.
@@ -244,83 +251,112 @@ export default function QuestsPage() {
                             quests.map(quest => (
                                 <div
                                     key={quest.id}
-                                    className={`flex items-center justify-between p-4 border rounded-lg transition-colors ${quest.is_active
-                                        ? 'bg-slate-50 border-slate-200 hover:bg-slate-100'
-                                        : 'bg-slate-100 border-slate-200 opacity-60'
+                                    className={`flex flex-col p-4 border rounded-lg transition-colors ${quest.is_active
+                                        ? 'bg-slate-50 border-slate-200 shadow-sm'
+                                        : 'bg-slate-100 border-slate-200 opacity-60' // Reduced opacity for inactive
                                         }`}
                                 >
-                                    <div className="flex items-center gap-4 flex-1 min-w-0">
-                                        {/* Active Status */}
-                                        <button
-                                            onClick={() => handleToggleActive(quest)}
-                                            className={`p-1 rounded ${quest.is_active ? 'text-green-600' : 'text-slate-400'}`}
-                                            title={quest.is_active ? 'Active' : 'Archived'}
-                                        >
-                                            {quest.is_active ? <CheckCircle className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
-                                        </button>
+                                    {/* Quest Header */}
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex items-start gap-4 flex-1 min-w-0">
+                                            {/* Status Icon */}
+                                            <button
+                                                onClick={() => handleToggleActive(quest)}
+                                                className={`mt-1 p-1 rounded ${quest.is_active ? 'text-green-600' : 'text-slate-400'}`}
+                                                title={quest.is_active ? 'Active' : 'Archived'}
+                                            >
+                                                {quest.is_active ? <CheckCircle className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
+                                            </button>
 
-                                        {/* Quest Info */}
-                                        <div className="flex-1 min-w-0">
-                                            <p className="font-bold text-slate-900 truncate">{quest.name}</p>
-                                            {quest.description && (
-                                                <p className="text-xs text-slate-500 truncate">{quest.description}</p>
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className="font-bold text-slate-900 text-lg flex items-center gap-3">
+                                                    {quest.name}
+                                                    {quest.is_active && <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Active</span>}
+                                                </h4>
+                                                {quest.description && (
+                                                    <p className="text-sm text-slate-600 mt-1">{quest.description}</p>
+                                                )}
+
+                                                {/* Quest Stats / Metadata inside header */}
+                                                <div className="flex items-center gap-4 mt-2 text-xs text-slate-500 font-mono">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Calendar className="h-3 w-3" />
+                                                        <span>{formatDate(quest.start_date)} → {formatDate(quest.end_date)}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Target className="h-3 w-3" />
+                                                        <span>{quest.tasks?.length || 0} Tasks</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Quest Actions */}
+                                        <div className="flex items-center gap-2 ml-4 self-start">
+                                            {!quest.is_active && canDeploy && (
+                                                <button
+                                                    onClick={() => handleToggleActive(quest)}
+                                                    className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-xs font-bold uppercase rounded hover:bg-green-700 transition-colors"
+                                                    title="Deploy Quest"
+                                                >
+                                                    <Rocket className="h-3 w-3" />
+                                                    Deploy
+                                                </button>
+                                            )}
+                                            {quest.is_active && canDeploy && (
+                                                <button
+                                                    onClick={() => handleToggleActive(quest)}
+                                                    className="px-3 py-1.5 bg-white border border-slate-300 text-slate-600 text-xs font-bold uppercase rounded hover:bg-slate-50 transition-colors"
+                                                >
+                                                    Recall
+                                                </button>
+                                            )}
+
+                                            {canManage && (
+                                                <>
+                                                    <button onClick={() => handleEditOpen(quest)} className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Edit">
+                                                        <Edit className="h-4 w-4" />
+                                                    </button>
+                                                    {isOwner && (
+                                                        <button onClick={() => handleDelete(quest.id)} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded" title="Delete">
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </button>
+                                                    )}
+                                                </>
                                             )}
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-4 ml-4">
-                                        {/* Dates */}
-                                        <div className="flex items-center gap-2 text-xs text-slate-500 font-mono">
-                                            <Calendar className="h-3 w-3" />
-                                            <span>{formatDate(quest.start_date)} → {formatDate(quest.end_date)}</span>
+                                    {/* Linked Tasks List - Only if has tasks */}
+                                    {quest.tasks && quest.tasks.length > 0 && (
+                                        <div className="mt-4 pt-4 border-t border-slate-200/50">
+                                            <h5 className="text-xs font-bold uppercase text-slate-400 mb-2 pl-1">Mission Log</h5>
+                                            <div className="space-y-1">
+                                                {quest.tasks.map(task => (
+                                                    <div key={task.id} className="flex items-center justify-between px-3 py-2 bg-white/50 rounded border border-slate-200/50 hover:bg-white hover:border-slate-300 transition-colors">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-2 h-2 rounded-full ${task.status?.category === 'done' ? 'bg-green-500' : task.status?.category === 'active' ? 'bg-blue-500' : 'bg-slate-300'}`} />
+                                                            <span className={`text-sm font-medium ${task.status?.category === 'done' ? 'text-slate-500 line-through' : 'text-slate-700'}`}>
+                                                                {task.title}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center gap-3 text-xs">
+                                                            <span className="text-slate-400 font-mono uppercase bg-slate-100 px-1.5 py-0.5 rounded">
+                                                                {task.status?.name || 'Unknown'}
+                                                            </span>
+                                                            <div className="flex items-center gap-1.5 text-slate-500 w-24 justify-end truncate">
+                                                                <span className="truncate">
+                                                                    {task.assignee?.first_name
+                                                                        ? `${task.assignee.first_name} ${task.assignee.last_name || ''}`
+                                                                        : (task.assignee?.email?.split('@')[0] || 'Unassigned')}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
-
-                                        {/* Deploy Button */}
-                                        {!quest.is_active && canDeploy && (
-                                            <button
-                                                onClick={() => handleToggleActive(quest)}
-                                                className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-xs font-bold uppercase rounded hover:bg-green-700 transition-colors"
-                                                title="Deploy Quest"
-                                            >
-                                                <Rocket className="h-3 w-3" />
-                                                Deploy
-                                            </button>
-                                        )}
-                                        {!quest.is_active && isAnalyst && (
-                                            <span className="text-[10px] text-slate-400 font-mono">Insufficient Clearance</span>
-                                        )}
-                                        {quest.is_active && canDeploy && (
-                                            <button
-                                                onClick={() => handleToggleActive(quest)}
-                                                className="flex items-center gap-1 px-3 py-1.5 bg-slate-400 text-white text-xs font-bold uppercase rounded hover:bg-slate-500 transition-colors"
-                                                title="Recall Quest"
-                                            >
-                                                Recall
-                                            </button>
-                                        )}
-
-                                        {/* Actions */}
-                                        {canManage && (
-                                            <>
-                                                <button
-                                                    onClick={() => handleEditOpen(quest)}
-                                                    className="p-2 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                                    title="Edit"
-                                                >
-                                                    <Edit className="h-4 w-4" />
-                                                </button>
-                                                {isOwner && (
-                                                    <button
-                                                        onClick={() => handleDelete(quest.id)}
-                                                        className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                                                        title="Delete"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </button>
-                                                )}
-                                            </>
-                                        )}
-                                    </div>
+                                    )}
                                 </div>
                             ))
                         )}
