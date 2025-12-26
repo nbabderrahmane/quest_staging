@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
 
     // Security Check
     const ctx = await getRoleContext(teamId!)
-    if (!ctx || !['owner', 'admin'].includes(ctx.role)) {
+    if (!ctx || !['owner', 'admin'].includes(ctx.role || '')) {
         console.error(`❌ Archive API: Access Denied for user ${user.id} on team ${teamId}`)
         return NextResponse.json({ error: 'Forbidden: Insufficient privileges' }, { status: 403 })
     }
