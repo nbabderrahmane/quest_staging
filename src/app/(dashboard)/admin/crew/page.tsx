@@ -1,0 +1,547 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { WindowCard } from '@/components/ui/window-card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Shield, User, Crown, Briefcase, Eye, Trash2, Edit, KeyRound, UserPlus } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
+import { getCrewMembers, updateCrewMember, removeCrewMember, resetCrewPassword, inviteCrewMember, toggleCrewActive } from './actions'
+
+interface CrewMember {
+    team_id: string
+    user_id: string
+    role: string
+    created_at: string
+    is_active?: boolean
+    profiles?: {
+        email: string | null
+        first_name: string | null
+        last_name: string | null
+        telephone?: string | null
+    }
+}
+
+const ROLE_CONFIG: Record<string, { label: string, icon: any, color: string }> = {
+    owner: { label: 'Owner', icon: Crown, color: 'text-yellow-500' },
+    admin: { label: 'Admin', icon: Shield, color: 'text-purple-500' },
+    manager: { label: 'Manager', icon: Briefcase, color: 'text-blue-500' },
+    member: { label: 'Member', icon: User, color: 'text-muted-foreground' },
+    analyst: { label: 'Analyst', icon: Eye, color: 'text-green-500' },
+}
+
+export default function CrewPage() {
+    const [crew, setCrew] = useState<CrewMember[]>([])
+    const [teamId, setTeamId] = useState<string | null>(null)
+    const [userRole, setUserRole] = useState<string>('member')
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+    const [isLoading, setIsLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+    const [success, setSuccess] = useState<string | null>(null)
+
+    // Recruitment Form State
+    const [inviteEmail, setInviteEmail] = useState('')
+    const [inviteFirstName, setInviteFirstName] = useState('')
+    const [inviteLastName, setInviteLastName] = useState('')
+    const [inviteTelephone, setInviteTelephone] = useState('')
+    const [invitePassword, setInvitePassword] = useState('')
+    const [inviteRole, setInviteRole] = useState('analyst')
+    const [isInviting, setIsInviting] = useState(false)
+
+    // Edit Modal State
+    const [editOpen, setEditOpen] = useState(false)
+    const [editMember, setEditMember] = useState<CrewMember | null>(null)
+    const [editRole, setEditRole] = useState('')
+    const [editTelephone, setEditTelephone] = useState('')
+
+    // Password Reset Modal State
+    const [resetOpen, setResetOpen] = useState(false)
+    const [resetUserId, setResetUserId] = useState<string | null>(null)
+    const [newPassword, setNewPassword] = useState('')
+
+    const canManage = ['owner', 'admin'].includes(userRole)
+    const isOwner = userRole === 'owner'
+
+    useEffect(() => {
+        async function load() {
+            const supabase = createClient()
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) return
+
+            setCurrentUserId(user.id)
+
+            // Get selected team UUID from cookie (clean it)
+            const selectedTeamCookie = document.cookie
+                .split('; ')
+                .find(row => row.startsWith('selected_team='))
+                ?.split('=')[1]?.trim()
+
+            // Get all memberships to find role
+            const { data: memberships } = await supabase
+                .from('team_members')
+                .select('team_id, role')
+                .eq('user_id', user.id)
+
+            console.log('DEBUG CrewPage:', { userId: user.id, selectedTeamCookie, memberships })
+
+            if (!memberships || memberships.length === 0) {
+                setError('No alliance memberships found.')
+                setIsLoading(false)
+                return
+            }
+
+            // Use UUID from cookie or first membership
+            let activeMembership = memberships.find(m => m.team_id === selectedTeamCookie)
+            if (!activeMembership) activeMembership = memberships[0]
+
+            const cleanTeamId = activeMembership.team_id.trim()
+            console.log('DEBUG CrewPage active:', { cleanTeamId, role: activeMembership.role })
+
+            setTeamId(cleanTeamId) // Clean UUID stored here
+            setUserRole(activeMembership.role)
+
+            // Fetch crew using clean UUID
+            const crewData = await getCrewMembers(cleanTeamId)
+            if ('error' in crewData) {
+                setError(crewData.error)
+            } else {
+                setCrew(crewData)
+            }
+            setIsLoading(false)
+        }
+        load()
+    }, [])
+
+    // Auto-dismiss messages after 4 seconds
+    useEffect(() => {
+        if (error) {
+            const timer = setTimeout(() => setError(null), 4000)
+            return () => clearTimeout(timer)
+        }
+    }, [error])
+
+    useEffect(() => {
+        if (success) {
+            const timer = setTimeout(() => setSuccess(null), 3000)
+            return () => clearTimeout(timer)
+        }
+    }, [success])
+
+    const getDisplayName = (member: CrewMember) => {
+        const profile = member.profiles
+
+        // Try full name first (white text for names)
+        if (profile?.first_name || profile?.last_name) {
+            return `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
+        }
+
+        // Fall back to email (white text)
+        if (profile?.email) {
+            return profile.email
+        }
+
+        // Ultimate fallback: Unknown Operative
+        return 'Unknown Operative'
+    }
+
+    const getDisplayEmail = (member: CrewMember) => {
+        const profile = member.profiles
+
+        // Show email if available
+        if (profile?.email) {
+            return profile.email
+        }
+
+        // Show UUID shorthand if no profile
+        return member.user_id.slice(0, 8) + '...'
+    }
+
+    const handleInvite = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!teamId || !inviteEmail || !invitePassword) return
+
+        setIsInviting(true)
+        const result = await inviteCrewMember(teamId, inviteEmail, inviteRole, invitePassword, {
+            firstName: inviteFirstName || undefined,
+            lastName: inviteLastName || undefined,
+            telephone: inviteTelephone || undefined
+        })
+        setIsInviting(false)
+
+        if (result.success) {
+            setSuccess('OPERATIVE INITIATED: Password assigned. Credentials must be shared manually (Email system offline).')
+            setInviteEmail('')
+            setInviteFirstName('')
+            setInviteLastName('')
+            setInviteTelephone('')
+            setInvitePassword('')
+            setInviteRole('analyst')
+            // Refresh crew list
+            const crewData = await getCrewMembers(teamId)
+            if ('error' in crewData) {
+                setError(crewData.error)
+            } else {
+                setCrew(crewData)
+            }
+        } else {
+            setError(result.error || 'Recruitment failed')
+        }
+    }
+
+    const handleEditOpen = (member: CrewMember) => {
+        setEditMember(member)
+        setEditRole(member.role)
+        setEditTelephone(member.profiles?.telephone || '')
+        setEditOpen(true)
+    }
+
+    const handleEditSave = async () => {
+        if (!editMember || !teamId) return
+        const result = await updateCrewMember(editMember.user_id, teamId, {
+            role: editRole,
+            telephone: editTelephone
+        })
+        if (result.success) {
+            setCrew(prev => prev.map(m => m.user_id === editMember.user_id
+                ? { ...m, role: editRole, profiles: { ...m.profiles, telephone: editTelephone } as any }
+                : m
+            ))
+            setEditOpen(false)
+            setSuccess('Member updated successfully.')
+        } else {
+            setError(result.error || 'Update failed')
+        }
+    }
+
+    const handleRemove = async (userId: string) => {
+        if (!teamId) return
+        if (!confirm('CONFIRM REMOVAL: This action will revoke alliance access for this operative.')) return
+
+        const result = await removeCrewMember(userId, teamId)
+        if (result.success) {
+            setCrew(prev => prev.filter(m => m.user_id !== userId))
+            setSuccess('OPERATIVE REMOVED: Crew member has been discharged from the alliance.')
+        } else {
+            setError(result.error || 'Removal failed')
+        }
+    }
+
+    const handlePasswordReset = async () => {
+        if (!resetUserId || !teamId || !newPassword) return
+        const result = await resetCrewPassword(resetUserId, teamId, newPassword)
+        if (result.success) {
+            setResetOpen(false)
+            setNewPassword('')
+            setSuccess('PASSWORD RESET: Crew member credentials have been updated.')
+        } else {
+            setError(result.error || 'Password reset failed')
+        }
+    }
+
+    const handleToggleActive = async (userId: string, currentActive: boolean) => {
+        if (!teamId) return
+        const result = await toggleCrewActive(userId, teamId, currentActive)
+        if (result.success) {
+            setCrew(prev => prev.map(m =>
+                m.user_id === userId ? { ...m, is_active: !currentActive } : m
+            ))
+            setSuccess(`OPERATIVE ${!currentActive ? 'ACTIVATED' : 'DEACTIVATED'}: Status updated.`)
+        } else {
+            setError(result.error || 'Toggle failed')
+        }
+    }
+
+    if (isLoading) {
+        return <div className="p-8 text-muted-foreground animate-pulse font-mono">Loading Crew Manifest...</div>
+    }
+
+    return (
+        <div className="min-h-screen bg-slate-50 -m-8 p-8 space-y-6">
+            <div className="flex items-end justify-between border-b border-slate-200 pb-4">
+                <div>
+                    <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900">Crew Deck</h1>
+                    <p className="text-slate-500 font-mono text-sm mt-1">Alliance Personnel Management</p>
+                </div>
+                <div className="text-xs font-mono text-blue-600 uppercase font-bold">
+                    {crew.length} Operative{crew.length !== 1 ? 's' : ''}
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Recruitment Form (Owner/Admin only) */}
+                {canManage && (
+                    <div className="lg:col-span-1">
+                        <div className="bg-white border border-slate-200 rounded-lg shadow-sm">
+                            <div className="px-4 py-3 border-b border-slate-200 bg-slate-50">
+                                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Recruitment Module</h3>
+                            </div>
+                            <form onSubmit={handleInvite} className="p-4 space-y-4">
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="text-xs uppercase text-slate-600 font-bold block mb-1">First Name</label>
+                                        <Input
+                                            type="text"
+                                            value={inviteFirstName}
+                                            onChange={(e) => setInviteFirstName(e.target.value)}
+                                            placeholder="John"
+                                            className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Last Name</label>
+                                        <Input
+                                            type="text"
+                                            value={inviteLastName}
+                                            onChange={(e) => setInviteLastName(e.target.value)}
+                                            placeholder="Doe"
+                                            className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Email *</label>
+                                    <Input
+                                        type="email"
+                                        value={inviteEmail}
+                                        onChange={(e) => setInviteEmail(e.target.value)}
+                                        placeholder="operative@alliance.com"
+                                        required
+                                        className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Telephone</label>
+                                    <Input
+                                        type="tel"
+                                        value={inviteTelephone}
+                                        onChange={(e) => setInviteTelephone(e.target.value)}
+                                        placeholder="+212 600 000 000"
+                                        className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Password *</label>
+                                    <Input
+                                        type="password"
+                                        value={invitePassword}
+                                        onChange={(e) => setInvitePassword(e.target.value)}
+                                        placeholder="Min. 6 characters"
+                                        required
+                                        minLength={6}
+                                        className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Assigned Rank</label>
+                                    <Select value={inviteRole} onValueChange={setInviteRole}>
+                                        <SelectTrigger className="bg-white border-slate-300 text-slate-900">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="admin">Admin</SelectItem>
+                                            <SelectItem value="manager">Manager</SelectItem>
+                                            <SelectItem value="analyst">Analyst</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={isInviting}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-bold uppercase tracking-wider hover:bg-blue-700 transition-colors disabled:opacity-50 rounded"
+                                >
+                                    <UserPlus className="h-4 w-4" />
+                                    {isInviting ? 'Recruiting...' : 'Recruit Operative'}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* Crew List */}
+                <div className={canManage ? "lg:col-span-2" : "lg:col-span-3"}>
+                    <div className="bg-white border border-slate-200 rounded-lg shadow-sm">
+                        <div className="px-4 py-3 border-b border-slate-200 bg-slate-50">
+                            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Active Crew</h3>
+                        </div>
+                        <div className="p-4 overflow-auto max-h-[600px]">
+                            <div className="space-y-3">
+                                {crew.length === 0 ? (
+                                    <p className="text-slate-500 text-sm text-center py-8">No operatives found in this alliance.</p>
+                                ) : (
+                                    crew.map(member => {
+                                        const roleConfig = ROLE_CONFIG[member.role] || ROLE_CONFIG.member
+                                        const RoleIcon = roleConfig.icon
+                                        const isCurrentUser = member.user_id === currentUserId
+                                        const isMemberOwner = member.role === 'owner'
+
+                                        return (
+                                            <div key={member.user_id} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors">
+                                                <div className="flex items-center gap-4">
+                                                    <div className={`h-10 w-10 rounded-full bg-slate-200 flex items-center justify-center ${roleConfig.color}`}>
+                                                        <RoleIcon className="h-5 w-5" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-slate-900 text-sm">
+                                                            {getDisplayName(member)}
+                                                            {isCurrentUser && <span className="text-blue-600 font-normal ml-2">(You)</span>}
+                                                        </p>
+                                                        {/* Email and Telephone row */}
+                                                        <div className="flex items-center gap-3 text-xs text-slate-500">
+                                                            <span>{member.profiles?.email || member.user_id.slice(0, 8) + '...'}</span>
+                                                            {member.profiles?.telephone && (
+                                                                <span>• {member.profiles.telephone}</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-2">
+                                                    {/* Joined Date */}
+                                                    <span className="text-[10px] text-slate-400 hidden sm:inline">
+                                                        {new Date(member.created_at).toLocaleDateString()}
+                                                    </span>
+
+                                                    {/* Role Badge */}
+                                                    <span className={`text-xs font-bold uppercase tracking-wider px-2 py-1 bg-slate-200 rounded ${roleConfig.color}`}>
+                                                        {roleConfig.label}
+                                                    </span>
+
+                                                    {/* Command Buttons (Owner/Admin only) */}
+                                                    {canManage && !isMemberOwner && !isCurrentUser && (
+                                                        <>
+                                                            {/* Toggle Active */}
+                                                            <Switch
+                                                                checked={member.is_active !== false}
+                                                                onCheckedChange={() => handleToggleActive(member.user_id, member.is_active !== false)}
+                                                                className="data-[state=checked]:bg-green-600"
+                                                            />
+
+                                                            <button
+                                                                onClick={() => handleEditOpen(member)}
+                                                                className="p-2 text-blue-600/50 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors"
+                                                                title="Edit"
+                                                            >
+                                                                <Edit className="h-4 w-4" />
+                                                            </button>
+
+                                                            {isOwner && (
+                                                                <button
+                                                                    onClick={() => { setResetUserId(member.user_id); setResetOpen(true); }}
+                                                                    className="p-2 text-yellow-600/50 hover:text-yellow-600 hover:bg-yellow-100 rounded transition-colors"
+                                                                    title="Reset Password"
+                                                                >
+                                                                    <KeyRound className="h-4 w-4" />
+                                                                </button>
+                                                            )}
+
+                                                            <button
+                                                                onClick={() => handleRemove(member.user_id)}
+                                                                className="p-2 text-red-600/50 hover:text-red-600 hover:bg-red-100 rounded transition-colors"
+                                                                title="Remove"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )
+                                    })
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Edit Role Dialog */}
+            <Dialog open={editOpen} onOpenChange={setEditOpen}>
+                <DialogContent className="bg-white border border-slate-200 text-slate-900 shadow-lg">
+                    <DialogHeader>
+                        <DialogTitle className="uppercase tracking-wider font-bold text-slate-900">Edit Crew Member</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                        <div>
+                            <label className="text-xs uppercase text-slate-600 font-bold block mb-2">Rank</label>
+                            <Select value={editRole} onValueChange={setEditRole}>
+                                <SelectTrigger className="bg-white border-slate-300 text-slate-900">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                    <SelectItem value="manager">Manager</SelectItem>
+                                    <SelectItem value="analyst">Analyst</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div>
+                            <label className="text-xs uppercase text-slate-600 font-bold block mb-2">Telephone</label>
+                            <Input
+                                type="tel"
+                                value={editTelephone}
+                                onChange={(e) => setEditTelephone(e.target.value)}
+                                className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
+                                placeholder="+212 600 000 000"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <button onClick={() => setEditOpen(false)} className="px-4 py-2 text-sm font-bold uppercase text-slate-500 hover:text-slate-700">Cancel</button>
+                        <button onClick={handleEditSave} className="px-4 py-2 bg-blue-600 text-white text-sm font-bold uppercase rounded hover:bg-blue-700">Save Changes</button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Password Reset Dialog */}
+            <Dialog open={resetOpen} onOpenChange={setResetOpen}>
+                <DialogContent className="bg-white border border-slate-200 text-slate-900 shadow-lg">
+                    <DialogHeader>
+                        <DialogTitle className="uppercase tracking-wider font-bold text-slate-900">Reset Crew Password</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <label className="text-xs uppercase text-slate-600 font-bold block mb-2">New Password</label>
+                        <Input
+                            type="password"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
+                            placeholder="Minimum 6 characters..."
+                        />
+                    </div>
+                    <DialogFooter>
+                        <button onClick={() => setResetOpen(false)} className="px-4 py-2 text-sm font-bold uppercase text-slate-500 hover:text-slate-700">Cancel</button>
+                        <button onClick={handlePasswordReset} className="px-4 py-2 bg-yellow-600 text-white text-sm font-bold uppercase rounded hover:bg-yellow-700">Reset Password</button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Error Toast */}
+            {error && (
+                <div className="fixed bottom-20 right-4 z-50 max-w-sm p-4 bg-red-50 border border-red-200 text-red-800 text-sm rounded-lg shadow-lg">
+                    <div className="flex items-start justify-between gap-2">
+                        <div>
+                            <p className="uppercase font-bold text-red-600 mb-1">Error</p>
+                            <p>{error}</p>
+                        </div>
+                        <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">✕</button>
+                    </div>
+                </div>
+            )}
+
+            {/* Success Toast */}
+            {success && (
+                <div className="fixed bottom-20 right-4 z-50 max-w-sm p-4 bg-green-50 border border-green-200 text-green-800 text-sm rounded-lg shadow-lg">
+                    <div className="flex items-start justify-between gap-2">
+                        <div>
+                            <p className="uppercase font-bold text-green-600 mb-1">Success</p>
+                            <p>{success}</p>
+                        </div>
+                        <button onClick={() => setSuccess(null)} className="text-green-400 hover:text-green-600">✕</button>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}

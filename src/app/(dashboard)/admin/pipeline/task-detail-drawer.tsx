@@ -1,0 +1,466 @@
+'use client'
+
+import { useState, useEffect, useRef } from 'react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
+import { Crown, Shield, Sword, User, Send, MessageSquare, FileText, Clock, Settings, AlertTriangle } from 'lucide-react'
+import { getTaskWithComments, addTaskComment, updateTaskDescription, updateTask } from './actions'
+
+interface TaskDetailDrawerProps {
+    taskId: string | null
+    teamId: string
+    open: boolean
+    onClose: () => void
+    canEdit: boolean
+    quests?: { id: string; name: string }[]
+    sizes?: { id: string; name: string; xp_points: number }[]
+    urgencies?: { id: string; name: string; color: string }[]
+    crew?: { id: string; email: string; first_name: string | null; last_name: string | null }[]
+}
+
+interface Comment {
+    id: string
+    content: string
+    created_at: string
+    author?: { id: string; email: string; first_name: string | null; last_name: string | null } | null
+    authorRole: string
+}
+
+interface TaskDetail {
+    id: string
+    title: string
+    description: string | null
+    created_at?: string
+    quest_id?: string | null
+    size_id?: string | null
+    urgency_id?: string | null
+    assigned_to?: string | null
+    needs_info?: boolean
+    quest?: { id: string; name: string } | null
+    size?: { id: string; name: string; xp_points: number } | null
+    urgency?: { id: string; name: string; color: string } | null
+    assignee?: { id: string; email: string; first_name: string | null; last_name: string | null } | null
+}
+
+const ROLE_ICONS: Record<string, typeof Crown> = {
+    owner: Crown,
+    admin: Shield,
+    manager: Sword,
+    analyst: User,
+    member: User
+}
+
+const ROLE_COLORS: Record<string, string> = {
+    owner: 'text-yellow-600',
+    admin: 'text-blue-600',
+    manager: 'text-purple-600',
+    analyst: 'text-slate-600',
+    member: 'text-slate-500'
+}
+
+function formatRelativeTime(dateStr: string): string {
+    const date = new Date(dateStr)
+    const now = new Date()
+    const diff = now.getTime() - date.getTime()
+
+    const minutes = Math.floor(diff / 60000)
+    const hours = Math.floor(diff / 3600000)
+    const days = Math.floor(diff / 86400000)
+
+    if (minutes < 1) return 'just now'
+    if (minutes < 60) return `${minutes}m ago`
+    if (hours < 24) return `${hours}h ago`
+    if (days < 7) return `${days}d ago`
+    return date.toLocaleDateString()
+}
+
+function linkify(text: string): React.ReactNode {
+    const urlRegex = /(https?:\/\/[^\s]+)/g
+    const parts = text.split(urlRegex)
+
+    return (
+        <>
+            {parts.map((part, i) =>
+                urlRegex.test(part) ? (
+                    <a
+                        key={i}
+                        href={part}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800 underline break-all"
+                    >
+                        {part}
+                    </a>
+                ) : (
+                    <span key={i}>{part}</span>
+                )
+            )}
+        </>
+    )
+}
+
+export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quests = [], sizes = [], urgencies = [], crew = [] }: TaskDetailDrawerProps) {
+    const [task, setTask] = useState<TaskDetail | null>(null)
+    const [comments, setComments] = useState<Comment[]>([])
+    const [isLoading, setIsLoading] = useState(false)
+    const [newComment, setNewComment] = useState('')
+    const [isSending, setIsSending] = useState(false)
+    const [description, setDescription] = useState('')
+    const [isEditingDesc, setIsEditingDesc] = useState(false)
+    const [isSavingDesc, setIsSavingDesc] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+    const commentsEndRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        async function loadTask() {
+            if (!taskId || !open) return
+            setIsLoading(true)
+            setError(null)
+            const result = await getTaskWithComments(taskId, teamId)
+            if ('error' in result) {
+                console.error(result.error)
+                setError(result.error || 'Failed to load task')
+                setTask(null)
+            } else {
+                setTask(result.task)
+                setComments(result.comments)
+                setDescription(result.task?.description || '')
+            }
+            setIsLoading(false)
+        }
+        loadTask()
+    }, [taskId, teamId, open])
+
+    // Scroll to bottom when new comments appear
+    useEffect(() => {
+        if (commentsEndRef.current) {
+            commentsEndRef.current.scrollIntoView({ behavior: 'smooth' })
+        }
+    }, [comments])
+
+    const handleSendComment = async () => {
+        if (!taskId || !newComment.trim()) return
+        setIsSending(true)
+        const result = await addTaskComment(taskId, teamId, newComment)
+        setIsSending(false)
+
+        if (result.success) {
+            setNewComment('')
+            // Refresh comments
+            const updated = await getTaskWithComments(taskId, teamId)
+            if (!('error' in updated)) {
+                setComments(updated.comments)
+            }
+        }
+    }
+
+    const handleSaveDescription = async () => {
+        if (!taskId) return
+        setIsSavingDesc(true)
+        const result = await updateTaskDescription(taskId, teamId, description)
+        setIsSavingDesc(false)
+        setIsEditingDesc(false)
+
+        if (result.success) {
+            setTask(prev => prev ? { ...prev, description } : null)
+        }
+    }
+
+    const handleUpdateParameter = async (key: string, value: any) => {
+        if (!taskId || !task) return
+
+        // Optimistic update
+        setTask(prev => prev ? { ...prev, [key]: value === '_none' ? null : value } : null)
+
+        const updateData: any = {}
+        if (value === '_none') {
+            updateData[key] = null
+        } else {
+            updateData[key] = value
+        }
+
+        // Map UI keys to DB keys if needed, though here they match mostly or we handle logic
+        // For Selects, we pass ID directly.
+        await updateTask(taskId, teamId, updateData)
+    }
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault()
+            handleSendComment()
+        }
+    }
+
+    if (!open) return null
+
+    return (
+        <Dialog open={open} onOpenChange={() => onClose()}>
+            <DialogContent className="bg-white border border-slate-200 text-slate-900 shadow-xl max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+                <div className="flex h-full min-h-[600px]">
+                    {/* Left Column: Brief & Comms (60%) */}
+                    <div className="w-[60%] flex flex-col border-r border-slate-200">
+                        {/* Header */}
+                        <DialogHeader className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex-shrink-0">
+                            <DialogTitle className="text-lg font-bold text-slate-900 pr-8">
+                                {task?.title || 'Loading...'}
+                            </DialogTitle>
+                            {task?.quest && (
+                                <p className="text-xs font-mono text-blue-600 mt-1">
+                                    Quest: {task.quest.name}
+                                </p>
+                            )}
+                        </DialogHeader>
+
+                        {isLoading ? (
+                            <div className="p-8 text-center text-slate-500 animate-pulse">Loading task details...</div>
+                        ) : error ? (
+                            <div className="p-8 text-center text-red-500 bg-red-50 m-6 rounded-lg border border-red-200">
+                                <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                <p className="font-bold">Error Loading Task</p>
+                                <p className="text-sm mt-1">{error}</p>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Description Section */}
+                                <div className="px-6 py-4 border-b border-slate-200 bg-white flex-shrink-0">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <FileText className="h-4 w-4 text-slate-400" />
+                                        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Brief</h3>
+                                    </div>
+                                    {isEditingDesc && canEdit ? (
+                                        <div className="space-y-2">
+                                            <textarea
+                                                value={description}
+                                                onChange={(e) => setDescription(e.target.value)}
+                                                rows={4}
+                                                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                                placeholder="Add mission briefing..."
+                                                autoFocus
+                                            />
+                                            <div className="flex gap-2 justify-end">
+                                                <button
+                                                    onClick={() => { setIsEditingDesc(false); setDescription(task?.description || '') }}
+                                                    className="px-3 py-1.5 text-xs font-bold uppercase text-slate-500 hover:text-slate-700"
+                                                >
+                                                    Cancel
+                                                </button>
+                                                <button
+                                                    onClick={handleSaveDescription}
+                                                    disabled={isSavingDesc}
+                                                    className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold uppercase rounded hover:bg-blue-700 disabled:opacity-50"
+                                                >
+                                                    {isSavingDesc ? 'Saving...' : 'Save'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div
+                                            onClick={() => canEdit && setIsEditingDesc(true)}
+                                            className={`min-h-[60px] p-3 bg-slate-50 border border-slate-200 rounded-md text-sm text-slate-700 whitespace-pre-wrap ${canEdit ? 'cursor-pointer hover:bg-slate-100' : ''}`}
+                                        >
+                                            {task?.description ? (
+                                                linkify(task.description)
+                                            ) : (
+                                                <span className="text-slate-400 italic">
+                                                    {canEdit ? 'Click to add mission briefing...' : 'No briefing provided.'}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Comms Feed Section */}
+                                <div className="flex-1 flex flex-col min-h-0">
+                                    <div className="px-6 py-3 border-b border-slate-200 bg-slate-50 flex-shrink-0">
+                                        <div className="flex items-center gap-2">
+                                            <MessageSquare className="h-4 w-4 text-slate-400" />
+                                            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Comms Feed</h3>
+                                            <span className="text-xs text-slate-400">({comments.length})</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Comments List */}
+                                    <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 bg-white">
+                                        {comments.length === 0 ? (
+                                            <p className="text-center text-slate-400 text-sm py-8">
+                                                No comms yet. Start the conversation.
+                                            </p>
+                                        ) : (
+                                            comments.map(comment => {
+                                                const RoleIcon = ROLE_ICONS[comment.authorRole] || User
+                                                const roleColor = ROLE_COLORS[comment.authorRole] || 'text-slate-500'
+                                                const authorName = comment.author?.first_name || comment.author?.last_name
+                                                    ? `${comment.author.first_name || ''} ${comment.author.last_name || ''}`.trim()
+                                                    : comment.author?.email || 'Unknown'
+
+                                                return (
+                                                    <div key={comment.id} className="flex gap-3">
+                                                        <div className={`flex-shrink-0 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center ${roleColor}`}>
+                                                            <RoleIcon className="h-4 w-4" />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-baseline gap-2">
+                                                                <span className="font-bold text-slate-900 text-sm">{authorName}</span>
+                                                                <span className="text-xs text-slate-400 flex items-center gap-1">
+                                                                    <Clock className="h-3 w-3" />
+                                                                    {formatRelativeTime(comment.created_at)}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-sm text-slate-700 mt-1 whitespace-pre-wrap break-words">
+                                                                {linkify(comment.content)}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })
+                                        )}
+                                        <div ref={commentsEndRef} />
+                                    </div>
+
+                                    {/* Comment Input */}
+                                    <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex-shrink-0">
+                                        <div className="flex gap-2">
+                                            <textarea
+                                                value={newComment}
+                                                onChange={(e) => setNewComment(e.target.value)}
+                                                onKeyDown={handleKeyDown}
+                                                placeholder="Write a message... (Enter to send)"
+                                                rows={2}
+                                                className="flex-1 px-3 py-2 bg-white border border-slate-300 rounded-md text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                            />
+                                            <button
+                                                onClick={handleSendComment}
+                                                disabled={isSending || !newComment.trim()}
+                                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                <Send className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
+
+                    {/* Right Column: Mission Parameters (40%) */}
+                    <div className="w-[40%] bg-slate-50 flex flex-col h-full overflow-y-auto">
+                        <div className="px-6 py-4 border-b border-slate-200">
+                            <div className="flex items-center gap-2">
+                                <Settings className="h-4 w-4 text-slate-400" />
+                                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Mission Parameters</h3>
+                            </div>
+                        </div>
+
+                        <div className="p-6 space-y-6">
+                            {/* Needs Info Toggle */}
+                            <div className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg">
+                                <div className="flex items-center gap-2">
+                                    <AlertTriangle className={`h-4 w-4 ${task?.needs_info ? 'text-red-500' : 'text-slate-400'}`} />
+                                    <span className="text-sm font-bold text-slate-700">Needs Info</span>
+                                </div>
+                                <Switch
+                                    checked={task?.needs_info || false}
+                                    onCheckedChange={(checked) => handleUpdateParameter('needs_info', checked)}
+                                    disabled={!canEdit}
+                                />
+                            </div>
+
+                            {/* Objective (Quest) */}
+                            <div className="space-y-2">
+                                <label className="text-xs uppercase font-bold text-slate-500">Objective (Quest)</label>
+                                <Select
+                                    value={task?.quest_id || '_none'}
+                                    onValueChange={(val) => handleUpdateParameter('quest_id', val)}
+                                    disabled={!canEdit}
+                                >
+                                    <SelectTrigger className="bg-white border-slate-300">
+                                        <SelectValue placeholder="No Quest" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="_none">No Quest</SelectItem>
+                                        {quests.map(q => (
+                                            <SelectItem key={q.id} value={q.id}>{q.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Size (XP) */}
+                            <div className="space-y-2">
+                                <label className="text-xs uppercase font-bold text-slate-500">XP Value (Size)</label>
+                                <Select
+                                    value={task?.size_id || '_none'}
+                                    onValueChange={(val) => handleUpdateParameter('size_id', val)}
+                                    disabled={!canEdit}
+                                >
+                                    <SelectTrigger className="bg-white border-slate-300">
+                                        <SelectValue placeholder="No Size" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="_none">No Size</SelectItem>
+                                        {sizes.map(s => (
+                                            <SelectItem key={s.id} value={s.id}>{s.name} ({s.xp_points} XP)</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Urgency */}
+                            <div className="space-y-2">
+                                <label className="text-xs uppercase font-bold text-slate-500">Urgency</label>
+                                <Select
+                                    value={task?.urgency_id || '_none'}
+                                    onValueChange={(val) => handleUpdateParameter('urgency_id', val)}
+                                    disabled={!canEdit}
+                                >
+                                    <SelectTrigger className="bg-white border-slate-300">
+                                        <SelectValue placeholder="No Urgency" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="_none">No Urgency</SelectItem>
+                                        {urgencies.map(u => (
+                                            <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Operator (Assignee) */}
+                            <div className="space-y-2">
+                                <label className="text-xs uppercase font-bold text-slate-500">Operator</label>
+                                <Select
+                                    value={task?.assigned_to || '_none'}
+                                    onValueChange={(val) => handleUpdateParameter('assigned_to', val)}
+                                    disabled={!canEdit}
+                                >
+                                    <SelectTrigger className="bg-white border-slate-300">
+                                        <SelectValue placeholder="Unassigned" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="_none">Unassigned</SelectItem>
+                                        {crew.map(m => (
+                                            <SelectItem key={m.id} value={m.id}>
+                                                {m.first_name || m.last_name
+                                                    ? `${m.first_name || ''} ${m.last_name || ''}`.trim()
+                                                    : m.email}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Read-only Info */}
+                            <div className="pt-8 mt-auto">
+                                <div className="p-4 bg-slate-100 rounded text-xs text-slate-400 font-mono space-y-1">
+                                    <p>TASK ID: {task?.id}</p>
+                                    <p>CREATED: {task && task.created_at ? new Date(task.created_at).toLocaleDateString() : '...'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+    )
+}

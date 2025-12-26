@@ -1,0 +1,44 @@
+'use client'
+
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { cn } from "@/lib/utils"
+import { motion } from "framer-motion"
+
+interface NavItemProps {
+    href: string
+    children: React.ReactNode
+    icon?: React.ReactNode
+}
+
+export function NavItem({ href, children, icon }: NavItemProps) {
+    const pathname = usePathname()
+    // Exact match for root, or starts with for nested
+    const isActive = href === '/'
+        ? pathname === '/'
+        : pathname.startsWith(href)
+
+    return (
+        <Link href={href} className="block relative group">
+            {isActive && (
+                <motion.div
+                    layoutId="activeNav"
+                    className="absolute inset-y-0 left-0 w-1 bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                />
+            )}
+            <div className={cn(
+                "flex items-center gap-3 px-4 py-2 text-sm font-medium transition-colors relative z-10",
+                isActive
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted/10 hover:text-foreground"
+            )}>
+                {icon}
+                {children}
+                {/* Micro-interaction hover highlight */}
+                <div className="absolute inset-y-0 right-1 w-0 bg-primary/20 transition-all group-hover:w-1 group-active:w-2 rounded-r-none" />
+            </div>
+        </Link>
+    )
+}
