@@ -7,11 +7,13 @@ import { Search, Target, Layers, User, Zap } from 'lucide-react'
 import confetti from 'canvas-confetti'
 import { getTasks, updateTaskStatus } from './actions'
 import { TaskDetailDrawer } from '@/app/(dashboard)/admin/pipeline/task-detail-drawer'
+import { BossDisplay } from '@/components/quest-board/boss-display'
 
 interface Quest {
     id: string
     name: string
     is_active?: boolean
+    boss_skin?: string
 }
 
 interface Status {
@@ -35,6 +37,15 @@ interface Task {
     quest?: { id: string; name: string } | null
 }
 
+interface Boss {
+    id: string
+    name: string
+    is_system: boolean
+    image_healthy: string
+    image_bloody: string
+    image_dead: string
+}
+
 interface QuestBoardClientProps {
     quests: Quest[]
     statuses: Status[]
@@ -45,6 +56,7 @@ interface QuestBoardClientProps {
     canEdit: boolean
     userId: string
     userRole: string
+    bosses: Boss[]
 }
 
 const URGENCY_COLORS: Record<string, string> = {
@@ -61,9 +73,15 @@ const STATUS_BG: Record<string, string> = {
     'Done': 'bg-green-50',
 }
 
-export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, canEdit, crew, userId, userRole }: QuestBoardClientProps) {
+export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, canEdit, crew, userId, userRole, bosses }: QuestBoardClientProps) {
+
     const [tasks, setTasks] = useState<Task[]>([])
-    const [selectedQuestId, setSelectedQuestId] = useState<string>('')
+    const [selectedQuestId, setSelectedQuestId] = useState<string>(() => {
+        const activeQuest = quests.find(q => q.is_active)
+        if (activeQuest) return activeQuest.id
+        if (quests.length > 0) return quests[0].id
+        return ''
+    })
     const [searchQuery, setSearchQuery] = useState('')
     const [isLoading, setIsLoading] = useState(false)
 
@@ -86,17 +104,8 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
             setIsLoading(false)
         }
         loadTasks()
-    }, [selectedQuestId])
-
-    // Set first active quest as default
-    useEffect(() => {
-        const activeQuest = quests.find(q => q.is_active)
-        if (activeQuest && !selectedQuestId) {
-            setSelectedQuestId(activeQuest.id)
-        } else if (quests.length > 0 && !selectedQuestId) {
-            setSelectedQuestId(quests[0].id)
-        }
-    }, [quests, selectedQuestId])
+        loadTasks()
+    }, [selectedQuestId, teamId])
 
     const [selectedAssignee, setSelectedAssignee] = useState<string>('all')
 
@@ -164,6 +173,30 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
 
     const currentQuest = quests.find(q => q.id === selectedQuestId)
 
+    // Resolve Boss Data
+    // 1. Try to find by ID (new system)
+    let activeBoss = bosses.find(b => b.id === currentQuest?.boss_skin)
+    // 2. If legacy 'generic_monster' or not found, try to find Titan Kong
+    if (!activeBoss) {
+        if (currentQuest?.boss_skin === 'generic_monster') {
+            activeBoss = bosses.find(b => b.name === 'The Titan Kong')
+        }
+    }
+    // 3. Absolute fallback is handled inside BossDisplay but we can pass undefined
+
+    // Boss Battle Logic
+    const totalXP = tasks.reduce((acc, t) => acc + (t.size?.xp_points || 0), 0)
+    const completedXP = tasks
+        .filter(t => t.status?.category === 'done')
+        .reduce((acc, t) => acc + (t.size?.xp_points || 0), 0)
+
+    const bossMaxHP = totalXP > 0 ? totalXP : 100 // Avoid division by zero
+    // Invert progress: Boss HP = Total - Completed
+    // If completed = 0, Boss HP = Total (100%)
+    // If completed = Total, Boss HP = 0 (0%)
+    const bossCurrentHP = Math.max(0, bossMaxHP - completedXP)
+    const bossHealthPercent = (bossCurrentHP / bossMaxHP) * 100
+
     const handleTaskClick = (taskId: string) => {
         setSelectedTaskId(taskId)
         setDetailOpen(true)
@@ -183,11 +216,38 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
         <div className="min-h-screen bg-slate-50 -m-8 p-8 space-y-6">
             {/* Control Bar */}
             <div className="flex items-center justify-between gap-4 border-b border-slate-200 pb-4">
-                <div>
-                    <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900">Quest Board</h1>
-                    <p className="text-slate-500 font-mono text-sm mt-1">
-                        {currentQuest ? currentQuest.name : 'Select a Quest'}
-                    </p>
+                <div className="flex items-center gap-6">
+                    {/* Boss Visualization */}
+                    <div className="hidden md:block">
+                        <BossDisplay
+                            bossData={activeBoss}
+                            currentHealth={bossCurrentHP}
+                            maxHealth={bossMaxHP}
+                        />
+                    </div>
+
+                    <div>
+                        <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900">Quest Board</h1>
+                        <p className="text-slate-500 font-mono text-sm mt-1 mb-2">
+                            {currentQuest ? currentQuest.name : 'Select a Quest'}
+                        </p>
+
+                        {/* Boss Health Bar */}
+                        {selectedQuestId && (
+                            <div className="w-64 space-y-1">
+                                <div className="flex justify-between text-xs font-bold uppercase">
+                                    <span className="text-red-600">Boss HP</span>
+                                    <span className="text-slate-400">{Math.round(bossHealthPercent)}%</span>
+                                </div>
+                                <div className="h-4 w-full bg-slate-200 rounded-full overflow-hidden border border-slate-300">
+                                    <div
+                                        className={`h-full transition-all duration-500 ${bossHealthPercent < 25 ? 'bg-red-600 animate-pulse' : 'bg-red-500'}`}
+                                        style={{ width: `${bossHealthPercent}%` }}
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-4">

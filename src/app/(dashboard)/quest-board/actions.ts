@@ -39,6 +39,7 @@ export async function createQuest(formData: FormData) {
     const teamId = formData.get('teamId') as string
     const name = formData.get('name') as string
     const description = formData.get('description') as string
+    const bossSkin = (formData.get('boss_skin') as string) || 'generic_monster'
     const setActive = formData.get('setActive') === 'on'
 
     if (!teamId || !name) return { error: 'Missing required fields' }
@@ -55,6 +56,7 @@ export async function createQuest(formData: FormData) {
         team_id: teamId,
         name,
         description,
+        boss_skin: bossSkin,
         is_active: setActive,
         created_at: new Date().toISOString()
     })

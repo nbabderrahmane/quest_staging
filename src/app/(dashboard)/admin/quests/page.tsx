@@ -4,13 +4,23 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Plus, Target, Calendar, Trash2, Edit, CheckCircle, Circle, Rocket, Archive, ArrowDownToLine, RefreshCcw } from 'lucide-react'
+import { BossSelector } from '@/components/quest-board/boss-selector'
+import { Plus, Target, Calendar, Trash2, Edit, CheckCircle, Circle, Rocket, Archive, ArrowDownToLine, RefreshCcw, Skull } from 'lucide-react'
 import { getQuestObjectives, createQuestObjective, updateQuestObjective, deleteQuestObjective, toggleQuestActive, archiveQuest, unarchiveQuest } from './actions'
+import { getBosses } from '../bosses/actions'
+
+interface Boss {
+    id: string
+    name: string
+    is_system: boolean
+    image_healthy: string
+}
 
 interface Quest {
     id: string
     name: string
     description: string | null
+    boss_skin?: string
     start_date: string | null
     end_date: string | null
     is_active: boolean
@@ -34,11 +44,13 @@ export default function QuestsPage() {
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState<string | null>(null)
+    const [bosses, setBosses] = useState<Boss[]>([])
 
     // Create Modal State
     const [createOpen, setCreateOpen] = useState(false)
     const [newName, setNewName] = useState('')
     const [newDescription, setNewDescription] = useState('')
+    const [newBossSkin, setNewBossSkin] = useState('generic_monster')
     const [newStartDate, setNewStartDate] = useState('')
     const [newEndDate, setNewEndDate] = useState('')
     const [isCreating, setIsCreating] = useState(false)
@@ -48,6 +60,7 @@ export default function QuestsPage() {
     const [editQuest, setEditQuest] = useState<Quest | null>(null)
     const [editName, setEditName] = useState('')
     const [editDescription, setEditDescription] = useState('')
+    const [editBossSkin, setEditBossSkin] = useState('generic_monster')
     const [editStartDate, setEditStartDate] = useState('')
     const [editEndDate, setEditEndDate] = useState('')
 
@@ -92,6 +105,11 @@ export default function QuestsPage() {
                 setQuests(questData)
             }
 
+            const bossData = await getBosses(cleanTeamId)
+            if (!('error' in bossData)) {
+                setBosses(bossData)
+            }
+
             setIsLoading(false)
         }
         load()
@@ -124,6 +142,7 @@ export default function QuestsPage() {
         const result = await createQuestObjective(teamId, {
             name: newName,
             description: newDescription || undefined,
+            boss_skin: newBossSkin,
             start_date: newStartDate || undefined,
             end_date: newEndDate || undefined
         })
@@ -134,6 +153,7 @@ export default function QuestsPage() {
             setCreateOpen(false)
             setNewName('')
             setNewDescription('')
+            setNewBossSkin('generic_monster')
             setNewStartDate('')
             setNewEndDate('')
             const questData = await getQuestObjectives(teamId)
@@ -149,6 +169,7 @@ export default function QuestsPage() {
         setEditQuest(quest)
         setEditName(quest.name)
         setEditDescription(quest.description || '')
+        setEditBossSkin(quest.boss_skin || 'generic_monster')
         setEditStartDate(quest.start_date || '')
         setEditEndDate(quest.end_date || '')
         setEditOpen(true)
@@ -160,6 +181,7 @@ export default function QuestsPage() {
         const result = await updateQuestObjective(editQuest.id, teamId, {
             name: editName,
             description: editDescription || undefined,
+            boss_skin: editBossSkin,
             start_date: editStartDate || undefined,
             end_date: editEndDate || undefined
         })
@@ -462,6 +484,13 @@ export default function QuestsPage() {
                                 className="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
+                        <div>
+                            <label className="text-xs uppercase text-slate-600 font-bold block mb-2 flex items-center gap-1">
+                                <Skull className="h-3 w-3" />
+                                Nemesis (Boss)
+                            </label>
+                            <BossSelector value={newBossSkin} onChange={setNewBossSkin} bosses={bosses} />
+                        </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Start Date</label>
@@ -526,6 +555,13 @@ export default function QuestsPage() {
                                 rows={3}
                                 className="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
+                        </div>
+                        <div>
+                            <label className="text-xs uppercase text-slate-600 font-bold block mb-2 flex items-center gap-1">
+                                <Skull className="h-3 w-3" />
+                                Nemesis (Boss)
+                            </label>
+                            <BossSelector value={editBossSkin} onChange={setEditBossSkin} bosses={bosses} />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>

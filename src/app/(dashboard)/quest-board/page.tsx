@@ -3,6 +3,7 @@ import { getQuests, getTasks } from "./actions"
 import { getStatuses, getSizes, getUrgencies } from "@/app/admin/actions"
 import { getCrewForAssignment } from "@/app/(dashboard)/admin/pipeline/actions"
 import { getUserTeams } from "@/app/teams/actions"
+import { getBosses } from "@/app/(dashboard)/admin/bosses/actions"
 import { getRoleContext } from "@/lib/role-service"
 import { cookies } from "next/headers"
 import { QuestBoardClient } from "./quest-board-client"
@@ -23,15 +24,17 @@ export default async function QuestBoardPage() {
         ? selectedTeamId
         : teams[0].id
 
-    const [quests, statuses, sizes, urgencies, roleCtx, crew] = await Promise.all([
+    const [quests, statuses, sizes, urgencies, roleCtx, crew, bossesData] = await Promise.all([
         getQuests(teamId),
         getStatuses(teamId),
         getSizes(teamId),
         getUrgencies(teamId),
         getRoleContext(teamId),
-        getCrewForAssignment(teamId)
+        getCrewForAssignment(teamId),
+        getBosses(teamId)
     ])
 
+    const bossList = ('error' in bossesData) ? [] : bossesData
     const canEdit = roleCtx ? ['owner', 'admin', 'manager', 'analyst'].includes(roleCtx.role || '') : false
 
     return (
@@ -45,6 +48,7 @@ export default async function QuestBoardPage() {
             canEdit={canEdit}
             userId={user.id}
             userRole={roleCtx?.role || 'member'}
+            bosses={bossList}
         />
     )
 }

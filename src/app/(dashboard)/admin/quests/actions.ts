@@ -52,6 +52,7 @@ export async function createQuestObjective(
     data: {
         name: string
         description?: string
+        boss_skin?: string
         start_date?: string
         end_date?: string
     }
@@ -83,11 +84,12 @@ export async function createQuestObjective(
         .from('quests')
         .insert({
             team_id: teamId,
-            created_by: user.id,
-            name: data.name.trim(),
-            description: data.description?.trim() || null,
-            start_date: data.start_date || null,
-            end_date: data.end_date || null
+            name: data.name,
+            description: data.description,
+            boss_skin: data.boss_skin || 'generic_monster',
+            start_date: data.start_date || new Date().toISOString(),
+            end_date: data.end_date,
+            created_by: user.id
         })
 
     if (error) {
@@ -213,6 +215,7 @@ export async function updateQuestObjective(
     data: Partial<{
         name: string
         description: string
+        boss_skin: string
         start_date: string | null
         end_date: string | null
         is_active: boolean
@@ -232,7 +235,11 @@ export async function updateQuestObjective(
 
     const { error } = await supabaseAdmin
         .from('quests')
-        .update({ ...data, updated_at: new Date().toISOString() })
+        .update({
+            ...data,
+            boss_skin: data.boss_skin || 'generic_monster',
+            updated_at: new Date().toISOString()
+        })
         .eq('id', questId)
         .eq('team_id', teamId)
 

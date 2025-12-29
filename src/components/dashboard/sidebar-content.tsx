@@ -6,7 +6,7 @@ import TeamSwitcher from './team-switcher'
 import { BrandSettings } from '@/components/dashboard/brand-settings'
 import { UserNav } from './user-nav'
 import { NavItem } from '@/components/ui/nav-item'
-import { LayoutDashboard, ScrollText, BarChart3, Settings, Flag, List, Briefcase, Building2 } from 'lucide-react'
+import { LayoutDashboard, ScrollText, BarChart3, Settings, Flag, List, Briefcase, Building2, Skull } from 'lucide-react'
 import { Team } from '@/lib/types'
 
 interface SidebarContentProps {
@@ -62,6 +62,9 @@ export function SidebarContent({ teams, activeTeam, userRole, user, profile }: S
                     <p className="text-[10px] uppercase tracking-[0.2em] text-sidebar-foreground/40 font-bold">System</p>
                 </div>
                 <NavItem href="/admin" icon={<Settings className="h-4 w-4" />}>Forge (Admin)</NavItem>
+                {['owner', 'admin'].includes(userRole) && (
+                    <NavItem href="/admin/bosses" icon={<Skull className="h-4 w-4" />}>Nemesis Registry</NavItem>
+                )}
                 <NavItem href="/admin/crew" icon={<Settings className="h-4 w-4" />}>Crew Deck</NavItem>
             </nav>
 
