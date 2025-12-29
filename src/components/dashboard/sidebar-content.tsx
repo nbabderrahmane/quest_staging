@@ -66,7 +66,7 @@ export function SidebarContent({ teams, activeTeam, userRole, user, profile }: S
             </nav>
 
             {/* User Footer */}
-            <UserNav user={{ email: user.email, phone: profile?.phone }} />
+            <UserNav user={{ email: user.email, phone: profile?.phone ?? undefined }} />
         </div>
     )
 }
