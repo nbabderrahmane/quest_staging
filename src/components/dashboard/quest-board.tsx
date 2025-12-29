@@ -80,7 +80,7 @@ export function QuestBoard({ quest, initialTasks, statuses, sizes, urgencies, te
 
         // Server Action
         startTransition(() => {
-            updateTaskStatus(taskId, newStatusId)
+            updateTaskStatus(taskId, newStatusId, teamId)
         })
     }
 
