@@ -1,5 +1,10 @@
 # Code Inventory
 
+## SQL System (`system/`)
+- `99_security_sweep.sql`: [CRITICAL] Master security migration (Strict RLS, Team Isolation, Profile Privacy).
+- `schema.sql`: Core database definition.
+- `*_init_*.sql`: Feature modules (Projects, Departments, Teams, Quests).
+
 ## UI Components (`src/components/ui`)
 - `window-card.tsx`: [NEW] Main container component with retro border and title bar.
 - `metric-card.tsx`: [NEW] Display component for single statistics with delta.
@@ -25,5 +30,7 @@
 ## Utilities (`src/lib`)
 - `supabase/client.ts`: Client-side Supabase client.
 - `supabase/server.ts`: Server-side Supabase client.
+- `supabase/middleware.ts`: Edge-compatible session management with env validation.
+- `role-service.ts`: Backend RBAC and Team Context verification.
 - `types.ts`: TypeScript definitions for DB entities.
 - `utils.ts`: Tailwind class merger.

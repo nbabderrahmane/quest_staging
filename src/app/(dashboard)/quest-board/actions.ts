@@ -83,6 +83,7 @@ export async function toggleQuestActive(questId: string, teamId: string, isActiv
         .from('quests')
         .update({ is_active: isActive })
         .eq('id', questId)
+        .eq('team_id', teamId)
 
     if (error) throw error
     revalidatePath('/quest-board')
@@ -90,7 +91,7 @@ export async function toggleQuestActive(questId: string, teamId: string, isActiv
 
 // --- TASKS ---
 
-export async function getTasks(questId: string) {
+export async function getTasks(questId: string, teamId: string) {
     const supabase = await createClient()
 
     try {
@@ -105,6 +106,7 @@ export async function getTasks(questId: string) {
                 quest:quests(id, name)
             `)
             .eq('quest_id', questId)
+            .eq('team_id', teamId)
             .order('created_at', { ascending: false })
 
         if (error) throw error
@@ -116,6 +118,7 @@ export async function getTasks(questId: string) {
             .from('tasks')
             .select('*')
             .eq('quest_id', questId)
+            .eq('team_id', teamId)
 
         if (error) {
             console.error('getTasks: Fallback failed.', error)
@@ -159,12 +162,13 @@ export async function createTask(prevState: any, formData: FormData) {
     return { success: true }
 }
 
-export async function updateTaskStatus(taskId: string, statusId: string) {
+export async function updateTaskStatus(taskId: string, statusId: string, teamId: string) {
     const supabase = await createClient()
     const { error } = await supabase
         .from('tasks')
         .update({ status_id: statusId, updated_at: new Date().toISOString() })
         .eq('id', taskId)
+        .eq('team_id', teamId)
 
     if (error) throw error
     revalidatePath('/quest-board')
@@ -201,6 +205,7 @@ export async function assignTaskToMember(taskId: string, teamId: string, assigne
         .from('tasks')
         .update({ assigned_to: assigneeId, updated_at: new Date().toISOString() })
         .eq('id', taskId)
+        .eq('team_id', teamId)
 
     if (updateError) {
         return { success: false, error: updateError.message }

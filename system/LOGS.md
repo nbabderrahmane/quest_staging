@@ -23,3 +23,13 @@
   - **Components**: Created `TaskCard` (with XP/Urgency indicators) and `CreateTaskDialog`.
   - **Metrics**: Added Total vs Completed XP tracking to the board header.
 - **Game Loop**: Established the flow of "Initialize Quest" -> "Add Tasks" -> "Complete Tasks" -> "XP Profit".
+
+## [2025-12-29] Phase 6.5: Security & Deployment Hardening
+- **Security Sweep**:
+  - Investigated and patched schema leaks (Direct SQL + Action patching).
+  - Enforced `team_id` checks on `updateStatus`, `toggleItemActive`, `updateTaskStatus`, `assignTaskToMember`, and `toggleQuestActive`.
+  - Upgraded RLS to "Strict Team Isolation" for `profiles`, `task_comments` and all operational tables via `099_security_sweep.sql`.
+- **Infrastructure**:
+  - Patched `middleware.ts` to strictly handle missing environment variables in Edge Runtime (Vercel deployment fix).
+  - Removed deprecated middleware patterns to support Next.js 16 Edge Runtime.
+  - Verified build correctness.

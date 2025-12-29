@@ -114,12 +114,13 @@ export async function getProjectTasks(projectId: string, teamId: string) {
     return data || []
 }
 
-export async function updateTaskStatus(taskId: string, statusId: string) {
+export async function updateTaskStatus(teamId: string, taskId: string, statusId: string) {
     const supabase = await createClient()
     const { error } = await supabase
         .from('tasks')
         .update({ status_id: statusId, updated_at: new Date().toISOString() })
         .eq('id', taskId)
+        .eq('team_id', teamId)
 
     if (error) throw error
     revalidatePath('/admin/projects/[id]', 'page')

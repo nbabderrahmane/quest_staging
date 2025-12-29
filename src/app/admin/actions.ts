@@ -93,7 +93,7 @@ export async function updateStatus(prevState: any, formData: FormData) {
 
     try {
         const supabase = await checkAdmin(teamId)
-        const { error } = await supabase.from('statuses').update({ name, is_active: isActive }).eq('id', id)
+        const { error } = await supabase.from('statuses').update({ name, is_active: isActive }).eq('id', id).eq('team_id', teamId)
         if (error) return { success: false, error: error.message }
         revalidatePath('/admin')
         return { success: true }
@@ -106,7 +106,7 @@ export async function updateStatus(prevState: any, formData: FormData) {
 export async function toggleItemActive(table: 'statuses' | 'sizes' | 'urgencies', id: string, teamId: string, currentValue: boolean) {
     try {
         const supabase = await checkAdmin(teamId)
-        const { error } = await supabase.from(table).update({ is_active: !currentValue }).eq('id', id)
+        const { error } = await supabase.from(table).update({ is_active: !currentValue }).eq('id', id).eq('team_id', teamId)
         if (error) return { success: false, error: `[${error.code}] ${error.message}` }
         revalidatePath('/admin')
         return { success: true }

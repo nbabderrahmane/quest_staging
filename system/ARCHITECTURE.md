@@ -35,3 +35,10 @@
 - **Server Components**: Fetch initial data.
 - **Client Components**: Handle interactivity and mutations (Server Actions).
 - **Supabase**: Direct DB access via RLS policies.
+
+## Security Architecture
+- **Team Isolation**: Strict "Zero-Leak" Policy.
+  - **RLS**: All operational tables (`tasks`, `quests`, `team_members`, `projects`, etc.) enforce `team_id` checks at the database row level.
+  - **Profile Privacy**: Profiles are only visible to users sharing at least one team with the target profile.
+  - **Server Actions**: All mutations explicitly verify `team_id` and role context (`getRoleContext`) before execution.
+- **Middleware**: Edge-compatible session management with strict environment variable validation.

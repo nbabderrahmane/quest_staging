@@ -64,7 +64,7 @@ export default async function DepartmentDetailPage({ params }: { params: Promise
                 teamId={teamId}
                 canEdit={canManage}
                 userId={user.id}
-                onTaskUpdate={updateTaskStatus}
+                onTaskUpdate={updateTaskStatus.bind(null, teamId)}
             />
         </div>
     )

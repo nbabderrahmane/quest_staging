@@ -81,7 +81,7 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
                 return
             }
             setIsLoading(true)
-            const taskData = await getTasks(selectedQuestId)
+            const taskData = await getTasks(selectedQuestId, teamId)
             setTasks(taskData || [])
             setIsLoading(false)
         }
@@ -149,11 +149,11 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
         setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status_id: statusId } : t))
 
         try {
-            await updateTaskStatus(taskId, statusId)
+            await updateTaskStatus(taskId, statusId, teamId)
         } catch (error) {
             console.error('Failed to update task status', error)
             // Revert on error
-            const taskData = await getTasks(selectedQuestId)
+            const taskData = await getTasks(selectedQuestId, teamId)
             setTasks(taskData || [])
         }
     }
@@ -174,7 +174,7 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
         setSelectedTaskId(null)
         // Refresh tasks after drawer closes
         if (selectedQuestId) {
-            const taskData = await getTasks(selectedQuestId)
+            const taskData = await getTasks(selectedQuestId, teamId)
             setTasks(taskData || [])
         }
     }
