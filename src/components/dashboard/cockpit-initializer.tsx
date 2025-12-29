@@ -77,92 +77,108 @@ export function CockpitInitializer({ teamId, teamName, userRole }: CockpitInitia
                                 </p>
                             </div>
                         ) : (
-                            <div className="grid gap-8">
-                                {/* Statuses Config */}
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2 text-xs uppercase text-muted-foreground font-bold tracking-wider">
-                                        <ChevronRight className="h-3 w-3 text-primary" /> Status Protocols
+                            <div className="space-y-6">
+                                <div className="bg-blue-900/10 border border-blue-500/20 p-4 rounded-lg flex items-center justify-between">
+                                    <div>
+                                        <h4 className="text-blue-400 font-bold uppercase text-xs tracking-wider mb-1">Standard Protocols Available</h4>
+                                        <p className="text-slate-400 text-xs text-left max-w-sm">
+                                            Initialize with recommended defaults (Agile Workflow, XP System, Standard Urgency).
+                                        </p>
                                     </div>
-                                    <div className="grid gap-2">
-                                        {statuses.map((s, i) => (
-                                            <div key={i} className="flex gap-2">
-                                                <Input
-                                                    value={s.name}
-                                                    onChange={(e) => updateItem(setStatuses, statuses, i, 'name', e.target.value)}
-                                                    className="h-8 bg-black/40 border-white/10 text-xs font-mono"
-                                                />
-                                                <div className="w-24 flex items-center justify-center text-[10px] bg-white/5 rounded border border-white/5 text-muted-foreground uppercase">
-                                                    {s.category}
+                                    <button
+                                        onClick={handleInitialize}
+                                        disabled={isLoading}
+                                        className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase tracking-wider rounded transition-colors"
+                                    >
+                                        Execute Quick Start
+                                    </button>
+                                </div>
+
+                                <div className="relative">
+                                    <div className="absolute inset-0 flex items-center">
+                                        <div className="w-full border-t border-white/10"></div>
+                                    </div>
+                                    <div className="relative flex justify-center text-xs uppercase">
+                                        <span className="bg-black px-2 text-slate-500">Or Customize Protocols</span>
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-8 opacity-75 hover:opacity-100 transition-opacity">
+                                    {/* Statuses Config */}
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2 text-xs uppercase text-muted-foreground font-bold tracking-wider">
+                                            <ChevronRight className="h-3 w-3 text-primary" /> Workflow Statuses
+                                        </div>
+                                        <div className="grid gap-2">
+                                            {statuses.map((s, i) => (
+                                                <div key={i} className="flex gap-2">
+                                                    <Input
+                                                        value={s.name}
+                                                        onChange={(e) => updateItem(setStatuses, statuses, i, 'name', e.target.value)}
+                                                        className="h-8 bg-black/40 border-white/10 text-xs font-mono"
+                                                    />
+                                                    <div className="w-24 flex items-center justify-center text-[10px] bg-white/5 rounded border border-white/5 text-muted-foreground uppercase">
+                                                        {s.category}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
 
-                                {/* Sizes Config */}
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2 text-xs uppercase text-muted-foreground font-bold tracking-wider">
-                                        <ChevronRight className="h-3 w-3 text-primary" /> Size Matrices (XP)
+                                    {/* Sizes Config */}
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2 text-xs uppercase text-muted-foreground font-bold tracking-wider">
+                                            <ChevronRight className="h-3 w-3 text-primary" /> XP Matrix
+                                        </div>
+                                        <div className="grid gap-2">
+                                            {sizes.map((s, i) => (
+                                                <div key={i} className="flex gap-2">
+                                                    <Input
+                                                        value={s.name}
+                                                        onChange={(e) => updateItem(setSizes, sizes, i, 'name', e.target.value)}
+                                                        className="h-8 bg-black/40 border-white/10 text-xs font-mono"
+                                                    />
+                                                    <Input
+                                                        type="number"
+                                                        value={s.xp_points}
+                                                        onChange={(e) => updateItem(setSizes, sizes, i, 'xp_points', parseInt(e.target.value))}
+                                                        className="h-8 w-24 bg-black/40 border-white/10 text-xs font-mono text-center"
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                    <div className="grid gap-2">
-                                        {sizes.map((s, i) => (
-                                            <div key={i} className="flex gap-2">
-                                                <Input
-                                                    value={s.name}
-                                                    onChange={(e) => updateItem(setSizes, sizes, i, 'name', e.target.value)}
-                                                    className="h-8 bg-black/40 border-white/10 text-xs font-mono"
-                                                />
-                                                <Input
-                                                    type="number"
-                                                    value={s.xp_points}
-                                                    onChange={(e) => updateItem(setSizes, sizes, i, 'xp_points', parseInt(e.target.value))}
-                                                    className="h-8 w-24 bg-black/40 border-white/10 text-xs font-mono text-center"
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
 
-                                {/* Urgencies Config */}
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2 text-xs uppercase text-muted-foreground font-bold tracking-wider">
-                                        <ChevronRight className="h-3 w-3 text-primary" /> Urgency Levels
+                                    {/* Urgencies Config */}
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2 text-xs uppercase text-muted-foreground font-bold tracking-wider">
+                                            <ChevronRight className="h-3 w-3 text-primary" /> Urgency Levels
+                                        </div>
+                                        <div className="grid gap-2">
+                                            {urgencies.map((u, i) => (
+                                                <div key={i} className="flex gap-2">
+                                                    <Input
+                                                        value={u.name}
+                                                        onChange={(e) => updateItem(setUrgencies, urgencies, i, 'name', e.target.value)}
+                                                        className="h-8 bg-black/40 border-white/10 text-xs font-mono"
+                                                        style={{ color: u.color }}
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                    <div className="grid gap-2">
-                                        {urgencies.map((u, i) => (
-                                            <div key={i} className="flex gap-2">
-                                                <Input
-                                                    value={u.name}
-                                                    onChange={(e) => updateItem(setUrgencies, urgencies, i, 'name', e.target.value)}
-                                                    className="h-8 bg-black/40 border-white/10 text-xs font-mono"
-                                                    style={{ color: u.color }}
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
+
+                                    <button
+                                        onClick={handleInitialize}
+                                        disabled={isLoading}
+                                        className="w-full py-3 border border-white/20 hover:bg-white/5 text-slate-400 hover:text-white text-xs font-bold uppercase tracking-wider rounded transition-colors"
+                                    >
+                                        Save Custom Configuration
+                                    </button>
                                 </div>
                             </div>
                         )}
 
-                        {/* Actions */}
-                        {canInitialize && (
-                            <div className="pt-4 border-t border-white/10">
-                                <button
-                                    onClick={handleInitialize}
-                                    disabled={isLoading}
-                                    className="w-full group relative overflow-hidden rounded bg-primary px-8 py-4 transition-all hover:bg-primary/90 hover:shadow-[0_0_20px_rgba(var(--primary),0.5)] disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <div className="relative z-10 flex items-center justify-center gap-2">
-                                        <span className="font-bold uppercase tracking-widest text-primary-foreground text-sm">
-                                            {isLoading ? 'Writing Protocols...' : 'Commit to Database'}
-                                        </span>
-                                        {isLoading && <span className="animate-pulse">_</span>}
-                                    </div>
-                                    {/* Scanline overlay */}
-                                    <div className="absolute inset-0 z-0 bg-[length:4px_4px] bg-[linear-gradient(rgba(0,0,0,0.1)_50%,transparent_0)] pointer-events-none" />
-                                </button>
-                            </div>
-                        )}
                     </div>
                 </WindowCard>
 

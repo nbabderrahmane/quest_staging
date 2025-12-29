@@ -5,7 +5,7 @@ import { createTeam } from '@/app/teams/actions'
 import { useState, useEffect } from 'react'
 import { PlusCircle, ChevronsUpDown, Check } from 'lucide-react'
 
-export default function TeamSwitcher({ teams = [] }: { teams: Team[] }) {
+export default function TeamSwitcher({ teams = [], userRole = 'member' }: { teams: Team[], userRole?: string }) {
     const [isOpen, setIsOpen] = useState(false)
     const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null)
 
@@ -36,6 +36,7 @@ export default function TeamSwitcher({ teams = [] }: { teams: Team[] }) {
     }
 
     const selectedTeam = teams.find(t => t.id === selectedTeamId) || teams[0]
+    const canCreateTeam = !userRole || ['owner', 'admin'].includes(userRole)
 
     return (
         <div className="relative">
@@ -60,19 +61,21 @@ export default function TeamSwitcher({ teams = [] }: { teams: Team[] }) {
                             {team.id === selectedTeamId && <Check className="h-4 w-4 text-primary" />}
                         </div>
                     ))}
-                    <div className="border-t border-sidebar-border mt-1 pt-1">
-                        <form action={createTeam}>
-                            <input
-                                name="name"
-                                placeholder="New Team Name"
-                                className="mb-1 w-full rounded bg-black/50 border border-sidebar-border p-2 text-xs text-white font-mono"
-                                required
-                            />
-                            <button className="flex w-full items-center justify-center gap-1 rounded bg-primary p-2 text-xs font-bold uppercase tracking-wider hover:bg-primary/80 transition-colors">
-                                <PlusCircle className="h-3 w-3" /> Create Alliance
-                            </button>
-                        </form>
-                    </div>
+                    {canCreateTeam && (
+                        <div className="border-t border-sidebar-border mt-1 pt-1">
+                            <form action={createTeam}>
+                                <input
+                                    name="name"
+                                    placeholder="New Team Name"
+                                    className="mb-1 w-full rounded bg-black/50 border border-sidebar-border p-2 text-xs text-white font-mono"
+                                    required
+                                />
+                                <button className="flex w-full items-center justify-center gap-1 rounded bg-primary p-2 text-xs font-bold uppercase tracking-wider hover:bg-primary/80 transition-colors">
+                                    <PlusCircle className="h-3 w-3" /> Create Alliance
+                                </button>
+                            </form>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

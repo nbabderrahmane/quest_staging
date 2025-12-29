@@ -203,24 +203,26 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
                         />
                     </div>
 
-                    {/* Assignee Filter */}
-                    <Select value={selectedAssignee} onValueChange={setSelectedAssignee}>
-                        <SelectTrigger className="w-[180px] bg-white border-slate-300 text-slate-900">
-                            <div className="flex items-center gap-2">
-                                <User className="h-4 w-4 text-slate-500" />
-                                <SelectValue placeholder="All Crew" />
-                            </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Crew</SelectItem>
-                            <SelectItem value="unassigned">Unassigned</SelectItem>
-                            {crew.map(member => (
-                                <SelectItem key={member.id} value={member.id}>
-                                    {member.first_name || 'Unknown'} {member.last_name || ''}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    {/* Assignee Filter - Hidden for Analysts */}
+                    {!isAnalyst && (
+                        <Select value={selectedAssignee} onValueChange={setSelectedAssignee}>
+                            <SelectTrigger className="w-[180px] bg-white border-slate-300 text-slate-900">
+                                <div className="flex items-center gap-2">
+                                    <User className="h-4 w-4 text-slate-500" />
+                                    <SelectValue placeholder="All Crew" />
+                                </div>
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Crew</SelectItem>
+                                <SelectItem value="unassigned">Unassigned</SelectItem>
+                                {crew.map(member => (
+                                    <SelectItem key={member.id} value={member.id}>
+                                        {member.first_name || 'Unknown'} {member.last_name || ''}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
 
                     {/* Quest Filter */}
                     <Select value={selectedQuestId} onValueChange={setSelectedQuestId}>
@@ -232,7 +234,7 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
                         </SelectTrigger>
                         <SelectContent>
                             {quests.length === 0 ? (
-                                <SelectItem value="" disabled>No quests available</SelectItem>
+                                <SelectItem value="none" disabled>No quests available</SelectItem>
                             ) : (
                                 quests.map(quest => (
                                     <SelectItem key={quest.id} value={quest.id}>

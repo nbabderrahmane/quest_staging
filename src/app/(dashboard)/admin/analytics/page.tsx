@@ -3,8 +3,18 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { getGlobalAnalytics, getLeaderboard, getQuestIntelligence, AnalyticsData, LeaderboardEntry, QuestIntelligence } from './actions'
-import { Crown, Shield, Star, Users, Target, Activity, AlertTriangle, Briefcase, Zap, RefreshCw } from 'lucide-react'
+import {
+    getGlobalAnalytics,
+    getLeaderboard,
+    getQuestIntelligence,
+    getDepartmentAnalytics,
+    AnalyticsData,
+    LeaderboardEntry,
+    QuestIntelligence,
+    DepartmentAnalytics
+} from './actions'
+import { Crown, Shield, Star, Users, Target, Activity, AlertTriangle, Briefcase, Zap, RefreshCw, PieChart as PieIcon, Building2 } from 'lucide-react'
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 // Rank Configuration
 const RANKS = [
@@ -13,10 +23,13 @@ const RANKS = [
     { name: 'Recruit', minXP: 0, color: 'text-slate-600 bg-slate-100 border-slate-200', icon: Star },
 ]
 
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#8dd1e1']
+
 export default function AnalyticsPage() {
     const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
     const [questIntel, setQuestIntel] = useState<QuestIntelligence[]>([])
+    const [deptAnalytics, setDeptAnalytics] = useState<DepartmentAnalytics[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [userRole, setUserRole] = useState<string | null>(null)
@@ -27,16 +40,6 @@ export default function AnalyticsPage() {
     const [availableCrew, setAvailableCrew] = useState<{ id: string, name: string }[]>([])
 
     const router = useRouter()
-
-    useEffect(() => {
-        async function load() {
-            // Re-load logic with filters
-            const supabase = createClient()
-            // ... (Auth logic mostly same, but need to re-fetch on filter change if possible, 
-            // but for simplicity we fetch once then maybe refetch stats? 
-            // Actually, we should move data fetching into a separate function we can call.)
-        }
-    }, [])
 
     const loadData = async () => {
         setIsLoading(true)
@@ -67,18 +70,20 @@ export default function AnalyticsPage() {
         setUserRole(role)
 
         // Parallel fetch with filters
-        const [analyticsData, leaderboardData, questData] = await Promise.all([
+        const [analyticsData, leaderboardData, questData, departmentData] = await Promise.all([
             getGlobalAnalytics(selectedTeamCookie, filters),
             getLeaderboard(selectedTeamCookie, { questId: filters.questId }),
-            getQuestIntelligence(selectedTeamCookie, filters)
+            getQuestIntelligence(selectedTeamCookie, filters),
+            getDepartmentAnalytics(selectedTeamCookie, { questId: filters.questId })
         ])
 
         if (analyticsData) setAnalytics(analyticsData)
         if (leaderboardData) setLeaderboard(leaderboardData)
+        if (departmentData) setDeptAnalytics(departmentData)
+
         if (questData) {
             setQuestIntel(questData)
-            // Populate Quest Options (only on first load ideally, but doing it here is safe)
-            if (filters.questId === 'all') { // Only update list if not filtered, or persist full list
+            if (filters.questId === 'all') {
                 setAvailableQuests(questData.map(q => ({ id: q.id, name: q.name })))
             }
         }
@@ -96,7 +101,7 @@ export default function AnalyticsPage() {
 
     useEffect(() => {
         loadData()
-    }, [filters]) // Refetch on filter change
+    }, [filters])
 
     const getRankConfig = (rankName: string) => {
         return RANKS.find(r => r.name === rankName) || RANKS[RANKS.length - 1]
@@ -105,6 +110,10 @@ export default function AnalyticsPage() {
     if (isLoading) {
         return <div className="p-8 text-slate-500 animate-pulse font-mono">Deciphering Analytics...</div>
     }
+
+    // Chart Data Preparation
+    const taskCountData = deptAnalytics.map(d => ({ name: d.name, value: d.taskCount }))
+    const xpData = deptAnalytics.map(d => ({ name: d.name, value: d.totalXP }))
 
     return (
         <div className="min-h-screen bg-slate-50 -m-8 p-8 space-y-8">
@@ -177,7 +186,6 @@ export default function AnalyticsPage() {
                         </div>
                         <p className="text-3xl font-black text-slate-900">{analytics?.velocity.toLocaleString() ?? 0} <span className="text-sm font-normal text-slate-400">XP</span></p>
                         <p className="text-xs text-slate-400 mt-1">Last 7 Days Output</p>
-                        {/* Progress bar could go here if we had a target */}
                     </div>
 
                     <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden group">
@@ -210,7 +218,76 @@ export default function AnalyticsPage() {
                 </div>
             </section>
 
-            {/* Section 2: Crew Performance & Load */}
+            {/* Section 2: Department Intelligence (NEW) */}
+            <section className="space-y-4">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-blue-500" />
+                    Department Intelligence
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Task Count Chart */}
+                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <h3 className="text-xs font-bold uppercase text-slate-500 tracking-wider mb-4">Task Distribution</h3>
+                        <div className="h-64 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={taskCountData}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={80}
+                                        fill="#8884d8"
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                    >
+                                        {taskCountData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}
+                                        itemStyle={{ color: '#0f172a', fontWeight: 'bold' }}
+                                    />
+                                    <Legend verticalAlign="bottom" height={36} />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* XP Chart */}
+                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <h3 className="text-xs font-bold uppercase text-slate-500 tracking-wider mb-4">XP Contribution</h3>
+                        <div className="h-64 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={xpData}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={80}
+                                        fill="#82ca9d"
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                    >
+                                        {xpData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}
+                                        itemStyle={{ color: '#0f172a', fontWeight: 'bold' }}
+                                    />
+                                    <Legend verticalAlign="bottom" height={36} />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Section 3: Crew Performance & Load */}
             <section className="space-y-4">
                 <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 flex items-center gap-2">
                     <Users className="h-4 w-4 text-blue-500" />
@@ -223,9 +300,10 @@ export default function AnalyticsPage() {
                                 <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold uppercase text-slate-500 tracking-wider">
                                     <th className="px-6 py-3 w-16 text-center">#</th>
                                     <th className="px-6 py-3">Operative</th>
+                                    <th className="px-6 py-3 text-center">Tasks</th>
                                     <th className="px-6 py-3">Rank</th>
                                     <th className="px-6 py-3">Current Load (Active XP)</th>
-                                    <th className="px-6 py-3 text-right">Total XP</th>
+                                    <th className="px-6 py-3 text-right">Completion Rate</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -233,9 +311,6 @@ export default function AnalyticsPage() {
                                     const rankConfig = getRankConfig(entry.rank)
                                     const RankIcon = rankConfig.icon
                                     // Load Balance Visualization
-                                    // Assuming max load helps visualize relation. Let's create a simple bar.
-                                    // We don't have max load, so we might just show raw bars scaled by an arbitrary max (e.g. 1000) or relative to max user.
-                                    // Let's assume 1000 XP is high load.
                                     const loadPercent = Math.min((entry.current_load / 1000) * 100, 100)
 
                                     return (
@@ -250,6 +325,12 @@ export default function AnalyticsPage() {
                                                         : (entry.email || 'Unknown Operative')}
                                                 </div>
                                                 <div className="text-xs text-slate-500">{entry.role}</div>
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <div className="flex flex-col items-center">
+                                                    <span className="font-bold text-slate-900">{entry.tasks_done} <span className="text-slate-400 text-xs font-normal">/ {entry.total_tasks_assigned}</span></span>
+                                                    <span className="text-[10px] uppercase text-slate-400">DONE</span>
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase border ${rankConfig.color}`}>
@@ -271,14 +352,17 @@ export default function AnalyticsPage() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <span className="font-black text-slate-900">{entry.total_xp.toLocaleString()}</span>
+                                                <div className="flex flex-col items-end">
+                                                    <span className={`font-black text-lg ${entry.completion_rate >= 80 ? 'text-green-600' : entry.completion_rate < 50 ? 'text-orange-500' : 'text-slate-900'}`}>{entry.completion_rate}%</span>
+                                                    <span className="text-xs text-slate-400 font-mono">Rate</span>
+                                                </div>
                                             </td>
                                         </tr>
                                     )
                                 })}
                                 {leaderboard.length === 0 && (
                                     <tr>
-                                        <td colSpan={5} className="px-6 py-8 text-center text-slate-400 italic">No crew data found.</td>
+                                        <td colSpan={6} className="px-6 py-8 text-center text-slate-400 italic">No crew data found.</td>
                                     </tr>
                                 )}
                             </tbody>
@@ -287,7 +371,7 @@ export default function AnalyticsPage() {
                 </div>
             </section>
 
-            {/* Section 3: Quest Intelligence */}
+            {/* Section 4: Quest Intelligence */}
             <section className="space-y-4">
                 <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 flex items-center gap-2">
                     <Briefcase className="h-4 w-4 text-blue-500" />

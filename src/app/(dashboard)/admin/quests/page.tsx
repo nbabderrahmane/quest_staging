@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Plus, Target, Calendar, Trash2, Edit, CheckCircle, Circle, Rocket } from 'lucide-react'
-import { getQuestObjectives, createQuestObjective, updateQuestObjective, deleteQuestObjective, toggleQuestActive } from './actions'
+import { Plus, Target, Calendar, Trash2, Edit, CheckCircle, Circle, Rocket, Archive, ArrowDownToLine, RefreshCcw } from 'lucide-react'
+import { getQuestObjectives, createQuestObjective, updateQuestObjective, deleteQuestObjective, toggleQuestActive, archiveQuest, unarchiveQuest } from './actions'
 
 interface Quest {
     id: string
@@ -14,6 +14,7 @@ interface Quest {
     start_date: string | null
     end_date: string | null
     is_active: boolean
+    is_archived: boolean
     created_at: string
     creator?: { id: string; email: string; first_name: string | null; last_name: string | null } | null
     tasks?: {
@@ -27,6 +28,7 @@ interface Quest {
 
 export default function QuestsPage() {
     const [quests, setQuests] = useState<Quest[]>([])
+    const [viewMode, setViewMode] = useState<'active' | 'archived'>('active')
     const [teamId, setTeamId] = useState<string | null>(null)
     const [userRole, setUserRole] = useState<string>('member')
     const [isLoading, setIsLoading] = useState(true)
@@ -83,7 +85,7 @@ export default function QuestsPage() {
             setTeamId(cleanTeamId)
             setUserRole(activeMembership.role)
 
-            const questData = await getQuestObjectives(cleanTeamId)
+            const questData = await getQuestObjectives(cleanTeamId, viewMode === 'archived')
             if ('error' in questData) {
                 setError(questData.error)
             } else {
@@ -93,7 +95,7 @@ export default function QuestsPage() {
             setIsLoading(false)
         }
         load()
-    }, [])
+    }, [viewMode])
 
     useEffect(() => {
         if (error) {
@@ -208,6 +210,31 @@ export default function QuestsPage() {
         }
     }
 
+    const handleArchive = async (questId: string) => {
+        if (!teamId) return
+        if (!confirm('ARCHIVE QUEST: This quest will be hidden from selection and analytics. Continue?')) return
+
+        const result = await archiveQuest(questId, teamId)
+        if (result.success) {
+            setQuests(prev => prev.filter(q => q.id !== questId))
+            setSuccess('QUEST ARCHIVED: Objective moved to archives.')
+        } else {
+            setError(result.error || 'Archival failed')
+        }
+    }
+
+    const handleUnarchive = async (questId: string) => {
+        if (!teamId) return
+
+        const result = await unarchiveQuest(questId, teamId)
+        if (result.success) {
+            setQuests(prev => prev.filter(q => q.id !== questId))
+            setSuccess('QUEST RESTORED: Objective moved back to active registry.')
+        } else {
+            setError(result.error || 'Restoration failed')
+        }
+    }
+
     if (isLoading) {
         return <div className="p-8 text-slate-500 animate-pulse font-mono">Loading Quest Objectives...</div>
     }
@@ -235,17 +262,37 @@ export default function QuestsPage() {
                 </div>
             </div>
 
+            {/* Tabs */}
+            <div className="flex gap-2">
+                <button
+                    onClick={() => setViewMode('active')}
+                    className={`flex items-center gap-2 px-4 py-2 text-sm font-bold uppercase rounded-t-lg transition-colors ${viewMode === 'active' ? 'bg-white border-t border-x border-slate-200 text-blue-600' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                >
+                    <Target className="h-4 w-4" />
+                    Active Objectives
+                </button>
+                <button
+                    onClick={() => setViewMode('archived')}
+                    className={`flex items-center gap-2 px-4 py-2 text-sm font-bold uppercase rounded-t-lg transition-colors ${viewMode === 'archived' ? 'bg-white border-t border-x border-slate-200 text-slate-600' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                >
+                    <Archive className="h-4 w-4" />
+                    Archived
+                </button>
+            </div>
+
             {/* Quest List */}
-            <div className="bg-white border border-slate-200 rounded-lg shadow-sm">
+            <div className="bg-white border border-slate-200 rounded-lg shadow-sm rounded-tl-none">
                 <div className="px-4 py-3 border-b border-slate-200 bg-slate-50 flex items-center gap-2">
-                    <Target className="h-4 w-4 text-slate-500" />
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Objectives Registry</h3>
+                    {viewMode === 'active' ? <Target className="h-4 w-4 text-slate-500" /> : <Archive className="h-4 w-4 text-slate-500" />}
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">
+                        {viewMode === 'active' ? 'Objectives Registry' : 'Archived Quests'}
+                    </h3>
                 </div>
                 <div className="p-4 overflow-auto max-h-[800px]">
                     <div className="space-y-4">
                         {quests.length === 0 ? (
                             <p className="text-slate-500 text-sm text-center py-12">
-                                No quests initiated. Create an objective to organize your tasks.
+                                {viewMode === 'active' ? 'No active quests found.' : 'No archived quests found.'}
                             </p>
                         ) : (
                             quests.map(quest => (
@@ -261,7 +308,8 @@ export default function QuestsPage() {
                                         <div className="flex items-start gap-4 flex-1 min-w-0">
                                             {/* Status Icon */}
                                             <button
-                                                onClick={() => handleToggleActive(quest)}
+                                                onClick={() => viewMode === 'active' && handleToggleActive(quest)}
+                                                disabled={viewMode === 'archived'}
                                                 className={`mt-1 p-1 rounded ${quest.is_active ? 'text-green-600' : 'text-slate-400'}`}
                                                 title={quest.is_active ? 'Active' : 'Archived'}
                                             >
@@ -272,6 +320,7 @@ export default function QuestsPage() {
                                                 <h4 className="font-bold text-slate-900 text-lg flex items-center gap-3">
                                                     {quest.name}
                                                     {quest.is_active && <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Active</span>}
+                                                    {quest.is_archived && <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Archived</span>}
                                                 </h4>
                                                 {quest.description && (
                                                     <p className="text-sm text-slate-600 mt-1">{quest.description}</p>
@@ -293,7 +342,7 @@ export default function QuestsPage() {
 
                                         {/* Quest Actions */}
                                         <div className="flex items-center gap-2 ml-4 self-start">
-                                            {!quest.is_active && canDeploy && (
+                                            {viewMode === 'active' && !quest.is_active && canDeploy && (
                                                 <button
                                                     onClick={() => handleToggleActive(quest)}
                                                     className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-xs font-bold uppercase rounded hover:bg-green-700 transition-colors"
@@ -303,7 +352,7 @@ export default function QuestsPage() {
                                                     Deploy
                                                 </button>
                                             )}
-                                            {quest.is_active && canDeploy && (
+                                            {viewMode === 'active' && quest.is_active && canDeploy && (
                                                 <button
                                                     onClick={() => handleToggleActive(quest)}
                                                     className="px-3 py-1.5 bg-white border border-slate-300 text-slate-600 text-xs font-bold uppercase rounded hover:bg-slate-50 transition-colors"
@@ -314,6 +363,24 @@ export default function QuestsPage() {
 
                                             {canManage && (
                                                 <>
+                                                    {viewMode === 'active' && (
+                                                        <button
+                                                            onClick={() => handleArchive(quest.id)}
+                                                            className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded"
+                                                            title="Archive"
+                                                        >
+                                                            <ArrowDownToLine className="h-4 w-4" />
+                                                        </button>
+                                                    )}
+                                                    {viewMode === 'archived' && (
+                                                        <button
+                                                            onClick={() => handleUnarchive(quest.id)}
+                                                            className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded"
+                                                            title="Restore"
+                                                        >
+                                                            <RefreshCcw className="h-4 w-4" />
+                                                        </button>
+                                                    )}
                                                     <button onClick={() => handleEditOpen(quest)} className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Edit">
                                                         <Edit className="h-4 w-4" />
                                                     </button>

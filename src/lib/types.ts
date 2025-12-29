@@ -4,6 +4,7 @@ export interface Team {
     id: string
     name: string
     created_at: string
+    logo_url?: string | null
 }
 
 export interface TeamMember {

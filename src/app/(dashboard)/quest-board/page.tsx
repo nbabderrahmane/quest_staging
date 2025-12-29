@@ -32,7 +32,7 @@ export default async function QuestBoardPage() {
         getCrewForAssignment(teamId)
     ])
 
-    const canEdit = roleCtx ? ['owner', 'admin', 'manager'].includes(roleCtx.role || '') : false
+    const canEdit = roleCtx ? ['owner', 'admin', 'manager', 'analyst'].includes(roleCtx.role || '') : false
 
     return (
         <QuestBoardClient

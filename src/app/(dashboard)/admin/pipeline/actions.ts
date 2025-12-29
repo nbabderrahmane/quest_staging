@@ -24,7 +24,9 @@ export async function getTasks(teamId: string, filters?: { statusCategory?: stri
             urgency:urgencies!urgency_id(id, name, color),
             assignee:profiles!assigned_to(id, email, first_name, last_name),
             creator:profiles!created_by(id, email, first_name, last_name),
-            quest:quests!quest_id(id, name)
+            quest:quests!quest_id(id, name),
+            project:projects!project_id(id, name),
+            department:departments!department_id(id, name)
         `)
         .eq('team_id', teamId)
         .order('created_at', { ascending: false })
@@ -37,6 +39,42 @@ export async function getTasks(teamId: string, filters?: { statusCategory?: stri
     }
 
     console.log(`DEBUG: getTasks returned ${data ? data.length : 0} rows. IDs: [${(data || []).map((t: any) => t.id).join(', ')}]`)
+    return data || []
+}
+
+// Get projects for dropdown
+export async function getProjectsForDropdown(teamId: string) {
+    const { createClient: createAdminClient } = await import('@supabase/supabase-js')
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+
+    const { data } = await supabaseAdmin
+        .from('projects')
+        .select('id, name')
+        .eq('team_id', teamId)
+        .order('name')
+
+    return data || []
+}
+
+// Get departments for dropdown
+export async function getDepartmentsForDropdown(teamId: string) {
+    const { createClient: createAdminClient } = await import('@supabase/supabase-js')
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+
+    const { data } = await supabaseAdmin
+        .from('departments')
+        .select('id, name')
+        .eq('team_id', teamId)
+        .order('name')
+
     return data || []
 }
 
@@ -53,7 +91,7 @@ export async function getQuestsForDropdown(teamId: string) {
         .from('quests')
         .select('id, name')
         .eq('team_id', teamId)
-        .eq('is_active', true)
+        .is('is_archived', false)
         .order('name')
 
     return data || []
@@ -94,6 +132,8 @@ export async function createTask(
         size_id?: string
         urgency_id?: string
         assigned_to?: string
+        project_id?: string
+        department_id?: string
     }
 ) {
     const supabase = await createClient()
@@ -154,7 +194,9 @@ export async function createTask(
         status_id: backlogStatus.id,
         size_id: data.size_id || null,
         urgency_id: data.urgency_id || null,
-        assigned_to: data.assigned_to || null
+        assigned_to: data.assigned_to || null,
+        project_id: data.project_id || null,
+        department_id: data.department_id || null
     }
     console.log('Task Data Payload:', taskPayload)
 
@@ -183,13 +225,17 @@ export async function updateTask(
         size_id: string
         urgency_id: string
         assigned_to: string | null
+
+        project_id: string | null
+        department_id: string | null
         needs_info?: boolean
         was_dropped?: boolean
     }>
 ) {
     const ctx = await getRoleContext(teamId)
-    if (!ctx || !ctx.canManageForge) {
-        return { success: false, error: 'SECURITY BREACH: Only commanders can modify tasks.' }
+    // Allow Owner, Admin, Manager, Analyst to update task details
+    if (!ctx || !ctx.role || !['owner', 'admin', 'manager', 'analyst'].includes(ctx.role)) {
+        return { success: false, error: 'SECURITY BREACH: Insufficient clearance to modify tasks.' }
     }
 
     const { createClient: createAdminClient } = await import('@supabase/supabase-js')
@@ -395,11 +441,9 @@ export async function updateTaskDescription(taskId: string, teamId: string, desc
 // Abort a task (Drop)
 export async function abortTask(taskId: string, teamId: string) {
     const ctx = await getRoleContext(teamId)
-    // Assuming only Manager+ can abort? Or anyone can abort tasks they own?
-    // "Task Detail Drawer : Add a button 'ABORT MISSION'"
-    // Let's assume Manager+ for now as it's a destructive action like delete.
-    if (!ctx || !ctx.canManageForge) {
-        return { success: false, error: 'SECURITY BREACH: Only commanders can abort missions.' }
+    // Allow Owner, Admin, Manager, Analyst to abort missions
+    if (!ctx || !ctx.role || !['owner', 'admin', 'manager', 'analyst'].includes(ctx.role)) {
+        return { success: false, error: 'SECURITY BREACH: Insufficient clearance to abort missions.' }
     }
 
     const { createClient: createAdminClient } = await import('@supabase/supabase-js')
@@ -427,9 +471,9 @@ export async function abortTask(taskId: string, teamId: string) {
 // Reactivate a task (Undrop)
 export async function reactivateTask(taskId: string, teamId: string) {
     const ctx = await getRoleContext(teamId)
-    // Same security as abort/update
-    if (!ctx || !ctx.canManageForge) {
-        return { success: false, error: 'SECURITY BREACH: Only commanders can reactivate missions.' }
+    // Allow Owner, Admin, Manager, Analyst to reactivate missions
+    if (!ctx || !ctx.role || !['owner', 'admin', 'manager', 'analyst'].includes(ctx.role)) {
+        return { success: false, error: 'SECURITY BREACH: Insufficient clearance to reactivate missions.' }
     }
 
     const { createClient: createAdminClient } = await import('@supabase/supabase-js')

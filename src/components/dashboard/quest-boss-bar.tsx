@@ -1,23 +1,25 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { getActiveQuestProgress } from '@/app/(dashboard)/admin/quests/actions'
 import { Target, Trophy, Flame } from 'lucide-react'
 
 export function QuestBossBar({ teamId }: { teamId: string }) {
     const [progress, setProgress] = useState<{ name: string, totalXP: number, currentXP: number, percentage: number } | null>(null)
     const [loading, setLoading] = useState(true)
+    const [supabase] = useState(() => createClient())
 
     useEffect(() => {
         async function load() {
             console.log('🔥 BossBar: Fetching progress for team', teamId)
             try {
                 const data = await getActiveQuestProgress(teamId)
-                console.log('🔥 BossBar: Data received', data)
                 if (data) {
+                    console.log('🔥 BossBar: Data received', data)
                     setProgress(data)
                 } else {
-                    console.log('🔥 BossBar: No active quest data found')
+                    console.log('🔥 BossBar: No data returned')
                 }
             } catch (err) {
                 console.error('🔥 BossBar: Fetch error', err)
@@ -26,15 +28,49 @@ export function QuestBossBar({ teamId }: { teamId: string }) {
             }
         }
         load()
-    }, [teamId])
 
-    if (loading) return null // Wait for load
+        // Realtime Subscription
+        const channel = supabase
+            .channel(`boss-bar-${teamId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'tasks',
+                    filter: `team_id=eq.${teamId}`
+                },
+                () => {
+                    console.log('🔥 BossBar: Task update detected, refreshing...')
+                    load()
+                }
+            )
+            .subscribe()
+
+        return () => {
+            supabase.removeChannel(channel)
+        }
+    }, [teamId, supabase])
+
+    if (loading) {
+        return (
+            <div className="h-16 bg-slate-900 border-b-4 border-slate-800 flex items-center justify-center z-[60] relative">
+                <div className="flex items-center gap-2 text-slate-500 text-xs font-mono uppercase animate-pulse">
+                    <span>Initializing Command...</span>
+                </div>
+            </div>
+        )
+    }
+
     if (!progress) {
-        // If we have no progress, don't render. 
-        // But if it "flashes", it implies we HAD progress then lost it, OR we rendered something else?
-        // Let's add a debug indicator if in dev
-        console.log('🔥 BossBar: Rendering NULL because no progress')
-        return null
+        return (
+            <div className="bg-slate-900 border-b-4 border-slate-800 relative text-white shadow-lg z-[60] h-16 flex items-center justify-center">
+                <div className="text-slate-500 font-mono text-xs uppercase tracking-widest flex items-center gap-2">
+                    <div className="h-2 w-2 bg-slate-700 rounded-full" />
+                    No Active Operation
+                </div>
+            </div>
+        )
     }
 
     // Determine color based on progress (Red -> Orange -> Green)
@@ -47,7 +83,7 @@ export function QuestBossBar({ teamId }: { teamId: string }) {
     const barColor = getColor(progress.percentage)
 
     return (
-        <div className="bg-slate-900 border-b-4 border-slate-800 relative overflow-hidden text-white shadow-lg z-30">
+        <div className="bg-slate-900 border-b-4 border-slate-800 relative overflow-hidden text-white shadow-lg z-[60]">
             {/* Background Texture/Pattern */}
             <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-500 via-slate-900 to-black" />
 

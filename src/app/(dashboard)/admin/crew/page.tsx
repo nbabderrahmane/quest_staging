@@ -8,7 +8,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from '@/components/ui/input'
 import { Shield, User, Crown, Briefcase, Eye, Trash2, Edit, KeyRound, UserPlus } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
-import { getCrewMembers, updateCrewMember, removeCrewMember, resetCrewPassword, inviteCrewMember, toggleCrewActive } from './actions'
+import { getCrewMembers, updateCrewMember, removeCrewMember, resetCrewPassword, inviteCrewMember, toggleCrewActive, updateUserTeams, getUserMemberships } from './actions'
+import { getUserTeams } from '@/app/teams/actions'
+
 
 interface CrewMember {
     team_id: string
@@ -48,6 +50,8 @@ export default function CrewPage() {
     const [inviteTelephone, setInviteTelephone] = useState('')
     const [invitePassword, setInvitePassword] = useState('')
     const [inviteRole, setInviteRole] = useState('analyst')
+    const [inviteTeamIds, setInviteTeamIds] = useState<string[]>([])
+    const [recruitableTeams, setRecruitableTeams] = useState<{ id: string, name: string }[]>([])
     const [isInviting, setIsInviting] = useState(false)
 
     // Edit Modal State
@@ -55,6 +59,7 @@ export default function CrewPage() {
     const [editMember, setEditMember] = useState<CrewMember | null>(null)
     const [editRole, setEditRole] = useState('')
     const [editTelephone, setEditTelephone] = useState('')
+    const [editTeamIds, setEditTeamIds] = useState<string[]>([])
 
     // Password Reset Modal State
     const [resetOpen, setResetOpen] = useState(false)
@@ -84,8 +89,6 @@ export default function CrewPage() {
                 .select('team_id, role')
                 .eq('user_id', user.id)
 
-            console.log('DEBUG CrewPage:', { userId: user.id, selectedTeamCookie, memberships })
-
             if (!memberships || memberships.length === 0) {
                 setError('No alliance memberships found.')
                 setIsLoading(false)
@@ -97,10 +100,19 @@ export default function CrewPage() {
             if (!activeMembership) activeMembership = memberships[0]
 
             const cleanTeamId = activeMembership.team_id.trim()
-            console.log('DEBUG CrewPage active:', { cleanTeamId, role: activeMembership.role })
 
-            setTeamId(cleanTeamId) // Clean UUID stored here
+            setTeamId(cleanTeamId)
             setUserRole(activeMembership.role)
+            setInviteTeamIds([cleanTeamId]) // Default to active team
+
+            // Fetch User Teams for Recruitment Dropdown
+            // Identify teams where user is Owner or Admin
+            const allTeams = await getUserTeams()
+            const myManagedTeams = allTeams.filter((t: { id: string }) => {
+                const membership = memberships.find(m => m.team_id === t.id)
+                return membership && ['owner', 'admin'].includes(membership.role)
+            })
+            setRecruitableTeams(myManagedTeams)
 
             // Fetch crew using clean UUID
             const crewData = await getCrewMembers(cleanTeamId)
@@ -114,7 +126,7 @@ export default function CrewPage() {
         load()
     }, [])
 
-    // Auto-dismiss messages after 4 seconds
+    // Auto-dismiss messages
     useEffect(() => {
         if (error) {
             const timer = setTimeout(() => setError(null), 4000)
@@ -131,88 +143,11 @@ export default function CrewPage() {
 
     const getDisplayName = (member: CrewMember) => {
         const profile = member.profiles
-
-        // Try full name first (white text for names)
         if (profile?.first_name || profile?.last_name) {
             return `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
         }
-
-        // Fall back to email (white text)
-        if (profile?.email) {
-            return profile.email
-        }
-
-        // Ultimate fallback: Unknown Operative
+        if (profile?.email) return profile.email
         return 'Unknown Operative'
-    }
-
-    const getDisplayEmail = (member: CrewMember) => {
-        const profile = member.profiles
-
-        // Show email if available
-        if (profile?.email) {
-            return profile.email
-        }
-
-        // Show UUID shorthand if no profile
-        return member.user_id.slice(0, 8) + '...'
-    }
-
-    const handleInvite = async (e: React.FormEvent) => {
-        e.preventDefault()
-        if (!teamId || !inviteEmail || !invitePassword) return
-
-        setIsInviting(true)
-        const result = await inviteCrewMember(teamId, inviteEmail, inviteRole, invitePassword, {
-            firstName: inviteFirstName || undefined,
-            lastName: inviteLastName || undefined,
-            telephone: inviteTelephone || undefined
-        })
-        setIsInviting(false)
-
-        if (result.success) {
-            setSuccess('OPERATIVE INITIATED: Password assigned. Credentials must be shared manually (Email system offline).')
-            setInviteEmail('')
-            setInviteFirstName('')
-            setInviteLastName('')
-            setInviteTelephone('')
-            setInvitePassword('')
-            setInviteRole('analyst')
-            // Refresh crew list
-            const crewData = await getCrewMembers(teamId)
-            if ('error' in crewData) {
-                setError(crewData.error)
-            } else {
-                setCrew(crewData)
-            }
-        } else {
-            setError(result.error || 'Recruitment failed')
-        }
-    }
-
-    const handleEditOpen = (member: CrewMember) => {
-        setEditMember(member)
-        setEditRole(member.role)
-        setEditTelephone(member.profiles?.telephone || '')
-        setEditOpen(true)
-    }
-
-    const handleEditSave = async () => {
-        if (!editMember || !teamId) return
-        const result = await updateCrewMember(editMember.user_id, teamId, {
-            role: editRole,
-            telephone: editTelephone
-        })
-        if (result.success) {
-            setCrew(prev => prev.map(m => m.user_id === editMember.user_id
-                ? { ...m, role: editRole, profiles: { ...m.profiles, telephone: editTelephone } as any }
-                : m
-            ))
-            setEditOpen(false)
-            setSuccess('Member updated successfully.')
-        } else {
-            setError(result.error || 'Update failed')
-        }
     }
 
     const handleRemove = async (userId: string) => {
@@ -257,6 +192,120 @@ export default function CrewPage() {
         return <div className="p-8 text-muted-foreground animate-pulse font-mono">Loading Crew Manifest...</div>
     }
 
+    const handleInvite = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (inviteTeamIds.length === 0 || !inviteEmail || !invitePassword) return
+
+        setIsInviting(true)
+
+        let successCount = 0
+        let errors = []
+
+        for (const tid of inviteTeamIds) {
+            const result = await inviteCrewMember(tid, inviteEmail, inviteRole, invitePassword, {
+                firstName: inviteFirstName || undefined,
+                lastName: inviteLastName || undefined,
+                telephone: inviteTelephone || undefined
+            })
+            if (result.success) successCount++
+            else errors.push(result.error)
+        }
+
+        setIsInviting(false)
+
+        if (successCount > 0) {
+            setSuccess(`OPERATIVE INITIATED: Recruited to ${successCount} alliance(s). Password assigned.`)
+            setInviteEmail('')
+            setInviteFirstName('')
+            setInviteLastName('')
+            setInviteTelephone('')
+            setInvitePassword('')
+            setInviteRole('analyst')
+            // Refresh crew list
+            if (teamId) {
+                const crewData = await getCrewMembers(teamId)
+                if (!('error' in crewData)) setCrew(crewData)
+            }
+        } else {
+            setError(errors[0] || 'Recruitment failed')
+        }
+    }
+
+    const handleEditOpen = async (member: CrewMember) => {
+        setEditMember(member)
+        setEditRole(member.role)
+        setEditTelephone(member.profiles?.telephone || '')
+        setEditTeamIds([]) // Reset temporarily
+        setEditOpen(true)
+
+        // Fetch user's current memberships
+        const result = await getUserMemberships(member.user_id)
+        if (result.success && result.memberships) {
+            setEditTeamIds(result.memberships.map((m: any) => m.team_id))
+        }
+    }
+
+    const handleEditSave = async () => {
+        if (!editMember || !teamId) return
+
+        // Update Teams & Role
+        const result = await updateUserTeams(editMember.user_id, editTeamIds, editRole, editTelephone)
+
+        if (result.success) {
+            // Update local state if user is still in the CURRENT team
+            if (editTeamIds.includes(teamId)) {
+                setCrew(prev => prev.map(m => m.user_id === editMember.user_id
+                    ? { ...m, role: editRole, profiles: { ...m.profiles, telephone: editTelephone } as any }
+                    : m
+                ))
+            } else {
+                // User removed from current team
+                setCrew(prev => prev.filter(m => m.user_id !== editMember.user_id))
+            }
+
+            setEditOpen(false)
+            setSuccess('Member updated successfully.')
+        } else {
+            setError(result.error || 'Update failed')
+        }
+    }
+
+    // Multi-Select Component (Inline)
+    const TeamMultiSelect = ({
+        value,
+        onChange,
+        options
+    }: {
+        value: string[],
+        onChange: (val: string[]) => void,
+        options: { id: string, name: string }[]
+    }) => {
+        return (
+            <div className="grid grid-cols-1 gap-2 border border-slate-200 rounded p-2 max-h-40 overflow-y-auto bg-slate-50">
+                {options.length === 0 && <p className="text-xs text-slate-400 p-2">No other alliances commandable.</p>}
+                {options.map(team => {
+                    const isSelected = value.includes(team.id)
+                    return (
+                        <div
+                            key={team.id}
+                            onClick={() => {
+                                if (isSelected) onChange(value.filter(v => v !== team.id))
+                                else onChange([...value, team.id])
+                            }}
+                            className={`
+                                flex items-center justify-between p-2 rounded cursor-pointer text-xs font-mono transition-colors
+                                ${isSelected ? 'bg-blue-100 border-blue-200 text-blue-900' : 'bg-white hover:bg-slate-100 text-slate-600'}
+                            `}
+                        >
+                            <span className="font-bold truncate">{team.name}</span>
+                            {isSelected && <Briefcase className="h-3 w-3 text-blue-600" />}
+                        </div>
+                    )
+                })}
+            </div>
+        )
+    }
+
     return (
         <div className="min-h-screen bg-slate-50 -m-8 p-8 space-y-6">
             <div className="flex items-end justify-between border-b border-slate-200 pb-4">
@@ -299,6 +348,15 @@ export default function CrewPage() {
                                             className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
                                         />
                                     </div>
+                                </div>
+                                <div>
+                                    <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Target Alliance(s)</label>
+                                    <TeamMultiSelect
+                                        value={inviteTeamIds}
+                                        onChange={setInviteTeamIds}
+                                        options={recruitableTeams}
+                                    />
+                                    {inviteTeamIds.length === 0 && <p className="text-[10px] text-red-400 mt-1">* Select at least one</p>}
                                 </div>
                                 <div>
                                     <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Email *</label>
@@ -348,7 +406,7 @@ export default function CrewPage() {
                                 </div>
                                 <button
                                     type="submit"
-                                    disabled={isInviting}
+                                    disabled={isInviting || inviteTeamIds.length === 0}
                                     className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-bold uppercase tracking-wider hover:bg-blue-700 transition-colors disabled:opacity-50 rounded"
                                 >
                                     <UserPlus className="h-4 w-4" />
@@ -363,7 +421,7 @@ export default function CrewPage() {
                 <div className={canManage ? "lg:col-span-2" : "lg:col-span-3"}>
                     <div className="bg-white border border-slate-200 rounded-lg shadow-sm">
                         <div className="px-4 py-3 border-b border-slate-200 bg-slate-50">
-                            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Active Crew</h3>
+                            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Active Crew ({crew.length})</h3>
                         </div>
                         <div className="p-4 overflow-auto max-h-[600px]">
                             <div className="space-y-3">
@@ -463,6 +521,14 @@ export default function CrewPage() {
                         <DialogTitle className="uppercase tracking-wider font-bold text-slate-900">Edit Crew Member</DialogTitle>
                     </DialogHeader>
                     <div className="py-4 space-y-4">
+                        <div>
+                            <label className="text-xs uppercase text-slate-600 font-bold block mb-2">Team Assignment(s)</label>
+                            <TeamMultiSelect
+                                value={editTeamIds}
+                                onChange={setEditTeamIds}
+                                options={recruitableTeams}
+                            />
+                        </div>
                         <div>
                             <label className="text-xs uppercase text-slate-600 font-bold block mb-2">Rank</label>
                             <Select value={editRole} onValueChange={setEditRole}>

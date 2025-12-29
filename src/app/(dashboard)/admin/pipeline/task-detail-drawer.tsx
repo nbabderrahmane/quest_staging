@@ -17,6 +17,8 @@ interface TaskDetailDrawerProps {
     sizes?: { id: string; name: string; xp_points: number }[]
     urgencies?: { id: string; name: string; color: string }[]
     crew?: { id: string; email: string; first_name: string | null; last_name: string | null }[]
+    projects?: { id: string; name: string }[]
+    departments?: { id: string; name: string }[]
 }
 
 interface Comment {
@@ -36,12 +38,16 @@ interface TaskDetail {
     size_id?: string | null
     urgency_id?: string | null
     assigned_to?: string | null
+    project_id?: string | null
+    department_id?: string | null
     needs_info?: boolean
     was_dropped?: boolean
     quest?: { id: string; name: string } | null
     size?: { id: string; name: string; xp_points: number } | null
     urgency?: { id: string; name: string; color: string } | null
     assignee?: { id: string; email: string; first_name: string | null; last_name: string | null } | null
+    project?: { id: string; name: string } | null
+    department?: { id: string; name: string } | null
 }
 
 const ROLE_ICONS: Record<string, typeof Crown> = {
@@ -101,7 +107,7 @@ function linkify(text: string): React.ReactNode {
     )
 }
 
-export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quests = [], sizes = [], urgencies = [], crew = [] }: TaskDetailDrawerProps) {
+export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quests = [], sizes = [], urgencies = [], crew = [], projects = [], departments = [] }: TaskDetailDrawerProps) {
     const [task, setTask] = useState<TaskDetail | null>(null)
     const [comments, setComments] = useState<Comment[]>([])
     const [isLoading, setIsLoading] = useState(false)
@@ -396,6 +402,47 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                                     onCheckedChange={(checked) => handleUpdateParameter('needs_info', checked)}
                                     disabled={!canEdit}
                                 />
+                            </div>
+
+
+                            {/* Project & Department */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-xs uppercase font-bold text-slate-500">Project</label>
+                                    <Select
+                                        value={task?.project_id || '_none'}
+                                        onValueChange={(val) => handleUpdateParameter('project_id', val)}
+                                        disabled={!canEdit}
+                                    >
+                                        <SelectTrigger className="bg-white border-slate-300">
+                                            <SelectValue placeholder="None" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="_none">None</SelectItem>
+                                            {projects.map(p => (
+                                                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs uppercase font-bold text-slate-500">Department</label>
+                                    <Select
+                                        value={task?.department_id || '_none'}
+                                        onValueChange={(val) => handleUpdateParameter('department_id', val)}
+                                        disabled={!canEdit}
+                                    >
+                                        <SelectTrigger className="bg-white border-slate-300">
+                                            <SelectValue placeholder="None" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="_none">None</SelectItem>
+                                            {departments.map(d => (
+                                                <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
 
                             {/* Objective (Quest) */}

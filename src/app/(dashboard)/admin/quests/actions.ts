@@ -4,8 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getRoleContext } from '@/lib/role-service'
 import { revalidatePath } from 'next/cache'
 
-// Get all quests (objectives) for a team
-export async function getQuestObjectives(teamId: string) {
+// Get all quests (objectives) for a team - Filter active vs archived
+export async function getQuestObjectives(teamId: string, showArchived: boolean = false) {
     const { createClient: createAdminClient } = await import('@supabase/supabase-js')
     const supabaseAdmin = createAdminClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -13,7 +13,7 @@ export async function getQuestObjectives(teamId: string) {
         { auth: { autoRefreshToken: false, persistSession: false } }
     )
 
-    const { data, error } = await supabaseAdmin
+    let query = supabaseAdmin
         .from('quests')
         .select(`
             *,
@@ -28,6 +28,15 @@ export async function getQuestObjectives(teamId: string) {
         `)
         .eq('team_id', teamId)
         .order('start_date', { ascending: false, nullsFirst: false })
+
+    if (showArchived) {
+        query = query.eq('is_archived', true)
+    } else {
+        // By default, showing active means NOT archived
+        query = query.is('is_archived', false)
+    }
+
+    const { data, error } = await query
 
     if (error) {
         console.error('getQuestObjectives: Failed', error)
@@ -84,6 +93,73 @@ export async function createQuestObjective(
     if (error) {
         console.error('createQuestObjective: Failed', error)
         return { success: false, error: `QUEST INITIATION FAILED: ${error.message}` }
+    }
+
+    revalidatePath('/admin/quests')
+    return { success: true }
+}
+
+// Archive a quest
+export async function archiveQuest(questId: string, teamId: string) {
+    const ctx = await getRoleContext(teamId)
+    // Managers+ can archive
+    if (!ctx || !ctx.role || !['owner', 'admin', 'manager'].includes(ctx.role)) {
+        return { success: false, error: 'SECURITY BREACH: Only commanders can archive quests.' }
+    }
+
+    const { createClient: createAdminClient } = await import('@supabase/supabase-js')
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+
+    // First, standard deactivation if it was active
+    await supabaseAdmin
+        .from('quests')
+        .update({ is_active: false })
+        .eq('id', questId)
+        .eq('team_id', teamId)
+
+    // Then set archived
+    const { error } = await supabaseAdmin
+        .from('quests')
+        .update({ is_archived: true })
+        .eq('id', questId)
+        .eq('team_id', teamId)
+
+    if (error) {
+        console.error('archiveQuest: Failed', error)
+        return { success: false, error: `QUEST ARCHIVAL FAILED: ${error.message}` }
+    }
+
+    revalidatePath('/admin/quests')
+    return { success: true }
+}
+
+// Unarchive a quest
+export async function unarchiveQuest(questId: string, teamId: string) {
+    const ctx = await getRoleContext(teamId)
+    if (!ctx || !ctx.role || !['owner', 'admin', 'manager'].includes(ctx.role)) {
+        return { success: false, error: 'SECURITY BREACH: Only commanders can unarchive quests.' }
+    }
+
+    const { createClient: createAdminClient } = await import('@supabase/supabase-js')
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+
+    const { error } = await supabaseAdmin
+        .from('quests')
+        .update({ is_archived: false })
+        .eq('id', questId)
+        .eq('team_id', teamId)
+
+    if (error) {
+        console.error('unarchiveQuest: Failed', error)
+        return { success: false, error: `QUEST RESTORATION FAILED: ${error.message}` }
     }
 
     revalidatePath('/admin/quests')
@@ -216,12 +292,14 @@ export async function getActiveQuestProgress(teamId: string) {
             tasks (
                 id, 
                 status_id,
+                was_dropped,
                 size:sizes!size_id(xp_points),
                 status:statuses!status_id(category)
             )
         `)
         .eq('team_id', teamId)
         .eq('is_active', true)
+        .is('is_archived', false)
         .maybeSingle()
 
     if (error) {
@@ -238,6 +316,8 @@ export async function getActiveQuestProgress(teamId: string) {
     let currentXP = 0
 
     quest.tasks?.forEach((t: any) => {
+        if (t.was_dropped) return // Exclude dropped/aborted missions
+
         const xp = t.size?.xp_points || 0
         totalXP += xp
         if (t.status?.category === 'done') {
@@ -255,4 +335,3 @@ export async function getActiveQuestProgress(teamId: string) {
         percentage
     }
 }
-

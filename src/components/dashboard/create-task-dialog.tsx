@@ -64,6 +64,11 @@ export function CreateTaskDialog({ questId, teamId, sizes, urgencies, statuses }
                     <DialogTitle className="uppercase tracking-widest text-primary text-sm font-bold">New Task Protocol</DialogTitle>
                 </DialogHeader>
                 <form action={handleSubmit} className="space-y-4 pt-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <Input name="project" placeholder="Project" className="rounded-none bg-muted/50 border-border focus:ring-primary" />
+                        <Input name="department" placeholder="Department" className="rounded-none bg-muted/50 border-border focus:ring-primary" />
+                    </div>
+
                     <Input name="title" placeholder="Task Directive" required className="rounded-none bg-muted/50 border-border focus:ring-primary" />
 
                     <div className="grid grid-cols-2 gap-4">

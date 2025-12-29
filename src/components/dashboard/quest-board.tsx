@@ -22,7 +22,7 @@ interface QuestBoardProps {
     userRole: string
 }
 
-export function QuestBoard({ quest, initialTasks, statuses, sizes, urgencies, teamId, crew }: QuestBoardProps) {
+export function QuestBoard({ quest, initialTasks, statuses, sizes, urgencies, teamId, crew, userRole }: QuestBoardProps) {
     const [tasks, setTasks] = useState(initialTasks)
     const [activeId, setActiveId] = useState<string | null>(null)
 
@@ -107,23 +107,25 @@ export function QuestBoard({ quest, initialTasks, statuses, sizes, urgencies, te
                             PROTOCOL: <span className="text-primary font-bold">{quest.name}</span>
                         </div>
 
-                        {/* Assignee Filter */}
-                        <div className="relative">
-                            <select
-                                value={selectedAssignee}
-                                onChange={(e) => setSelectedAssignee(e.target.value)}
-                                className="bg-background text-xs font-bold border border-border rounded px-2 py-1 focus:ring-1 focus:ring-primary outline-none"
-                            >
-                                <option value="all">ALL CREW</option>
-                                <option value="unassigned">UNASSIGNED</option>
-                                <hr />
-                                {(crew || []).map((member: any) => (
-                                    <option key={member.user_id} value={member.user_id}>
-                                        {member.first_name} {member.last_name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                        {/* Assignee Filter - Hidden for Analysts */}
+                        {userRole !== 'analyst' && (
+                            <div className="relative">
+                                <select
+                                    value={selectedAssignee}
+                                    onChange={(e) => setSelectedAssignee(e.target.value)}
+                                    className="bg-background text-xs font-bold border border-border rounded px-2 py-1 focus:ring-1 focus:ring-primary outline-none"
+                                >
+                                    <option value="all">ALL CREW</option>
+                                    <option value="unassigned">UNASSIGNED</option>
+                                    <hr />
+                                    {(crew || []).map((member: any) => (
+                                        <option key={member.user_id} value={member.user_id}>
+                                            {member.first_name} {member.last_name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-6">

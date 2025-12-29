@@ -167,7 +167,7 @@ export async function inviteCrewMember(
     }
 
     // Add to team_members (UUID injection)
-    const { error: insertError } = await supabase
+    const { error: insertError } = await supabaseAdmin
         .from('team_members')
         .insert({
             team_id: teamId,
@@ -195,9 +195,16 @@ export async function updateCrewMember(
         return { success: false, error: 'SECURITY BREACH: Only commanders (Owner/Admin) can modify crew records.' }
     }
 
+    // Bypass RLS with Admin Client
+    const { createClient: createAdminClient } = await import('@supabase/supabase-js')
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+
     // Prevent changing an owner's role
-    const supabase = await createClient()
-    const { data: targetMember } = await supabase
+    const { data: targetMember } = await supabaseAdmin
         .from('team_members')
         .select('role, user_id')
         .eq('team_id', teamId)
@@ -215,7 +222,7 @@ export async function updateCrewMember(
 
     // Update role if provided
     if (data.role) {
-        const { error } = await supabase
+        const { error } = await supabaseAdmin
             .from('team_members')
             .update({ role: data.role })
             .eq('team_id', teamId)
@@ -228,13 +235,6 @@ export async function updateCrewMember(
 
     // Update telephone in profiles if provided
     if (data.telephone !== undefined) {
-        const { createClient: createAdminClient } = await import('@supabase/supabase-js')
-        const supabaseAdmin = createAdminClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!,
-            { auth: { autoRefreshToken: false, persistSession: false } }
-        )
-
         const { error: profileError } = await supabaseAdmin
             .from('profiles')
             .update({ telephone: data.telephone || null })
@@ -262,9 +262,16 @@ export async function toggleCrewActive(
         return { success: false, error: 'SECURITY BREACH: Only commanders can toggle crew status.' }
     }
 
+    // Bypass RLS with Admin Client
+    const { createClient: createAdminClient } = await import('@supabase/supabase-js')
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+
     // Prevent toggling owner
-    const supabase = await createClient()
-    const { data: targetMember } = await supabase
+    const { data: targetMember } = await supabaseAdmin
         .from('team_members')
         .select('role')
         .eq('team_id', teamId)
@@ -281,8 +288,8 @@ export async function toggleCrewActive(
     }
 
     // Note: team_members table may not have is_active column yet
-    // If it doesn't exist, this will fail gracefully
-    const { error } = await supabase
+    // If it doesn't exist, this will fail gracefully or we should catch specific error
+    const { error } = await supabaseAdmin
         .from('team_members')
         .update({ is_active: !currentActive })
         .eq('team_id', teamId)
@@ -298,20 +305,36 @@ export async function toggleCrewActive(
 
 // Remove crew member from team - Owner/Admin only
 export async function removeCrewMember(userId: string, teamId: string) {
+    console.log(`[Crew] removeCrewMember requested for User ${userId} in Team ${teamId}`)
+
     const ctx = await getRoleContext(teamId)
+    console.log(`[Crew] Context role:`, ctx?.role)
 
     if (!ctx || !ctx.canManageForge) {
         return { success: false, error: 'SECURITY BREACH: Only commanders can remove crew members.' }
     }
 
+    // Bypass RLS with Admin Client
+    const { createClient: createAdminClient } = await import('@supabase/supabase-js')
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+
     // Prevent removing owner
-    const supabase = await createClient()
-    const { data: targetMember } = await supabase
+    const { data: targetMember, error: fetchError } = await supabaseAdmin
         .from('team_members')
         .select('role')
         .eq('team_id', teamId)
         .eq('user_id', userId)
         .single()
+
+    console.log(`[Crew] Target member fetch:`, { targetMember, error: fetchError })
+
+    if (fetchError || !targetMember) {
+        return { success: false, error: 'TARGET LOST: Operative not found in this alliance.' }
+    }
 
     if (targetMember?.role === 'owner') {
         return { success: false, error: 'PROTOCOL VIOLATION: The Owner cannot be removed from the alliance.' }
@@ -322,14 +345,20 @@ export async function removeCrewMember(userId: string, teamId: string) {
         return { success: false, error: 'PROTOCOL VIOLATION: You cannot remove yourself from the alliance.' }
     }
 
-    const { error } = await supabase
+    const { error, count } = await supabaseAdmin
         .from('team_members')
-        .delete()
+        .delete({ count: 'exact' })
         .eq('team_id', teamId)
         .eq('user_id', userId)
 
+    console.log(`[Crew] Delete result:`, { count, error })
+
     if (error) {
         return { success: false, error: formatCrewError(error.code, error.message) }
+    }
+
+    if (count === 0) {
+        return { success: false, error: 'DELETION ERROR: Operation completed but no record was removed.' }
     }
 
     revalidatePath('/admin/crew')
@@ -345,9 +374,16 @@ export async function resetCrewPassword(userId: string, teamId: string, newPassw
         return { success: false, error: 'SECURITY BREACH: Only the Alliance Owner can reset passwords.' }
     }
 
+    // Use Supabase Admin API with service_role key
+    const { createClient: createAdminClient } = await import('@supabase/supabase-js')
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+
     // Prevent resetting owner's password by non-self
-    const supabase = await createClient()
-    const { data: targetMember } = await supabase
+    const { data: targetMember } = await supabaseAdmin
         .from('team_members')
         .select('role')
         .eq('team_id', teamId)
@@ -363,14 +399,6 @@ export async function resetCrewPassword(userId: string, teamId: string, newPassw
         return { success: false, error: 'PROTOCOL VIOLATION: Password must be at least 6 characters.' }
     }
 
-    // Use Supabase Admin API with service_role key
-    const { createClient: createAdminClient } = await import('@supabase/supabase-js')
-    const supabaseAdmin = createAdminClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        { auth: { autoRefreshToken: false, persistSession: false } }
-    )
-
     const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
         password: newPassword
     })
@@ -380,6 +408,133 @@ export async function resetCrewPassword(userId: string, teamId: string, newPassw
         return { success: false, error: `PASSWORD RESET FAILED: ${error.message}` }
     }
 
+    return { success: true }
+}
+
+// Get memberships for a specific user within valid teams (intersected with admin's managed teams)
+export async function getUserMemberships(targetUserId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return { success: false, error: 'Not authenticated' }
+
+    // 1. Get teams managed by current admin
+    const { data: myMemberships } = await supabase
+        .from('team_members')
+        .select('team_id, role')
+        .eq('user_id', user.id)
+        .in('role', ['owner', 'admin'])
+
+    if (!myMemberships || myMemberships.length === 0) return { success: false, error: 'No managed teams found' }
+
+    const managedTeamIds = myMemberships.map(m => m.team_id)
+
+    // 2. Get target user's memberships filtered by managed teams
+    const { data: targetMemberships } = await supabase
+        .from('team_members')
+        .select('team_id, role')
+        .eq('user_id', targetUserId)
+        .in('team_id', managedTeamIds)
+
+    return { success: true, memberships: targetMemberships || [] }
+}
+
+// Update multiple team memberships for a user
+export async function updateUserTeams(
+    targetUserId: string,
+    targetTeamIds: string[],
+    role: string,
+    telephone?: string
+) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return { success: false, error: 'Not authenticated' }
+
+    // 1. Validate Admin Context
+    // Ensure current admin is actually admin/owner of ALL targetTeamIds
+    // AND all teams being removed (we need to fetch current state first)
+
+    // Fetch Admin's roles
+    const { data: myMemberships } = await supabase
+        .from('team_members')
+        .select('team_id, role')
+        .eq('user_id', user.id)
+        .in('role', ['owner', 'admin'])
+
+    if (!myMemberships) return { success: false, error: 'Permission denied' }
+
+    // Map of Admin's role per team
+    const myRoleByTeam = new Map(myMemberships.map(m => [m.team_id, m.role]))
+
+    // Verify Admin manages all requested target teams
+    const invalidTeams = targetTeamIds.filter(id => !myRoleByTeam.has(id))
+    if (invalidTeams.length > 0) {
+        return { success: false, error: 'SECURITY BREACH: You cannot assign users to teams you do not command.' }
+    }
+
+    // 2. Determine Changes
+    // Fetch current memberships of target user in ALL teams managed by Admin (to detect removals)
+    const managedTeamIds = Array.from(myRoleByTeam.keys())
+
+    const { data: currentMemberships } = await supabase
+        .from('team_members')
+        .select('team_id, role')
+        .eq('user_id', targetUserId)
+        .in('team_id', managedTeamIds)
+
+    const currentTeamIds = (currentMemberships || []).map(m => m.team_id)
+
+    const toAdd = targetTeamIds.filter(id => !currentTeamIds.includes(id))
+    const toRemove = currentTeamIds.filter(id => !targetTeamIds.includes(id))
+    const toUpdate = targetTeamIds.filter(id => currentTeamIds.includes(id))
+
+    // 3. Execute Updates
+    // A. Additions
+    if (toAdd.length > 0) {
+        const payload = toAdd.map(tid => ({
+            team_id: tid,
+            user_id: targetUserId,
+            role: role
+        }))
+        const { error: addError } = await supabase.from('team_members').insert(payload)
+        if (addError) return { success: false, error: `Error adding to teams: ${addError.message}` }
+    }
+
+    // B. Removals
+    if (toRemove.length > 0) {
+        const { error: remError } = await supabase
+            .from('team_members')
+            .delete()
+            .eq('user_id', targetUserId)
+            .in('team_id', toRemove)
+
+        if (remError) return { success: false, error: `Error removing from teams: ${remError.message}` }
+    }
+
+    // C. Updates (Role Change)
+    if (toUpdate.length > 0) {
+        const { error: upError } = await supabase
+            .from('team_members')
+            .update({ role: role })
+            .eq('user_id', targetUserId)
+            .in('team_id', toUpdate)
+
+        if (upError) return { success: false, error: `Error updating roles: ${upError.message}` }
+    }
+
+    // 4. Update Profile (Telephone) if provided
+    if (telephone !== undefined) {
+        const { createClient: createAdminClient } = await import('@supabase/supabase-js')
+        const supabaseAdmin = createAdminClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!,
+            { auth: { autoRefreshToken: false, persistSession: false } }
+        )
+        await supabaseAdmin.from('profiles').update({ telephone }).eq('id', targetUserId)
+    }
+
+    revalidatePath('/admin/crew')
     return { success: true }
 }
 

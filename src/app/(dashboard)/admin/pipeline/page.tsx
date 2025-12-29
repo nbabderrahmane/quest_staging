@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useRouter } from 'next/navigation'
 import { Input } from '@/components/ui/input'
 import { Plus, Scroll, User, Zap, Target, Trash2, Search, Filter } from 'lucide-react'
-import { getTasks, createTask, getCrewForAssignment, getQuestsForDropdown, deleteTask } from './actions'
+import { getTasks, createTask, getCrewForAssignment, getQuestsForDropdown, deleteTask, getProjectsForDropdown, getDepartmentsForDropdown } from './actions'
 import { TaskDetailDrawer } from './task-detail-drawer'
 
 interface Task {
@@ -22,6 +22,8 @@ interface Task {
     urgency?: { id: string; name: string; color: string } | null
     assignee?: { id: string; email: string; first_name: string | null; last_name: string | null } | null
     quest?: { id: string; name: string } | null
+    project?: { id: string; name: string } | null
+    department?: { id: string; name: string } | null
     was_dropped?: boolean
 }
 
@@ -40,6 +42,11 @@ interface ForgeItem {
 }
 
 interface QuestOption {
+    id: string
+    name: string
+}
+
+interface Option {
     id: string
     name: string
 }
@@ -73,6 +80,8 @@ export default function PipelinePage() {
     const [urgencies, setUrgencies] = useState<ForgeItem[]>([])
     const [crew, setCrew] = useState<CrewMember[]>([])
     const [questOptions, setQuestOptions] = useState<QuestOption[]>([])
+    const [projectOptions, setProjectOptions] = useState<Option[]>([])
+    const [departmentOptions, setDepartmentOptions] = useState<Option[]>([])
 
     // Create Modal State
     const [createOpen, setCreateOpen] = useState(false)
@@ -82,6 +91,8 @@ export default function PipelinePage() {
     const [newSizeId, setNewSizeId] = useState<string>('')
     const [newUrgencyId, setNewUrgencyId] = useState<string>('')
     const [newAssignee, setNewAssignee] = useState<string>('')
+    const [newProjectId, setNewProjectId] = useState<string>('')
+    const [newDepartmentId, setNewDepartmentId] = useState<string>('')
     const [isCreating, setIsCreating] = useState(false)
 
     // Task Detail Drawer State
@@ -92,12 +103,17 @@ export default function PipelinePage() {
     const [searchQuery, setSearchQuery] = useState('')
     const [statusFilter, setStatusFilter] = useState<string>('')
     const [questFilter, setQuestFilter] = useState<string>('')
+    const [projectFilter, setProjectFilter] = useState<string>('')
+    const [departmentFilter, setDepartmentFilter] = useState<string>('')
     const [quickFilter, setQuickFilter] = useState<'all' | 'mine' | 'unclaimed' | 'needs_info'>('all')
 
     const canManage = ['owner', 'admin', 'manager'].includes(userRole)
     const canCreate = ['owner', 'admin', 'manager', 'analyst'].includes(userRole)
     const isOwner = userRole === 'owner'
     const isAnalyst = userRole === 'analyst'
+
+
+
 
     useEffect(() => {
         async function load() {
@@ -137,11 +153,17 @@ export default function PipelinePage() {
                 setTasks(taskData)
             }
 
-            // Fetch quests for dropdown
-            const questData = await getQuestsForDropdown(cleanTeamId)
+            // Fetch quests, projects, departments for dropdowns
+            const [questData, projectData, departmentData] = await Promise.all([
+                getQuestsForDropdown(cleanTeamId),
+                getProjectsForDropdown(cleanTeamId),
+                getDepartmentsForDropdown(cleanTeamId)
+            ])
             setQuestOptions(questData)
+            setProjectOptions(projectData)
+            setDepartmentOptions(departmentData)
 
-            // Fetch sizes and urgencies
+            // Fetch sizes
             const { data: sizesData } = await supabase
                 .from('sizes')
                 .select('id, name, xp_points')
@@ -149,6 +171,7 @@ export default function PipelinePage() {
                 .order('xp_points', { ascending: true })
             if (sizesData) setSizes(sizesData)
 
+            // Fetch urgencies
             const { data: urgenciesData } = await supabase
                 .from('urgencies')
                 .select('id, name, color')
@@ -190,11 +213,12 @@ export default function PipelinePage() {
         e.preventDefault()
         if (!teamId || !newTitle) return
 
-        // Optional fields - user can add details later in edit
         const questValue = (newQuestId && newQuestId !== '_none') ? newQuestId : undefined
         const sizeValue = newSizeId || undefined
         const urgencyValue = newUrgencyId || undefined
         const assigneeValue = (newAssignee && newAssignee !== '_none') ? newAssignee : undefined
+        const projectValue = (newProjectId && newProjectId !== '_none') ? newProjectId : undefined
+        const departmentValue = (newDepartmentId && newDepartmentId !== '_none') ? newDepartmentId : undefined
 
         setIsCreating(true)
         const result = await createTask(teamId, {
@@ -203,7 +227,9 @@ export default function PipelinePage() {
             quest_id: questValue,
             size_id: sizeValue,
             urgency_id: urgencyValue,
-            assigned_to: assigneeValue
+            assigned_to: assigneeValue,
+            project_id: projectValue,
+            department_id: departmentValue
         })
         setIsCreating(false)
 
@@ -217,6 +243,8 @@ export default function PipelinePage() {
             setNewSizeId('')
             setNewUrgencyId('')
             setNewAssignee('')
+            setNewProjectId('')
+            setNewDepartmentId('')
             // Refresh tasks
             const taskData = await getTasks(teamId)
             if (!('error' in taskData)) {
@@ -274,6 +302,16 @@ export default function PipelinePage() {
         if (questFilter && questFilter !== '_all') {
             if (questFilter === '_none' && task.quest) return false
             if (questFilter !== '_none' && task.quest?.id !== questFilter) return false
+        }
+        // Project filter
+        if (projectFilter && projectFilter !== '_all') {
+            if (projectFilter === '_none' && task.project) return false
+            if (projectFilter !== '_none' && task.project?.id !== projectFilter) return false
+        }
+        // Department filter
+        if (departmentFilter && departmentFilter !== '_all') {
+            if (departmentFilter === '_none' && task.department) return false
+            if (departmentFilter !== '_none' && task.department?.id !== departmentFilter) return false
         }
         return true
     })
@@ -380,6 +418,32 @@ export default function PipelinePage() {
                         ))}
                     </select>
                 </div>
+                <div>
+                    <select
+                        value={projectFilter}
+                        onChange={(e) => setProjectFilter(e.target.value)}
+                        className="px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="_all">All Projects</option>
+                        <option value="_none">No Project</option>
+                        {projectOptions.map(p => (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                    </select>
+                </div>
+                <div>
+                    <select
+                        value={departmentFilter}
+                        onChange={(e) => setDepartmentFilter(e.target.value)}
+                        className="px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="_all">All Departments</option>
+                        <option value="_none">No Department</option>
+                        {departmentOptions.map(d => (
+                            <option key={d.id} value={d.id}>{d.name}</option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
             {/* Task List */}
@@ -425,6 +489,11 @@ export default function PipelinePage() {
                                                         {task.quest.name}
                                                     </span>
                                                 )}
+                                                {task.project && (
+                                                    <span className="text-[10px] font-mono text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">
+                                                        {task.project.name}
+                                                    </span>
+                                                )}
                                             </div>
                                             {task.description && (
                                                 <p className="text-xs text-slate-500 truncate">{task.description}</p>
@@ -455,7 +524,10 @@ export default function PipelinePage() {
                                         {/* Delete (Owner only) */}
                                         {isOwner && (
                                             <button
-                                                onClick={() => handleDelete(task.id)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    handleDelete(task.id)
+                                                }}
                                                 className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                                                 title="Abandon Task"
                                             >
@@ -500,6 +572,36 @@ export default function PipelinePage() {
                                 rows={2}
                                 className="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Project</label>
+                                <Select value={newProjectId} onValueChange={setNewProjectId}>
+                                    <SelectTrigger className="bg-white border-slate-300 text-slate-900">
+                                        <SelectValue placeholder="Select project..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="_none">None</SelectItem>
+                                        {projectOptions.map(p => (
+                                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div>
+                                <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Department</label>
+                                <Select value={newDepartmentId} onValueChange={setNewDepartmentId}>
+                                    <SelectTrigger className="bg-white border-slate-300 text-slate-900">
+                                        <SelectValue placeholder="Select department..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="_none">None</SelectItem>
+                                        {departmentOptions.map(d => (
+                                            <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
                         <div>
                             <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Quest (Objective)</label>
@@ -637,11 +739,13 @@ export default function PipelinePage() {
                     teamId={teamId}
                     open={detailOpen}
                     onClose={() => { setDetailOpen(false); setSelectedTaskId(null) }}
-                    canEdit={canManage}
+                    canEdit={canManage || isAnalyst}
                     quests={questOptions}
                     sizes={sizes.map(s => ({ ...s, xp_points: s.xp_points || 0 }))}
                     urgencies={urgencies.map(u => ({ ...u, color: u.color || '' }))}
                     crew={crew}
+                    projects={projectOptions}
+                    departments={departmentOptions}
                 />
             )}
         </div>
