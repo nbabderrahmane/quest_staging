@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Search, Target, Layers, User, Zap } from 'lucide-react'
@@ -93,44 +93,52 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
 
     // Load tasks when quest changes
     useEffect(() => {
+        let mounted = true
         async function loadTasks() {
             if (!selectedQuestId) {
-                setTasks([])
+                if (mounted) setTasks([])
                 return
             }
-            setIsLoading(true)
+            if (mounted) setIsLoading(true)
             const taskData = await getTasks(selectedQuestId, teamId)
-            setTasks(taskData || [])
-            setIsLoading(false)
+            if (mounted) {
+                setTasks(taskData || [])
+                setIsLoading(false)
+            }
         }
         loadTasks()
-        loadTasks()
+        return () => { mounted = false }
     }, [selectedQuestId, teamId])
 
     const [selectedAssignee, setSelectedAssignee] = useState<string>('all')
 
     // Filter tasks by search, analyst role, and assignee
-    const filteredTasks = tasks.filter(task => {
-        // 1. Analyst Restriction
-        if (isAnalyst && task.assigned_to !== userId) {
-            return false
-        }
+    const filteredTasks = useMemo(() => {
+        return tasks.filter(task => {
+            // 1. Analyst Restriction
+            if (isAnalyst && task.assigned_to !== userId) {
+                return false
+            }
 
-        // 2. Search
-        const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase())
-        if (!matchesSearch) return false
+            // 2. Search
+            const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase())
+            if (!matchesSearch) return false
 
-        // 3. Assignee Filter
-        if (selectedAssignee === 'all') return true
-        if (selectedAssignee === 'unassigned') return !task.assigned_to
-        return task.assigned_to === selectedAssignee
-    })
+            // 3. Assignee Filter
+            if (selectedAssignee === 'all') return true
+            if (selectedAssignee === 'unassigned') return !task.assigned_to
+            return task.assigned_to === selectedAssignee
+        })
+    }, [tasks, isAnalyst, userId, searchQuery, selectedAssignee])
 
     // Group tasks by status
-    const tasksByStatus: Record<string, Task[]> = {}
-    for (const status of statuses) {
-        tasksByStatus[status.id] = filteredTasks.filter(t => t.status_id === status.id)
-    }
+    const tasksByStatus = useMemo(() => {
+        const grouped: Record<string, Task[]> = {}
+        for (const status of statuses) {
+            grouped[status.id] = filteredTasks.filter(t => t.status_id === status.id)
+        }
+        return grouped
+    }, [statuses, filteredTasks])
 
     const handleDragStart = (e: React.DragEvent, taskId: string) => {
         e.dataTransfer.setData('taskId', taskId)
