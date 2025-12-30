@@ -26,14 +26,26 @@ interface CreateTaskDialogProps {
     sizes: Size[]
     urgencies: Urgency[]
     statuses: Status[]
+    defaultStatusId?: string
+    open?: boolean
+    onOpenChange?: (open: boolean) => void
+    children?: React.ReactNode // Allow custom trigger
 }
 
-export function CreateTaskDialog({ questId, teamId, sizes, urgencies, statuses }: CreateTaskDialogProps) {
-    const [open, setOpen] = useState(false)
+export function CreateTaskDialog({ questId, teamId, sizes, urgencies, statuses, defaultStatusId, open: controlledOpen, onOpenChange: setControlledOpen, children }: CreateTaskDialogProps) {
+    const [date, setDate] = useState<Date>()
+    const [internalOpen, setInternalOpen] = useState(false)
+
+    const isControlled = controlledOpen !== undefined
+    const open = isControlled ? controlledOpen : internalOpen
+    const setOpen = isControlled ? setControlledOpen! : setInternalOpen
     const [loading, setLoading] = useState(false)
 
-    // Find "Backlog" status for default
+    // Find "Backlog" status for default if not provided
     const backlogStatus = statuses.find(s => s.category === 'backlog')?.id
+    const finalDefaultStatus = defaultStatusId || backlogStatus
+
+    // Reset status when dialog opens if we wanted to enforce it, but simplistic is fine
 
     async function handleSubmit(formData: FormData) {
         setLoading(true)
@@ -54,10 +66,12 @@ export function CreateTaskDialog({ questId, teamId, sizes, urgencies, statuses }
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <button className="bg-primary text-primary-foreground p-2 rounded-full shadow-[0_0_15px_rgba(var(--primary),0.5)] hover:bg-primary/90 transition-all fixed bottom-8 right-8 z-50 md:static md:rounded-none md:shadow-none md:flex md:items-center md:gap-2 md:px-4 md:py-2 md:w-auto">
-                    <Plus className="h-5 w-5" />
-                    <span className="hidden md:inline font-bold uppercase text-xs tracking-wider">New Task</span>
-                </button>
+                {children ? children : (
+                    <button className="bg-primary text-primary-foreground p-2 rounded-full shadow-[0_0_15px_rgba(var(--primary),0.5)] hover:bg-primary/90 transition-all fixed bottom-8 right-8 z-50 md:static md:rounded-none md:shadow-none md:flex md:items-center md:gap-2 md:px-4 md:py-2 md:w-auto">
+                        <Plus className="h-5 w-5" />
+                        <span className="hidden md:inline font-bold uppercase text-xs tracking-wider">New Task</span>
+                    </button>
+                )}
             </DialogTrigger>
             <DialogContent className="rounded-none border-border bg-card text-foreground">
                 <DialogHeader>
@@ -87,7 +101,7 @@ export function CreateTaskDialog({ questId, teamId, sizes, urgencies, statuses }
                         </Select>
                     </div>
 
-                    <Select name="statusId" defaultValue={backlogStatus}>
+                    <Select name="statusId" defaultValue={finalDefaultStatus} key={finalDefaultStatus}>
                         <SelectTrigger className="rounded-none bg-muted/50 border-border"><SelectValue placeholder="Initial Status" /></SelectTrigger>
                         <SelectContent>
                             {statuses.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}

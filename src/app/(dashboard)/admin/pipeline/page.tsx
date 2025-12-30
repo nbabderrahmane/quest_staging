@@ -323,29 +323,30 @@ export default function PipelinePage() {
 
     return (
         <div className="min-h-screen bg-slate-50 -m-8 p-8 space-y-6">
-            <div className="flex items-end justify-between border-b border-slate-200 pb-4">
+            <div className="flex flex-col md:flex-row items-start md:items-end justify-between border-b border-slate-200 pb-4 gap-4">
                 <div>
-                    <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900">Mission Pipeline</h1>
-                    <div className="flex items-center gap-4 mt-1">
-                        <p className="text-slate-500 font-mono text-sm">Task Registry & Operations Center</p>
-                        <div className="h-4 w-[1px] bg-slate-300"></div>
-                        <div className="flex items-center gap-2 text-xs font-bold uppercase text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">
+                    <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-slate-900">Mission Pipeline</h1>
+                    <div className="flex flex-wrap items-center gap-2 md:gap-4 mt-1">
+                        <p className="text-slate-500 font-mono text-xs md:text-sm">Task Registry & Operations Center</p>
+                        <div className="hidden md:block h-4 w-[1px] bg-slate-300"></div>
+                        <div className="flex items-center gap-2 text-[10px] md:text-xs font-bold uppercase text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">
                             <Zap className="h-3 w-3" />
                             Potential XP: {potentialXP}
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
                     <div className="text-xs font-mono text-blue-600 uppercase font-bold">
                         {filteredTasks.length} of {tasks.length} Task{tasks.length !== 1 ? 's' : ''}
                     </div>
                     {canCreate && (
                         <button
                             onClick={() => setCreateOpen(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-bold uppercase tracking-wider hover:bg-blue-700 transition-colors rounded"
+                            className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-blue-600 text-white text-xs md:text-sm font-bold uppercase tracking-wider hover:bg-blue-700 transition-colors rounded"
                         >
                             <Plus className="h-4 w-4" />
-                            Create New Task
+                            <span className="hidden md:inline">Create New Task</span>
+                            <span className="md:hidden">New Task</span>
                         </button>
                     )}
                 </div>
@@ -463,50 +464,60 @@ export default function PipelinePage() {
                                 <div
                                     key={task.id}
                                     onClick={() => { setSelectedTaskId(task.id); setDetailOpen(true) }}
-                                    className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                                    className="flex flex-col md:flex-row md:items-center justify-between p-3 md:p-4 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer gap-3 md:gap-0"
                                 >
-                                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                                    <div className="flex items-start md:items-center gap-3 md:gap-4 flex-1 min-w-0">
                                         {/* Status Badge */}
                                         {task.status && (
-                                            <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded border ${STATUS_CATEGORY_COLORS[task.status.category] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                                            <span className={`shrink-0 text-[10px] font-bold uppercase px-2 py-1 rounded border ${STATUS_CATEGORY_COLORS[task.status.category] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
                                                 {task.status.name}
                                             </span>
                                         )}
 
-                                        {/* Urgency Badge */}
-                                        {task.urgency && (
-                                            <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded border ${URGENCY_COLORS[task.urgency.name] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-                                                {task.urgency.name}
-                                            </span>
-                                        )}
+                                        {/* Mobile: Urgency moved here for better visibility ?? Or keep alongside status? */}
+                                        {/* Keeping order but ensuring wrapping */}
 
-                                        {/* Task Title */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2">
-                                                <p className="font-bold text-slate-900 truncate">{task.title}</p>
+                                        <div className="flex-1 min-w-0 space-y-1">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <p className="font-bold text-slate-900 text-sm md:text-base truncate max-w-full">{task.title}</p>
+
+                                                {/* Desktop Urgency */}
+                                                {task.urgency && (
+                                                    <span className={`hidden md:inline-block text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${URGENCY_COLORS[task.urgency.name] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                                                        {task.urgency.name}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                {/* Mobile Urgency */}
+                                                {task.urgency && (
+                                                    <span className={`md:hidden text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${URGENCY_COLORS[task.urgency.name] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                                                        {task.urgency.name}
+                                                    </span>
+                                                )}
+
                                                 {task.quest && (
-                                                    <span className="text-[10px] font-mono text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                                                    <span className="text-[10px] font-mono text-blue-600 bg-blue-50 px-2 py-0.5 rounded truncate max-w-[100px]">
                                                         {task.quest.name}
                                                     </span>
                                                 )}
                                                 {task.project && (
-                                                    <span className="text-[10px] font-mono text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">
+                                                    <span className="text-[10px] font-mono text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-100 truncate max-w-[100px]">
                                                         {task.project.name}
                                                     </span>
                                                 )}
                                             </div>
+
                                             {task.description && (
                                                 <p className="text-xs text-slate-500 truncate">{task.description}</p>
-                                            )}
-                                            {task.was_dropped && (
-                                                <span className="inline-block mt-1 px-1.5 py-0.5 bg-red-100 text-red-600 text-[9px] font-bold uppercase rounded border border-red-200">
-                                                    Aborted
-                                                </span>
                                             )}
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-3 ml-4">
+                                    <div className="flex items-center justify-between md:justify-end gap-3 md:ml-4 border-t md:border-t-0 border-slate-200 pt-2 md:pt-0 mt-1 md:mt-0">
+                                        {/* Labels for mobile context if needed, but icons are self-explanatory */}
+
                                         {/* Size/XP Badge */}
                                         {task.size && (
                                             <span className="flex items-center gap-1 text-xs font-mono text-purple-600 bg-purple-50 px-2 py-1 rounded">
@@ -516,9 +527,9 @@ export default function PipelinePage() {
                                         )}
 
                                         {/* Assignee */}
-                                        <div className="flex items-center gap-2 text-sm text-slate-600 min-w-[120px]">
+                                        <div className="flex items-center gap-2 text-sm text-slate-600 md:min-w-[120px] justify-end">
                                             <User className="h-4 w-4 text-slate-400" />
-                                            <span className="truncate">{getAssigneeName(task.assignee)}</span>
+                                            <span className="truncate max-w-[100px] md:max-w-none">{getAssigneeName(task.assignee)}</span>
                                         </div>
 
                                         {/* Delete (Owner only) */}

@@ -25,6 +25,8 @@ interface QuestBoardProps {
 export function QuestBoard({ quest, initialTasks, statuses, sizes, urgencies, teamId, crew, userRole }: QuestBoardProps) {
     const [tasks, setTasks] = useState(initialTasks)
     const [activeId, setActiveId] = useState<string | null>(null)
+    const [isCreateOpen, setIsCreateOpen] = useState(false)
+    const [newTaskStatusId, setNewTaskStatusId] = useState<string | undefined>(undefined)
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -161,6 +163,10 @@ export function QuestBoard({ quest, initialTasks, statuses, sizes, urgencies, te
                             key={status.id}
                             status={status}
                             tasks={filteredTasks.filter(t => t.status_id === status.id)}
+                            onAddTask={status.category === 'backlog' ? () => {
+                                setNewTaskStatusId(status.id)
+                                setIsCreateOpen(true)
+                            } : undefined}
                         />
                     ))}
                 </div>
@@ -170,13 +176,16 @@ export function QuestBoard({ quest, initialTasks, statuses, sizes, urgencies, te
                     {activeTask ? <TaskCard task={activeTask} /> : null}
                 </DragOverlay>
 
-                {/* Floating Action Button */}
+                {/* Create Task Dialog (Floating + Controlled) */}
                 <CreateTaskDialog
                     questId={quest.id}
                     teamId={teamId}
                     sizes={sizes}
                     urgencies={urgencies}
                     statuses={statuses}
+                    open={isCreateOpen}
+                    onOpenChange={setIsCreateOpen}
+                    defaultStatusId={newTaskStatusId}
                 />
             </div>
         </DndContext>

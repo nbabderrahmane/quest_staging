@@ -215,8 +215,9 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
     return (
         <div className="min-h-screen bg-slate-50 -m-8 p-8 space-y-6">
             {/* Control Bar */}
-            <div className="flex items-center justify-between gap-4 border-b border-slate-200 pb-4">
-                <div className="flex items-center gap-6">
+            {/* Control Bar */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6 w-full md:w-auto">
                     {/* Boss Visualization */}
                     <div className="hidden md:block">
                         <BossDisplay
@@ -226,15 +227,15 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
                         />
                     </div>
 
-                    <div>
-                        <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900">Quest Board</h1>
-                        <p className="text-slate-500 font-mono text-sm mt-1 mb-2">
+                    <div className="w-full md:w-auto">
+                        <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-slate-900">Quest Board</h1>
+                        <p className="text-slate-500 font-mono text-xs md:text-sm mt-1 mb-2">
                             {currentQuest ? currentQuest.name : 'Select a Quest'}
                         </p>
 
                         {/* Boss Health Bar */}
                         {selectedQuestId && (
-                            <div className="w-64 space-y-1">
+                            <div className="w-full md:w-64 space-y-1">
                                 <div className="flex justify-between text-xs font-bold uppercase">
                                     <span className="text-red-600">Boss HP</span>
                                     <span className="text-slate-400">{Math.round(bossHealthPercent)}%</span>
@@ -250,23 +251,23 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 md:gap-4 w-full md:w-auto">
                     {/* Search Bar */}
-                    <div className="relative">
+                    <div className="relative w-full md:w-auto">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <Input
                             type="text"
                             placeholder="Search tasks..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10 w-64 bg-white border-slate-300 text-slate-900"
+                            className="pl-10 w-full md:w-64 bg-white border-slate-300 text-slate-900"
                         />
                     </div>
 
                     {/* Assignee Filter - Hidden for Analysts */}
                     {!isAnalyst && (
                         <Select value={selectedAssignee} onValueChange={setSelectedAssignee}>
-                            <SelectTrigger className="w-[180px] bg-white border-slate-300 text-slate-900">
+                            <SelectTrigger className="w-full md:w-[180px] bg-white border-slate-300 text-slate-900">
                                 <div className="flex items-center gap-2">
                                     <User className="h-4 w-4 text-slate-500" />
                                     <SelectValue placeholder="All Crew" />
@@ -286,7 +287,7 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
 
                     {/* Quest Filter */}
                     <Select value={selectedQuestId} onValueChange={setSelectedQuestId}>
-                        <SelectTrigger className="w-[220px] bg-white border-slate-300 text-slate-900">
+                        <SelectTrigger className="w-full md:w-[220px] bg-white border-slate-300 text-slate-900">
                             <div className="flex items-center gap-2">
                                 <Target className="h-4 w-4 text-blue-600" />
                                 <SelectValue placeholder="Select Quest" />

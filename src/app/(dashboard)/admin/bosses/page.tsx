@@ -79,8 +79,8 @@ export default function BossesPage() {
         const file = e.target.files?.[0]
         if (!file) return
 
-        if (file.size > 50 * 1024) { // 50KB limit
-            setError('FILE TOO LARGE: Boss sprites must be < 50KB (pixel art/emoji size).')
+        if (file.size > 750 * 1024) { // 750KB limit
+            setError('FILE TOO LARGE: Boss sprites must be < 750KB.')
             return
         }
 
@@ -93,13 +93,21 @@ export default function BossesPage() {
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!teamId || !newName || !imgHealthy || !imgBloody || !imgDead) {
-            setError('PROTOCOL VIOLATION: All fields and images are required.')
+
+        const missing = []
+        if (!teamId) missing.push('Team ID')
+        if (!newName) missing.push('Name')
+        if (!imgHealthy) missing.push('Healthy Image')
+        if (!imgBloody) missing.push('Bloody Image')
+        if (!imgDead) missing.push('Dead Image')
+
+        if (missing.length > 0) {
+            setError(`PROTOCOL VIOLATION: All fields and images are required. Missing: ${missing.join(', ')}`)
             return
         }
 
         setIsCreating(true)
-        const result = await createBoss(teamId, {
+        const result = await createBoss(teamId!, {
             name: newName,
             description: newDesc,
             image_healthy: imgHealthy,
@@ -142,14 +150,14 @@ export default function BossesPage() {
 
     return (
         <div className="min-h-screen bg-slate-50 -m-8 p-8 space-y-8">
-            <div className="flex items-end justify-between border-b border-slate-200 pb-4">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-4">
                 <div>
-                    <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900">Nemesis Registry</h1>
-                    <p className="text-slate-500 font-mono text-sm mt-1">Manage System & Custom Bosses</p>
+                    <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-slate-900">Nemesis Registry</h1>
+                    <p className="text-slate-500 font-mono text-xs md:text-sm mt-1">Manage System & Custom Bosses</p>
                 </div>
                 <button
                     onClick={() => setCreateOpen(!createOpen)}
-                    className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white text-sm font-bold uppercase hover:bg-slate-800 rounded"
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 text-white text-sm font-bold uppercase hover:bg-slate-800 rounded w-full md:w-auto"
                 >
                     <Plus className="h-4 w-4" />
                     Add Custom Boss

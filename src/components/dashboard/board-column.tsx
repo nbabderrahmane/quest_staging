@@ -8,9 +8,10 @@ import { cn } from "@/lib/utils"
 interface BoardColumnProps {
     status: Status
     tasks: Task[]
+    onAddTask?: () => void
 }
 
-export function BoardColumn({ status, tasks }: BoardColumnProps) {
+export function BoardColumn({ status, tasks, onAddTask }: BoardColumnProps) {
     const { setNodeRef, isOver } = useDroppable({
         id: status.id,
         data: { status }
@@ -23,8 +24,19 @@ export function BoardColumn({ status, tasks }: BoardColumnProps) {
                 "p-3 border-b border-border/50 flex items-center justify-between",
                 status.category === 'done' ? "bg-green-500/10" : ""
             )}>
-                <h3 className="font-bold uppercase tracking-widest text-xs text-muted-foreground">{status.name}</h3>
-                <span className="text-[10px] font-mono opacity-50 bg-secondary/20 px-1.5 py-0.5 rounded-sm">{tasks.length}</span>
+                <div className="flex items-center gap-2">
+                    <h3 className="font-bold uppercase tracking-widest text-xs text-muted-foreground">{status.name}</h3>
+                    <span className="text-[10px] font-mono opacity-50 bg-secondary/20 px-1.5 py-0.5 rounded-sm">{tasks.length}</span>
+                </div>
+                {onAddTask && (
+                    <button
+                        onClick={onAddTask}
+                        className="text-muted-foreground hover:text-primary transition-colors p-1 rounded hover:bg-background/50"
+                        title="Quick Add Task"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
+                    </button>
+                )}
             </div>
 
             {/* Droppable Area */}

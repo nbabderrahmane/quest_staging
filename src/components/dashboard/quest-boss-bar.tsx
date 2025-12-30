@@ -87,16 +87,16 @@ export function QuestBossBar({ teamId }: { teamId: string }) {
             {/* Background Texture/Pattern */}
             <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-500 via-slate-900 to-black" />
 
-            <div className="max-w-7xl mx-auto px-8 py-3 relative flex items-center justify-between gap-8 h-16">
+            <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 relative flex items-center justify-between gap-4 md:gap-8 h-16">
 
                 {/* Left: Quest Name */}
-                <div className="flex items-center gap-3 min-w-0">
-                    <div className="p-1.5 bg-slate-800 rounded border border-slate-700">
-                        <Target className="h-5 w-5 text-blue-400" />
+                <div className="flex items-center gap-2 md:gap-3 min-w-0 max-w-[40%] md:max-w-none">
+                    <div className="p-1.5 bg-slate-800 rounded border border-slate-700 shrink-0">
+                        <Target className="h-4 w-4 md:h-5 md:w-5 text-blue-400" />
                     </div>
-                    <div>
-                        <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest leading-none mb-1">Active Operation</div>
-                        <h3 className="font-black text-lg uppercase tracking-tight truncate leading-none text-white drop-shadow-md">
+                    <div className="min-w-0">
+                        <div className="text-[9px] md:text-[10px] uppercase font-bold text-slate-400 tracking-widest leading-none mb-1 hidden sm:block">Active Operation</div>
+                        <h3 className="font-black text-sm md:text-lg uppercase tracking-tight truncate leading-none text-white drop-shadow-md">
                             {progress.name}
                         </h3>
                     </div>
@@ -104,18 +104,18 @@ export function QuestBossBar({ teamId }: { teamId: string }) {
 
                 {/* Center: The Boss Bar */}
                 <div className="flex-1 max-w-2xl flex flex-col justify-center">
-                    <div className="flex justify-between text-xs font-mono font-bold mb-1 px-1">
+                    <div className="flex justify-between text-[10px] md:text-xs font-mono font-bold mb-1 px-1">
                         <span className="text-blue-400 flex items-center gap-1">
-                            <Flame className="h-3 w-3" /> {progress.currentXP} XP
+                            <Flame className="h-3 w-3" /> {progress.currentXP} <span className="hidden sm:inline">XP</span>
                         </span>
-                        <span className="text-slate-500">
-                            {progress.percentage}% COMPLETE
+                        <span className="text-slate-500 text-center mx-2">
+                            {progress.percentage}% <span className="hidden sm:inline">COMPLETE</span>
                         </span>
-                        <span className="text-slate-400">
-                            Target: {progress.totalXP} XP
+                        <span className="text-slate-400 text-right">
+                            <span className="hidden sm:inline">Target: </span>{progress.totalXP} <span className="hidden sm:inline">XP</span>
                         </span>
                     </div>
-                    <div className="h-4 bg-slate-800 rounded-sm border border-slate-700 relative overflow-hidden">
+                    <div className="h-3 md:h-4 bg-slate-800 rounded-sm border border-slate-700 relative overflow-hidden">
                         {/* Bar Fill */}
                         <div
                             className={`h-full transition-all duration-1000 ease-out relative ${barColor}`}

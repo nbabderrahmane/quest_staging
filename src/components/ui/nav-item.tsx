@@ -9,9 +9,10 @@ interface NavItemProps {
     href: string
     children: React.ReactNode
     icon?: React.ReactNode
+    onClick?: () => void
 }
 
-export function NavItem({ href, children, icon }: NavItemProps) {
+export function NavItem({ href, children, icon, onClick }: NavItemProps) {
     const pathname = usePathname()
     // Exact match for root, or starts with for nested
     const isActive = href === '/'
@@ -19,7 +20,7 @@ export function NavItem({ href, children, icon }: NavItemProps) {
         : pathname.startsWith(href)
 
     return (
-        <Link href={href} className="block relative group">
+        <Link href={href} onClick={onClick} className="block relative group">
             {isActive && (
                 <motion.div
                     layoutId="activeNav"

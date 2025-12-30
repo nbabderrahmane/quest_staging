@@ -15,9 +15,10 @@ interface SidebarContentProps {
     userRole: string
     user: { email?: string }
     profile: { phone?: string | null } | null
+    onNavigate?: () => void
 }
 
-export function SidebarContent({ teams, activeTeam, userRole, user, profile }: SidebarContentProps) {
+export function SidebarContent({ teams, activeTeam, userRole, user, profile, onNavigate }: SidebarContentProps) {
     return (
         <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
             {/* Brand Area */}
@@ -46,13 +47,13 @@ export function SidebarContent({ teams, activeTeam, userRole, user, profile }: S
                 <div className="px-4 pb-2">
                     <p className="text-[10px] uppercase tracking-[0.2em] text-sidebar-foreground/40 font-bold">Command</p>
                 </div>
-                <NavItem href="/quest-board" icon={<LayoutDashboard className="h-4 w-4" />}>Quest Board</NavItem>
-                <NavItem href="/admin/quests" icon={<Flag className="h-4 w-4" />}>Quest Factory</NavItem>
-                <NavItem href="/admin/pipeline" icon={<List className="h-4 w-4" />}>Mission Pipeline</NavItem>
-                <NavItem href="/admin/analytics" icon={<BarChart3 className="h-4 w-4" />}>Analytics</NavItem>
-                <NavItem href="/admin/reporting" icon={<ScrollText className="h-4 w-4" />}>Reporting</NavItem>
-                <NavItem href="/admin/projects" icon={<Briefcase className="h-4 w-4" />}>Projects</NavItem>
-                <NavItem href="/admin/departments" icon={<Building2 className="h-4 w-4" />}>Departments</NavItem>
+                <NavItem href="/quest-board" icon={<LayoutDashboard className="h-4 w-4" />} onClick={onNavigate}>Quest Board</NavItem>
+                <NavItem href="/admin/quests" icon={<Flag className="h-4 w-4" />} onClick={onNavigate}>Quest Factory</NavItem>
+                <NavItem href="/admin/pipeline" icon={<List className="h-4 w-4" />} onClick={onNavigate}>Mission Pipeline</NavItem>
+                <NavItem href="/admin/analytics" icon={<BarChart3 className="h-4 w-4" />} onClick={onNavigate}>Analytics</NavItem>
+                <NavItem href="/admin/reporting" icon={<ScrollText className="h-4 w-4" />} onClick={onNavigate}>Reporting</NavItem>
+                <NavItem href="/admin/projects" icon={<Briefcase className="h-4 w-4" />} onClick={onNavigate}>Projects</NavItem>
+                <NavItem href="/admin/departments" icon={<Building2 className="h-4 w-4" />} onClick={onNavigate}>Departments</NavItem>
 
                 <div className="my-4 px-4">
                     <div className="h-px bg-sidebar-border/50" />
@@ -61,11 +62,11 @@ export function SidebarContent({ teams, activeTeam, userRole, user, profile }: S
                 <div className="px-4 pb-2">
                     <p className="text-[10px] uppercase tracking-[0.2em] text-sidebar-foreground/40 font-bold">System</p>
                 </div>
-                <NavItem href="/admin" icon={<Settings className="h-4 w-4" />}>Forge (Admin)</NavItem>
+                <NavItem href="/admin" icon={<Settings className="h-4 w-4" />} onClick={onNavigate}>Forge (Admin)</NavItem>
                 {['owner', 'admin'].includes(userRole) && (
-                    <NavItem href="/admin/bosses" icon={<Skull className="h-4 w-4" />}>Nemesis Registry</NavItem>
+                    <NavItem href="/admin/bosses" icon={<Skull className="h-4 w-4" />} onClick={onNavigate}>Nemesis Registry</NavItem>
                 )}
-                <NavItem href="/admin/crew" icon={<Settings className="h-4 w-4" />}>Crew Deck</NavItem>
+                <NavItem href="/admin/crew" icon={<Settings className="h-4 w-4" />} onClick={onNavigate}>Crew Deck</NavItem>
             </nav>
 
             {/* User Footer */}

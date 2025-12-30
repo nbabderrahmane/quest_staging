@@ -226,9 +226,10 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
     return (
         <Dialog open={open} onOpenChange={() => onClose()}>
             <DialogContent className="bg-white border border-slate-200 text-slate-900 shadow-xl max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-                <div className="flex h-full min-h-[600px]">
-                    {/* Left Column: Brief & Comms (60%) */}
-                    <div className="w-[60%] flex flex-col border-r border-slate-200">
+                <div className="flex flex-col md:flex-row h-full min-h-0 md:min-h-[600px]">
+                    {/* Left Column: Brief & Comms (100% Mobile, 60% Desktop) */}
+                    {/* On mobile, take 60% height to show comms, let params take 40% */}
+                    <div className="w-full md:w-[60%] h-[60%] md:h-full flex flex-col border-b md:border-b-0 md:border-r border-slate-200 order-2 md:order-1">
                         {/* Header */}
                         <DialogHeader className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex-shrink-0">
                             <div className="flex justify-between items-start">
@@ -261,7 +262,9 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                         ) : (
                             <>
                                 {/* Description Section */}
-                                <div className="px-6 py-4 border-b border-slate-200 bg-white flex-shrink-0">
+                                <div className="px-6 py-4 border-b border-slate-200 bg-white flex-shrink-0 hidden md:block">
+                                    {/* Hide description on mobile to save space? Or keep it? */}
+                                    {/* Let's keep it but maybe compact */}
                                     <div className="flex items-center gap-2 mb-3">
                                         <FileText className="h-4 w-4 text-slate-400" />
                                         <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Brief</h3>
@@ -308,9 +311,22 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                                     )}
                                 </div>
 
+                                {/* Mobile Only: Brief Toggle or just reduced header? */}
+                                {/* For simplicity, just rendering it same as desktop for now, relying on scrolling */}
+                                <div className="px-6 py-4 border-b border-slate-200 bg-white flex-shrink-0 md:hidden">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <FileText className="h-4 w-4 text-slate-400" />
+                                        <span className="text-xs font-bold uppercase text-slate-700">Brief</span>
+                                    </div>
+                                    <p className="text-xs text-slate-600 line-clamp-3" onClick={() => canEdit && setIsEditingDesc(true)}>
+                                        {task?.description || 'No briefing.'}
+                                    </p>
+                                </div>
+
+
                                 {/* Comms Feed Section */}
                                 <div className="flex-1 flex flex-col min-h-0">
-                                    <div className="px-6 py-3 border-b border-slate-200 bg-slate-50 flex-shrink-0">
+                                    <div className="px-4 md:px-6 py-2 md:py-3 border-b border-slate-200 bg-slate-50 flex-shrink-0">
                                         <div className="flex items-center gap-2">
                                             <MessageSquare className="h-4 w-4 text-slate-400" />
                                             <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Comms Feed</h3>
@@ -319,7 +335,7 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                                     </div>
 
                                     {/* Comments List */}
-                                    <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 bg-white">
+                                    <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 space-y-4 bg-white">
                                         {comments.length === 0 ? (
                                             <p className="text-center text-slate-400 text-sm py-8">
                                                 No comms yet. Start the conversation.
@@ -357,20 +373,20 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                                     </div>
 
                                     {/* Comment Input */}
-                                    <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex-shrink-0">
+                                    <div className="px-4 md:px-6 py-3 md:py-4 border-t border-slate-200 bg-slate-50 flex-shrink-0">
                                         <div className="flex gap-2">
                                             <textarea
                                                 value={newComment}
                                                 onChange={(e) => setNewComment(e.target.value)}
                                                 onKeyDown={handleKeyDown}
-                                                placeholder="Write a message... (Enter to send)"
-                                                rows={2}
-                                                className="flex-1 px-3 py-2 bg-white border border-slate-300 rounded-md text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                                placeholder="Write a message..."
+                                                rows={1}
+                                                className="flex-1 px-3 py-2 bg-white border border-slate-300 rounded-md text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none min-h-[40px] max-h-[100px]"
                                             />
                                             <button
                                                 onClick={handleSendComment}
                                                 disabled={isSending || !newComment.trim()}
-                                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                                             >
                                                 <Send className="h-4 w-4" />
                                             </button>
@@ -381,8 +397,24 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                         )}
                     </div>
 
-                    {/* Right Column: Mission Parameters (40%) */}
-                    <div className="w-[40%] bg-slate-50 flex flex-col h-full overflow-y-auto">
+                    {/* Right Column: Mission Parameters (100% Mobile, 40% Desktop) */}
+                    {/* On Desktop: 40% width. On Mobile: height 40%, order-1 (so it's on top? Or bottom?) */}
+                    {/* Actually, user might want to see parameters first? No, Title is in Left col header. */}
+                    {/* Let's put Parameters at TOP on mobile (under standard header if possible, but standard header is inside Left Col). */}
+                    {/* Current Structure: Columns wrap everything including headers. */}
+                    {/* If we want Title to be always top, we might need to restructure. */}
+                    {/* For now, just stacking: Brief/Comms (Bottom 60%) and Params (Top 40%)? */}
+                    {/* Or Params (Bottom 40%)? Usually you check params then chat. */}
+                    {/* Let's try Params TOP (order-1) so you see status/assignee, then scroll down to Comms. */}
+                    {/* BUT Header with Title is in Left Column... this is awkward. */}
+                    {/* Let's keep Left (Order-2) and Right (Order-1)? No, Title is in Left. */}
+                    {/* Compromise: Left Col (Title + Comms) is Order-1 (Top). Right Col (Params) is Order-2 (Bottom). */}
+                    <div className="w-full md:w-[40%] h-[40%] md:h-full bg-slate-50 flex flex-col overflow-y-auto border-t md:border-t-0 order-1 md:order-2">
+                        {/* Mobile Handle / Indicator? */}
+                        <div className="md:hidden flex justify-center py-2 border-b border-slate-100 bg-white">
+                            <div className="w-12 h-1 bg-slate-200 rounded-full" />
+                        </div>
+
                         <div className="px-6 py-4 border-b border-slate-200">
                             <div className="flex items-center gap-2">
                                 <Settings className="h-4 w-4 text-slate-400" />

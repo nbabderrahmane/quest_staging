@@ -51,7 +51,7 @@ export function MobileNav(props: MobileNavProps) {
 
                         {/* Reuse Sidebar Content */}
                         <div className="h-full pt-8"> {/* pt-8 to clear X button */}
-                            <SidebarContent {...props} />
+                            <SidebarContent {...props} onNavigate={() => setIsOpen(false)} />
                         </div>
                     </div>
                 </div>
