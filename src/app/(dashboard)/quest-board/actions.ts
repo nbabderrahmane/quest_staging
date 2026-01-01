@@ -105,7 +105,8 @@ export async function getTasks(questId: string, teamId: string) {
                 status:statuses(id, name, category),
                 size:sizes(id, name, xp_points),
                 urgency:urgencies(id, name, color, weight),
-                quest:quests(id, name)
+                quest:quests(id, name),
+                client:clients(id, name)
             `)
             .eq('quest_id', questId)
             .eq('team_id', teamId)

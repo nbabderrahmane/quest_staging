@@ -54,6 +54,7 @@ export function SidebarContent({ teams, activeTeam, userRole, user, profile, onN
                 <NavItem href="/admin/reporting" icon={<ScrollText className="h-4 w-4" />} onClick={onNavigate}>Reporting</NavItem>
                 <NavItem href="/admin/projects" icon={<Briefcase className="h-4 w-4" />} onClick={onNavigate}>Projects</NavItem>
                 <NavItem href="/admin/departments" icon={<Building2 className="h-4 w-4" />} onClick={onNavigate}>Departments</NavItem>
+                <NavItem href="/admin/clients" icon={<Briefcase className="h-4 w-4" />} onClick={onNavigate}>Clients</NavItem>
 
                 <div className="my-4 px-4">
                     <div className="h-px bg-sidebar-border/50" />

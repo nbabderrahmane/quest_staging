@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { getQuests, getTasks } from "./actions"
 import { getStatuses, getSizes, getUrgencies } from "@/app/admin/actions"
-import { getCrewForAssignment } from "@/app/(dashboard)/admin/pipeline/actions"
+import { getCrewForAssignment, getClientsForDropdown } from "@/app/(dashboard)/admin/pipeline/actions"
 import { getUserTeams } from "@/app/teams/actions"
 import { getBosses } from "@/app/(dashboard)/admin/bosses/actions"
 import { getRoleContext } from "@/lib/role-service"
@@ -24,14 +24,15 @@ export default async function QuestBoardPage() {
         ? selectedTeamId
         : teams[0].id
 
-    const [quests, statuses, sizes, urgencies, roleCtx, crew, bossesData] = await Promise.all([
+    const [quests, statuses, sizes, urgencies, roleCtx, crew, bossesData, clients] = await Promise.all([
         getQuests(teamId),
         getStatuses(teamId),
         getSizes(teamId),
         getUrgencies(teamId),
         getRoleContext(teamId),
         getCrewForAssignment(teamId),
-        getBosses(teamId)
+        getBosses(teamId),
+        getClientsForDropdown(teamId)
     ])
 
     const bossList = ('error' in bossesData) ? [] : bossesData
@@ -44,6 +45,7 @@ export default async function QuestBoardPage() {
             sizes={sizes}
             urgencies={urgencies}
             crew={crew}
+            clients={clients || []}
             teamId={teamId}
             canEdit={canEdit}
             userId={user.id}

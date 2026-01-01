@@ -19,9 +19,22 @@ export interface Status {
     id: string
     team_id: string
     name: string
-    category: 'backlog' | 'active' | 'done' | 'archived'
+    category: 'backlog' | 'active' | 'validation' | 'done' | 'archived'
     sort_order: number
     is_active: boolean
+}
+
+export interface Client {
+    id: string
+    team_id: string
+    name: string
+    first_name?: string | null
+    last_name?: string | null
+    email?: string | null
+    phone?: string | null
+    company_name?: string | null
+    logo_url?: string | null
+    created_at: string
 }
 
 export interface Size {
@@ -73,6 +86,7 @@ export interface Task {
     status_id: string
     size_id: string
     urgency_id: string
+    client_id?: string | null
     assigned_to?: string | null // DB Column
     assignee_id?: string | null // Legacy Type compatibility
     xp_points: number
@@ -82,4 +96,5 @@ export interface Task {
     status?: Status
     size?: Size
     urgency?: Urgency
+    client?: Client
 }

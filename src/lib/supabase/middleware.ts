@@ -1,7 +1,17 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// Public routes that don't need auth check at all
+const PUBLIC_ROUTES = ['/login', '/portal/login', '/auth/callback', '/auth/signout']
+
 export async function updateSession(request: NextRequest) {
+    const path = request.nextUrl.pathname
+
+    // Fast path: Skip auth check entirely for public routes
+    if (PUBLIC_ROUTES.some(route => path.startsWith(route))) {
+        return NextResponse.next({ request })
+    }
+
     let supabaseResponse = NextResponse.next({
         request,
     })
@@ -41,13 +51,29 @@ export async function updateSession(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser()
 
-    if (
+    // 1. Portal Route Protection
+    if (path.startsWith('/portal')) {
+        // If not logged in, redirect to Portal Login
+        if (!user) {
+            const url = request.nextUrl.clone()
+            url.pathname = '/portal/login'
+            return NextResponse.redirect(url)
+        }
+
+        // If logged in but at root /portal, go to dashboard
+        if (path === '/portal') {
+            const url = request.nextUrl.clone()
+            url.pathname = '/portal/dashboard'
+            return NextResponse.redirect(url)
+        }
+    }
+    // 2. Admin/General Route Protection
+    else if (
         !user &&
-        !request.nextUrl.pathname.startsWith('/login') &&
-        !request.nextUrl.pathname.startsWith('/auth') &&
-        !request.nextUrl.pathname.startsWith('/api')
+        !path.startsWith('/api') &&
+        path !== '/' // Allow landing page if exists? Or assume root is admin? assuming root is protected for now.
     ) {
-        // no user, potentially respond by redirecting the user to the login page
+        // no user, redirect to login
         const url = request.nextUrl.clone()
         url.pathname = '/login'
         return NextResponse.redirect(url)

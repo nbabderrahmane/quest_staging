@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useRouter } from 'next/navigation'
 import { Input } from '@/components/ui/input'
 import { Plus, Scroll, User, Zap, Target, Trash2, Search, Filter } from 'lucide-react'
-import { getTasks, createTask, getCrewForAssignment, getQuestsForDropdown, deleteTask, getProjectsForDropdown, getDepartmentsForDropdown } from './actions'
+import { getTasks, createTask, getCrewForAssignment, getQuestsForDropdown, deleteTask, getProjectsForDropdown, getDepartmentsForDropdown, getClientsForDropdown } from './actions'
 import { TaskDetailDrawer } from './task-detail-drawer'
 
 interface Task {
@@ -24,6 +24,7 @@ interface Task {
     quest?: { id: string; name: string } | null
     project?: { id: string; name: string } | null
     department?: { id: string; name: string } | null
+    client?: { id: string; name: string } | null
     was_dropped?: boolean
 }
 
@@ -82,6 +83,7 @@ export default function PipelinePage() {
     const [questOptions, setQuestOptions] = useState<QuestOption[]>([])
     const [projectOptions, setProjectOptions] = useState<Option[]>([])
     const [departmentOptions, setDepartmentOptions] = useState<Option[]>([])
+    const [clientOptions, setClientOptions] = useState<Option[]>([])
 
     // Create Modal State
     const [createOpen, setCreateOpen] = useState(false)
@@ -93,6 +95,7 @@ export default function PipelinePage() {
     const [newAssignee, setNewAssignee] = useState<string>('')
     const [newProjectId, setNewProjectId] = useState<string>('')
     const [newDepartmentId, setNewDepartmentId] = useState<string>('')
+    const [newClientId, setNewClientId] = useState<string>('')
     const [isCreating, setIsCreating] = useState(false)
 
     // Task Detail Drawer State
@@ -105,6 +108,7 @@ export default function PipelinePage() {
     const [questFilter, setQuestFilter] = useState<string>('')
     const [projectFilter, setProjectFilter] = useState<string>('')
     const [departmentFilter, setDepartmentFilter] = useState<string>('')
+    const [clientFilter, setClientFilter] = useState<string>('')
     const [quickFilter, setQuickFilter] = useState<'all' | 'mine' | 'unclaimed' | 'needs_info'>('all')
 
     const canManage = ['owner', 'admin', 'manager'].includes(userRole)
@@ -154,14 +158,16 @@ export default function PipelinePage() {
             }
 
             // Fetch quests, projects, departments for dropdowns
-            const [questData, projectData, departmentData] = await Promise.all([
+            const [questData, projectData, departmentData, clientData] = await Promise.all([
                 getQuestsForDropdown(cleanTeamId),
                 getProjectsForDropdown(cleanTeamId),
-                getDepartmentsForDropdown(cleanTeamId)
+                getDepartmentsForDropdown(cleanTeamId),
+                getClientsForDropdown(cleanTeamId)
             ])
             setQuestOptions(questData)
             setProjectOptions(projectData)
             setDepartmentOptions(departmentData)
+            setClientOptions(clientData)
 
             // Fetch sizes
             const { data: sizesData } = await supabase
@@ -219,6 +225,7 @@ export default function PipelinePage() {
         const assigneeValue = (newAssignee && newAssignee !== '_none') ? newAssignee : undefined
         const projectValue = (newProjectId && newProjectId !== '_none') ? newProjectId : undefined
         const departmentValue = (newDepartmentId && newDepartmentId !== '_none') ? newDepartmentId : undefined
+        const clientValue = (newClientId && newClientId !== '_none') ? newClientId : undefined
 
         setIsCreating(true)
         const result = await createTask(teamId, {
@@ -229,7 +236,8 @@ export default function PipelinePage() {
             urgency_id: urgencyValue,
             assigned_to: assigneeValue,
             project_id: projectValue,
-            department_id: departmentValue
+            department_id: departmentValue,
+            client_id: clientValue
         })
         setIsCreating(false)
 
@@ -245,6 +253,7 @@ export default function PipelinePage() {
             setNewAssignee('')
             setNewProjectId('')
             setNewDepartmentId('')
+            setNewClientId('')
             // Refresh tasks
             const taskData = await getTasks(teamId)
             if (!('error' in taskData)) {
@@ -312,6 +321,11 @@ export default function PipelinePage() {
         if (departmentFilter && departmentFilter !== '_all') {
             if (departmentFilter === '_none' && task.department) return false
             if (departmentFilter !== '_none' && task.department?.id !== departmentFilter) return false
+        }
+        // Client filter
+        if (clientFilter && clientFilter !== '_all') {
+            if (clientFilter === '_none' && task.client) return false
+            if (clientFilter !== '_none' && task.client?.id !== clientFilter) return false
         }
         return true
     })
@@ -445,6 +459,19 @@ export default function PipelinePage() {
                         ))}
                     </select>
                 </div>
+                <div>
+                    <select
+                        value={clientFilter}
+                        onChange={(e) => setClientFilter(e.target.value)}
+                        className="px-3 py-2 bg-background border border-border rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
+                    >
+                        <option value="_all">All Clients</option>
+                        <option value="_none">No Client</option>
+                        {clientOptions.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
             {/* Task List */}
@@ -505,6 +532,11 @@ export default function PipelinePage() {
                                                 {task.project && (
                                                     <span className="text-[10px] font-mono text-purple-500 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20 truncate max-w-[100px]">
                                                         {task.project.name}
+                                                    </span>
+                                                )}
+                                                {task.client && (
+                                                    <span className="text-[10px] font-mono text-cyan-500 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20 truncate max-w-[100px]">
+                                                        {task.client.name}
                                                     </span>
                                                 )}
                                             </div>
@@ -757,6 +789,7 @@ export default function PipelinePage() {
                     crew={crew}
                     projects={projectOptions}
                     departments={departmentOptions}
+                    clients={clientOptions}
                 />
             )}
         </div>

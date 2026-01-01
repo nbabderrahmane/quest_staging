@@ -19,6 +19,7 @@ interface TaskDetailDrawerProps {
     crew?: { id: string; email: string; first_name: string | null; last_name: string | null }[]
     projects?: { id: string; name: string }[]
     departments?: { id: string; name: string }[]
+    clients?: { id: string; name: string }[]
 }
 
 interface Comment {
@@ -40,6 +41,7 @@ interface TaskDetail {
     assigned_to?: string | null
     project_id?: string | null
     department_id?: string | null
+    client_id?: string | null
     needs_info?: boolean
     was_dropped?: boolean
     quest?: { id: string; name: string } | null
@@ -107,7 +109,7 @@ function linkify(text: string): React.ReactNode {
     )
 }
 
-export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quests = [], sizes = [], urgencies = [], crew = [], projects = [], departments = [] }: TaskDetailDrawerProps) {
+export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quests = [], sizes = [], urgencies = [], crew = [], projects = [], departments = [], clients = [] }: TaskDetailDrawerProps) {
     const [task, setTask] = useState<TaskDetail | null>(null)
     const [comments, setComments] = useState<Comment[]>([])
     const [isLoading, setIsLoading] = useState(false)
@@ -231,25 +233,25 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                     {/* On mobile, take 60% height to show comms, let params take 40% */}
                     <div className="w-full md:w-[60%] h-[60%] md:h-full flex flex-col border-b md:border-b-0 md:border-r border-border order-2 md:order-1">
                         {/* Header */}
-                        <DialogHeader className="px-6 py-4 border-b border-border bg-muted/30 flex-shrink-0">
+                        <div className="px-6 py-6 border-b border-border bg-muted/20 flex-shrink-0">
                             <div className="flex justify-between items-start">
-                                <div>
-                                    <DialogTitle className="text-lg font-bold text-foreground pr-2">
+                                <div className="space-y-1">
+                                    <h2 className="text-xl font-black text-foreground pr-2 uppercase tracking-tighter">
                                         {task?.title || 'Loading...'}
-                                    </DialogTitle>
+                                    </h2>
                                     {task?.was_dropped && (
-                                        <span className="inline-block mt-1 px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold uppercase rounded border border-red-200">
+                                        <span className="inline-block px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold uppercase rounded border border-red-200">
                                             Mission Aborted
                                         </span>
                                     )}
                                     {task?.quest && (
-                                        <p className="text-xs font-mono text-blue-600 mt-1">
-                                            Quest: {task.quest.name}
+                                        <p className="text-xs font-mono text-blue-600">
+                                            Objective: {task.quest.name}
                                         </p>
                                     )}
                                 </div>
                             </div>
-                        </DialogHeader>
+                        </div>
 
                         {isLoading ? (
                             <div className="p-8 text-center text-muted-foreground animate-pulse">Loading task details...</div>
@@ -409,25 +411,25 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                     {/* BUT Header with Title is in Left Column... this is awkward. */}
                     {/* Let's keep Left (Order-2) and Right (Order-1)? No, Title is in Left. */}
                     {/* Compromise: Left Col (Title + Comms) is Order-1 (Top). Right Col (Params) is Order-2 (Bottom). */}
-                    <div className="w-full md:w-[40%] h-[40%] md:h-full bg-slate-50 flex flex-col overflow-y-auto border-t md:border-t-0 order-1 md:order-2">
+                    <div className="w-full md:w-[40%] h-[40%] md:h-full bg-muted/10 flex flex-col overflow-y-auto border-t md:border-t-0 order-1 md:order-2">
                         {/* Mobile Handle / Indicator? */}
                         <div className="md:hidden flex justify-center py-2 border-b border-slate-100 bg-white">
                             <div className="w-12 h-1 bg-slate-200 rounded-full" />
                         </div>
 
-                        <div className="px-6 py-4 border-b border-slate-200">
+                        <div className="px-6 py-4 border-b border-border">
                             <div className="flex items-center gap-2">
-                                <Settings className="h-4 w-4 text-slate-400" />
-                                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Mission Parameters</h3>
+                                <Settings className="h-4 w-4 text-muted-foreground" />
+                                <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Mission Parameters</h3>
                             </div>
                         </div>
 
                         <div className="p-6 space-y-6">
                             {/* Needs Info Toggle */}
-                            <div className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg">
+                            <div className="flex items-center justify-between p-3 bg-card border border-border rounded-lg">
                                 <div className="flex items-center gap-2">
-                                    <AlertTriangle className={`h-4 w-4 ${task?.needs_info ? 'text-red-500' : 'text-slate-400'}`} />
-                                    <span className="text-sm font-bold text-slate-700">Needs Info</span>
+                                    <AlertTriangle className={`h-4 w-4 ${task?.needs_info ? 'text-destructive' : 'text-muted-foreground'}`} />
+                                    <span className="text-sm font-bold text-foreground">Needs Info</span>
                                 </div>
                                 <Switch
                                     checked={task?.needs_info || false}
@@ -440,7 +442,7 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                             {/* Project & Department */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <label className="text-xs uppercase font-bold text-slate-500">Project</label>
+                                    <label className="text-xs uppercase font-bold text-muted-foreground">Project</label>
                                     <Select
                                         value={task?.project_id || '_none'}
                                         onValueChange={(val) => handleUpdateParameter('project_id', val)}
@@ -458,7 +460,7 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                                     </Select>
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs uppercase font-bold text-slate-500">Department</label>
+                                    <label className="text-xs uppercase font-bold text-muted-foreground">Department</label>
                                     <Select
                                         value={task?.department_id || '_none'}
                                         onValueChange={(val) => handleUpdateParameter('department_id', val)}
@@ -477,9 +479,29 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                                 </div>
                             </div>
 
+                            {/* Client */}
+                            <div className="space-y-2">
+                                <label className="text-xs uppercase font-bold text-muted-foreground">Client</label>
+                                <Select
+                                    value={task?.client_id || '_none'}
+                                    onValueChange={(val) => handleUpdateParameter('client_id', val)}
+                                    disabled={!canEdit}
+                                >
+                                    <SelectTrigger className="bg-background border-input">
+                                        <SelectValue placeholder="None" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="_none">None</SelectItem>
+                                        {clients.map(c => (
+                                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
                             {/* Objective (Quest) */}
                             <div className="space-y-2">
-                                <label className="text-xs uppercase font-bold text-slate-500">Objective (Quest)</label>
+                                <label className="text-xs uppercase font-bold text-muted-foreground">Objective (Quest)</label>
                                 <Select
                                     value={task?.quest_id || '_none'}
                                     onValueChange={(val) => handleUpdateParameter('quest_id', val)}
@@ -499,7 +521,7 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
 
                             {/* Size (XP) */}
                             <div className="space-y-2">
-                                <label className="text-xs uppercase font-bold text-slate-500">XP Value (Size)</label>
+                                <label className="text-xs uppercase font-bold text-muted-foreground">XP Value (Size)</label>
                                 <Select
                                     value={task?.size_id || '_none'}
                                     onValueChange={(val) => handleUpdateParameter('size_id', val)}
@@ -519,7 +541,7 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
 
                             {/* Urgency */}
                             <div className="space-y-2">
-                                <label className="text-xs uppercase font-bold text-slate-500">Urgency</label>
+                                <label className="text-xs uppercase font-bold text-muted-foreground">Urgency</label>
                                 <Select
                                     value={task?.urgency_id || '_none'}
                                     onValueChange={(val) => handleUpdateParameter('urgency_id', val)}
@@ -539,7 +561,7 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
 
                             {/* Operator (Assignee) */}
                             <div className="space-y-2">
-                                <label className="text-xs uppercase font-bold text-slate-500">Operator</label>
+                                <label className="text-xs uppercase font-bold text-muted-foreground">Operator</label>
                                 <Select
                                     value={task?.assigned_to || '_none'}
                                     onValueChange={(val) => handleUpdateParameter('assigned_to', val)}
@@ -563,11 +585,11 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
 
                             {/* Abort / Reactivate Mission Button */}
                             {canEdit && (
-                                <div className="pt-4 border-t border-slate-200 mt-4">
+                                <div className="pt-4 border-t border-border mt-4">
                                     {task?.was_dropped ? (
                                         <button
                                             onClick={handleReactivate}
-                                            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 hover:text-emerald-700 hover:border-emerald-300 rounded-md text-xs font-bold uppercase transition-colors"
+                                            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500/20 hover:border-emerald-500/30 rounded-md text-xs font-bold uppercase transition-colors"
                                         >
                                             <Zap className="h-4 w-4" />
                                             Reactivate Mission
@@ -575,7 +597,7 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                                     ) : (
                                         <button
                                             onClick={handleAbort}
-                                            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 hover:text-red-700 hover:border-red-300 rounded-md text-xs font-bold uppercase transition-colors"
+                                            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 hover:border-destructive/30 rounded-md text-xs font-bold uppercase transition-colors"
                                         >
                                             <AlertOctagon className="h-4 w-4" />
                                             Abort Mission
@@ -586,7 +608,7 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
 
                             {/* Read-only Info */}
                             <div className="pt-8 mt-auto">
-                                <div className="p-4 bg-slate-100 rounded text-xs text-slate-400 font-mono space-y-1">
+                                <div className="p-4 bg-muted/50 rounded text-xs text-muted-foreground font-mono space-y-1">
                                     <p>TASK ID: {task?.id}</p>
                                     <p>CREATED: {task && task.created_at ? new Date(task.created_at).toLocaleDateString() : '...'}</p>
                                 </div>
@@ -594,7 +616,7 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                         </div>
                     </div>
                 </div>
-            </DialogContent>
-        </Dialog>
+            </DialogContent >
+        </Dialog >
     )
 }

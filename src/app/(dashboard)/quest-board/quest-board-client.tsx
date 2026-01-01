@@ -2,12 +2,15 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useRouter } from 'next/navigation'
 import { Input } from '@/components/ui/input'
-import { Search, Target, Layers, User, Zap } from 'lucide-react'
+import { Search, Target, Layers, User, Zap, Plus, Loader2 } from 'lucide-react'
 import confetti from 'canvas-confetti'
 import { getTasks, updateTaskStatus } from './actions'
+import { createTask } from '@/app/(dashboard)/admin/pipeline/actions'
 import { TaskDetailDrawer } from '@/app/(dashboard)/admin/pipeline/task-detail-drawer'
 import { BossDisplay } from '@/components/quest-board/boss-display'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 
 interface Quest {
     id: string
@@ -57,6 +60,7 @@ interface QuestBoardClientProps {
     userId: string
     userRole: string
     bosses: Boss[]
+    clients: { id: string; name: string }[]
 }
 
 const URGENCY_COLORS: Record<string, string> = {
@@ -73,9 +77,10 @@ const STATUS_BG: Record<string, string> = {
     'Done': 'bg-green-500/5',
 }
 
-export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, canEdit, crew, userId, userRole, bosses }: QuestBoardClientProps) {
-
+export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, canEdit, crew, userId, userRole, bosses, clients }: QuestBoardClientProps) {
+    const router = useRouter()
     const [tasks, setTasks] = useState<Task[]>([])
+
     const [selectedQuestId, setSelectedQuestId] = useState<string>(() => {
         const activeQuest = quests.find(q => q.is_active)
         if (activeQuest) return activeQuest.id
@@ -84,6 +89,11 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
     })
     const [searchQuery, setSearchQuery] = useState('')
     const [isLoading, setIsLoading] = useState(false)
+
+    // Quick Create State
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+    const [newTaskTitle, setNewTaskTitle] = useState('')
+    const [isCreating, setIsCreating] = useState(false)
 
     const isAnalyst = userRole === 'analyst'
 
@@ -131,6 +141,7 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
         })
     }, [tasks, isAnalyst, userId, searchQuery, selectedAssignee])
 
+
     // Group tasks by status
     const tasksByStatus = useMemo(() => {
         const grouped: Record<string, Task[]> = {}
@@ -149,17 +160,18 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
         const taskId = e.dataTransfer.getData('taskId')
         if (!taskId) return
 
-        // Confetti Check
         const targetStatus = statuses.find(s => s.id === statusId)
         console.log('🎊 Drop Debug:', { taskId, statusId, targetCategory: targetStatus?.category })
 
-        if (targetStatus?.category === 'done') {
-            confetti({
-                particleCount: 150,
-                spread: 70,
-                origin: { y: 0.6 },
-                colors: ['#22c55e', '#ffffff', '#fbbf24']
-            })
+        if (targetStatus?.category === 'done' || targetStatus?.category === 'validation') {
+            if (targetStatus?.category === 'done') {
+                confetti({
+                    particleCount: 150,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: ['#22c55e', '#ffffff', '#fbbf24']
+                })
+            }
         }
 
         // Optimistic update
@@ -179,6 +191,30 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
         e.preventDefault()
     }
 
+    const handleQuickCreate = async () => {
+        if (!newTaskTitle.trim() || !selectedQuestId) return
+        setIsCreating(true)
+        try {
+            const res = await createTask(teamId, {
+                title: newTaskTitle.trim(),
+                quest_id: selectedQuestId
+            })
+            if (res.success) {
+                // Refresh tasks
+                const taskData = await getTasks(selectedQuestId, teamId)
+                setTasks(taskData || [])
+                setIsCreateModalOpen(false)
+                setNewTaskTitle('')
+            } else {
+                alert(res.error)
+            }
+        } catch (e: any) {
+            alert(e.message || 'Failed to create task')
+        } finally {
+            setIsCreating(false)
+        }
+    }
+
     const currentQuest = quests.find(q => q.id === selectedQuestId)
 
     // Resolve Boss Data
@@ -195,7 +231,7 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
     // Boss Battle Logic
     const totalXP = tasks.reduce((acc, t) => acc + (t.size?.xp_points || 0), 0)
     const completedXP = tasks
-        .filter(t => t.status?.category === 'done')
+        .filter(t => t.status?.category === 'done' || t.status?.category === 'validation')
         .reduce((acc, t) => acc + (t.size?.xp_points || 0), 0)
 
     const bossMaxHP = totalXP > 0 ? totalXP : 100 // Avoid division by zero
@@ -223,7 +259,6 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
     return (
         <div className="min-h-screen bg-background -m-8 p-8 space-y-6">
             {/* Control Bar */}
-            {/* Control Bar */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-4">
                 <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6 w-full md:w-auto">
                     {/* Boss Visualization */}
@@ -240,6 +275,7 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
                         <p className="text-muted-foreground font-mono text-xs md:text-sm mt-1 mb-2">
                             {currentQuest ? currentQuest.name : 'Select a Quest'}
                         </p>
+
 
                         {/* Boss Health Bar */}
                         {selectedQuestId && (
@@ -351,6 +387,15 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
                                     <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
                                         {status.name}
                                     </h3>
+                                    {status.category === 'backlog' && (
+                                        <button
+                                            onClick={() => setIsCreateModalOpen(true)}
+                                            className="p-1 hover:bg-muted rounded text-primary transition-colors"
+                                            title="Quick Decree"
+                                        >
+                                            <Plus className="h-3.5 w-3.5" />
+                                        </button>
+                                    )}
                                 </div>
                                 <span className="text-xs font-mono text-muted-foreground">
                                     {tasksByStatus[status.id]?.length || 0}
@@ -397,6 +442,40 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
                 </div>
             )}
 
+            {/* Quick Create Dialog */}
+            <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="uppercase tracking-tighter">Decree New Task</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Task Title</label>
+                            <Input
+                                autoFocus
+                                value={newTaskTitle}
+                                onChange={e => setNewTaskTitle(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && handleQuickCreate()}
+                                placeholder="e.g. Update Main Engine"
+                                className="font-bold"
+                            />
+                        </div>
+                        <div className="bg-primary/5 border border-primary/20 p-3 rounded text-[10px] font-bold uppercase text-primary tracking-wider">
+                            Linked to: {currentQuest?.name || 'Active Quest'}
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <button
+                            disabled={!newTaskTitle.trim() || isCreating}
+                            onClick={handleQuickCreate}
+                            className="w-full py-2 bg-primary text-white rounded font-black uppercase text-xs hover:bg-primary/90 disabled:opacity-50 transition-all shadow-lg shadow-primary/20"
+                        >
+                            {isCreating ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Decree Task'}
+                        </button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             {/* Task Detail Drawer */}
             <TaskDetailDrawer
                 taskId={selectedTaskId}
@@ -408,6 +487,7 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
                 sizes={sizes.map(s => ({ ...s, xp_points: s.xp_points || 0 }))}
                 urgencies={urgencies.map(u => ({ ...u, color: u.color || '' }))}
                 crew={crew}
+                clients={clients}
             />
         </div>
     )

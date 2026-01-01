@@ -5,7 +5,7 @@ import { getRoleContext } from '@/lib/role-service'
 import { revalidatePath, unstable_noStore as noStore } from 'next/cache'
 
 // Get all tasks for the pipeline (no category filtering)
-export async function getTasks(teamId: string, filters?: { statusCategory?: string; questId?: string; search?: string }) {
+export async function getTasks(teamId: string, filters?: { statusCategory?: string; questId?: string; search?: string; clientId?: string }) {
     const { createClient: createAdminClient } = await import('@supabase/supabase-js')
     const supabaseAdmin = createAdminClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -26,10 +26,15 @@ export async function getTasks(teamId: string, filters?: { statusCategory?: stri
             creator:profiles!created_by(id, email, first_name, last_name),
             quest:quests!quest_id(id, name),
             project:projects!project_id(id, name),
-            department:departments!department_id(id, name)
+            department:departments!department_id(id, name),
+            client:clients!client_id(id, name, logo_url)
         `)
         .eq('team_id', teamId)
         .order('created_at', { ascending: false })
+
+    if (filters?.clientId) {
+        query = query.eq('client_id', filters.clientId)
+    }
 
     const { data, error } = await query
 
@@ -78,6 +83,24 @@ export async function getDepartmentsForDropdown(teamId: string) {
     return data || []
 }
 
+// Get clients for dropdown
+export async function getClientsForDropdown(teamId: string) {
+    const { createClient: createAdminClient } = await import('@supabase/supabase-js')
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+
+    const { data } = await supabaseAdmin
+        .from('clients')
+        .select('id, name')
+        .eq('team_id', teamId)
+        .order('name')
+
+    return data || []
+}
+
 // Get quest objectives for dropdown
 export async function getQuestsForDropdown(teamId: string) {
     const { createClient: createAdminClient } = await import('@supabase/supabase-js')
@@ -110,6 +133,7 @@ export async function getCrewForAssignment(teamId: string) {
         .from('team_members')
         .select('user_id, role')
         .eq('team_id', teamId)
+        .in('role', ['owner', 'admin', 'manager', 'analyst', 'member']) // Include all potential assignees
 
     if (!members || members.length === 0) return []
 
@@ -118,6 +142,7 @@ export async function getCrewForAssignment(teamId: string) {
         .from('profiles')
         .select('id, email, first_name, last_name')
         .in('id', userIds)
+        .order('first_name')
 
     return profiles || []
 }
@@ -134,6 +159,7 @@ export async function createTask(
         assigned_to?: string
         project_id?: string
         department_id?: string
+        client_id?: string
     }
 ) {
     const supabase = await createClient()
@@ -196,7 +222,8 @@ export async function createTask(
         urgency_id: data.urgency_id || null,
         assigned_to: data.assigned_to || null,
         project_id: data.project_id || null,
-        department_id: data.department_id || null
+        department_id: data.department_id || null,
+        client_id: data.client_id || null
     }
     console.log('Task Data Payload:', taskPayload)
 
@@ -228,6 +255,7 @@ export async function updateTask(
 
         project_id: string | null
         department_id: string | null
+        client_id: string | null
         needs_info?: boolean
         was_dropped?: boolean
     }>
@@ -308,7 +336,8 @@ export async function getTaskWithComments(taskId: string, teamId: string) {
             urgency:urgencies!urgency_id(id, name, color),
             assignee:profiles!assigned_to(id, email, first_name, last_name),
             creator:profiles!created_by(id, email, first_name, last_name),
-            quest:quests!quest_id(id, name)
+            quest:quests!quest_id(id, name),
+            client:clients!client_id(id, name)
         `)
         .eq('id', taskId)
         .eq('team_id', teamId)
@@ -337,7 +366,7 @@ export async function getTaskWithComments(taskId: string, teamId: string) {
             id,
             content,
             created_at,
-            author:author_id(id, email, first_name, last_name)
+            author:author_id!author_id(id, email, first_name, last_name)
         `)
         .eq('task_id', taskId)
         .order('created_at', { ascending: true })

@@ -1,8 +1,39 @@
-import Link from 'next/link'
+'use client'
+
 import Image from 'next/image'
-import { login, signup } from './actions'
+import { useState } from 'react'
+import { handleUnifiedLogin } from './actions'
+import { useRouter } from 'next/navigation'
+import { Loader2, User, Briefcase } from 'lucide-react'
 
 export default function LoginPage() {
+    const router = useRouter()
+    const [isLoading, setIsLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+
+
+    async function handleSubmit(formData: FormData) {
+        setIsLoading(true)
+        setError(null)
+
+        const res = await handleUnifiedLogin(formData)
+
+        if (res.success) {
+            if (res.requiresSelection) {
+                router.push('/select-dashboard')
+            } else if (res.isStaff) {
+                router.push('/quest-board')
+            } else if (res.isClient) {
+                router.push('/portal/dashboard')
+            } else {
+                router.push('/')
+            }
+        } else {
+            setError(res.error || 'Login failed')
+            setIsLoading(false)
+        }
+    }
+
     return (
         <div className="flex min-h-screen items-center justify-center bg-background p-4">
             <div className="w-full max-w-md space-y-8 rounded-lg border border-sidebar-border bg-sidebar p-8 shadow-xl backdrop-blur-sm">
@@ -23,7 +54,12 @@ export default function LoginPage() {
                     </p>
                 </div>
 
-                <form className="mt-8 space-y-6">
+                <form action={handleSubmit} className="mt-8 space-y-6">
+                    {error && (
+                        <div className="bg-destructive/10 p-3 rounded text-sm text-destructive border border-destructive/20">
+                            {error}
+                        </div>
+                    )}
                     <div className="space-y-4 rounded-md shadow-sm">
                         <div>
                             <label htmlFor="email-address" className="sr-only">
@@ -57,20 +93,16 @@ export default function LoginPage() {
 
                     <div className="flex gap-4">
                         <button
-                            formAction={login}
-                            className="group relative flex w-full justify-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                            disabled={isLoading}
+                            className="group relative flex w-full justify-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
                         >
-                            Sign in
-                        </button>
-                        <button
-                            formAction={signup}
-                            className="group relative flex w-full justify-center rounded-md bg-secondary px-3 py-2 text-sm font-semibold text-secondary-foreground hover:bg-secondary/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
-                        >
-                            Sign up
+                            {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Sign in'}
                         </button>
                     </div>
                 </form>
             </div>
+
         </div>
     )
 }
+
