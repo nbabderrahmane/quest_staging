@@ -281,8 +281,8 @@ export default function CrewPage() {
         options: { id: string, name: string }[]
     }) => {
         return (
-            <div className="grid grid-cols-1 gap-2 border border-slate-200 rounded p-2 max-h-40 overflow-y-auto bg-slate-50">
-                {options.length === 0 && <p className="text-xs text-slate-400 p-2">No other alliances commandable.</p>}
+            <div className="grid grid-cols-1 gap-2 border border-border rounded p-2 max-h-40 overflow-y-auto bg-muted/10">
+                {options.length === 0 && <p className="text-xs text-muted-foreground p-2">No other alliances commandable.</p>}
                 {options.map(team => {
                     const isSelected = value.includes(team.id)
                     return (
@@ -294,7 +294,7 @@ export default function CrewPage() {
                             }}
                             className={`
                                 flex items-center justify-between p-2 rounded cursor-pointer text-xs font-mono transition-colors
-                                ${isSelected ? 'bg-blue-100 border-blue-200 text-blue-900' : 'bg-white hover:bg-slate-100 text-slate-600'}
+                                ${isSelected ? 'bg-primary/20 border-primary text-primary' : 'bg-card hover:bg-muted text-muted-foreground'}
                             `}
                         >
                             <span className="font-bold truncate">{team.name}</span>
@@ -307,11 +307,11 @@ export default function CrewPage() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 -m-8 p-8 space-y-6">
-            <div className="flex items-end justify-between border-b border-slate-200 pb-4">
+        <div className="min-h-screen bg-background -m-8 p-8 space-y-6">
+            <div className="flex items-end justify-between border-b border-border pb-4">
                 <div>
-                    <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900">Crew Deck</h1>
-                    <p className="text-slate-500 font-mono text-sm mt-1">Alliance Personnel Management</p>
+                    <h1 className="text-3xl font-black uppercase tracking-tight text-foreground">Crew Deck</h1>
+                    <p className="text-muted-foreground font-mono text-sm mt-1">Alliance Personnel Management</p>
                 </div>
                 <div className="text-xs font-mono text-blue-600 uppercase font-bold">
                     {crew.length} Operative{crew.length !== 1 ? 's' : ''}
@@ -322,30 +322,30 @@ export default function CrewPage() {
                 {/* Recruitment Form (Owner/Admin only) */}
                 {canManage && (
                     <div className="lg:col-span-1">
-                        <div className="bg-white border border-slate-200 rounded-lg shadow-sm">
-                            <div className="px-4 py-3 border-b border-slate-200 bg-slate-50">
-                                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Recruitment Module</h3>
+                        <div className="bg-card border border-border rounded-lg shadow-sm">
+                            <div className="px-4 py-3 border-b border-border bg-muted/10">
+                                <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Recruitment Module</h3>
                             </div>
                             <form onSubmit={handleInvite} className="p-4 space-y-4">
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <label className="text-xs uppercase text-slate-600 font-bold block mb-1">First Name</label>
+                                        <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">First Name</label>
                                         <Input
                                             type="text"
                                             value={inviteFirstName}
                                             onChange={(e) => setInviteFirstName(e.target.value)}
                                             placeholder="John"
-                                            className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
+                                            className="bg-background border-input text-foreground placeholder:text-muted-foreground"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Last Name</label>
+                                        <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Last Name</label>
                                         <Input
                                             type="text"
                                             value={inviteLastName}
                                             onChange={(e) => setInviteLastName(e.target.value)}
                                             placeholder="Doe"
-                                            className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
+                                            className="bg-background border-input text-foreground placeholder:text-muted-foreground"
                                         />
                                     </div>
                                 </div>
@@ -359,28 +359,28 @@ export default function CrewPage() {
                                     {inviteTeamIds.length === 0 && <p className="text-[10px] text-red-400 mt-1">* Select at least one</p>}
                                 </div>
                                 <div>
-                                    <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Email *</label>
+                                    <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Email *</label>
                                     <Input
                                         type="email"
                                         value={inviteEmail}
                                         onChange={(e) => setInviteEmail(e.target.value)}
                                         placeholder="operative@alliance.com"
                                         required
-                                        className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
+                                        className="bg-background border-input text-foreground placeholder:text-muted-foreground"
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Telephone</label>
+                                    <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Telephone</label>
                                     <Input
                                         type="tel"
                                         value={inviteTelephone}
                                         onChange={(e) => setInviteTelephone(e.target.value)}
                                         placeholder="+212 600 000 000"
-                                        className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
+                                        className="bg-background border-input text-foreground placeholder:text-muted-foreground"
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Password *</label>
+                                    <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Password *</label>
                                     <Input
                                         type="password"
                                         value={invitePassword}
@@ -388,13 +388,13 @@ export default function CrewPage() {
                                         placeholder="Min. 6 characters"
                                         required
                                         minLength={6}
-                                        className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
+                                        className="bg-background border-input text-foreground placeholder:text-muted-foreground"
                                     />
                                 </div>
                                 <div>
                                     <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Assigned Rank</label>
                                     <Select value={inviteRole} onValueChange={setInviteRole}>
-                                        <SelectTrigger className="bg-white border-slate-300 text-slate-900">
+                                        <SelectTrigger className="bg-background border-input text-foreground">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -419,14 +419,14 @@ export default function CrewPage() {
 
                 {/* Crew List */}
                 <div className={canManage ? "lg:col-span-2" : "lg:col-span-3"}>
-                    <div className="bg-white border border-slate-200 rounded-lg shadow-sm">
-                        <div className="px-4 py-3 border-b border-slate-200 bg-slate-50">
-                            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Active Crew ({crew.length})</h3>
+                    <div className="bg-card border border-border rounded-lg shadow-sm">
+                        <div className="px-4 py-3 border-b border-border bg-muted/10">
+                            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Active Crew ({crew.length})</h3>
                         </div>
                         <div className="p-4 overflow-auto max-h-[600px]">
                             <div className="space-y-3">
                                 {crew.length === 0 ? (
-                                    <p className="text-slate-500 text-sm text-center py-8">No operatives found in this alliance.</p>
+                                    <p className="text-muted-foreground text-sm text-center py-8">No operatives found in this alliance.</p>
                                 ) : (
                                     crew.map(member => {
                                         const roleConfig = ROLE_CONFIG[member.role] || ROLE_CONFIG.member
@@ -435,18 +435,18 @@ export default function CrewPage() {
                                         const isMemberOwner = member.role === 'owner'
 
                                         return (
-                                            <div key={member.user_id} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors">
+                                            <div key={member.user_id} className="flex items-center justify-between p-3 bg-muted/5 border border-border rounded-lg hover:bg-muted/10 transition-colors">
                                                 <div className="flex items-center gap-4">
-                                                    <div className={`h-10 w-10 rounded-full bg-slate-200 flex items-center justify-center ${roleConfig.color}`}>
+                                                    <div className={`h-10 w-10 rounded-full bg-muted flex items-center justify-center ${roleConfig.color}`}>
                                                         <RoleIcon className="h-5 w-5" />
                                                     </div>
                                                     <div>
-                                                        <p className="font-bold text-slate-900 text-sm">
+                                                        <p className="font-bold text-foreground text-sm">
                                                             {getDisplayName(member)}
-                                                            {isCurrentUser && <span className="text-blue-600 font-normal ml-2">(You)</span>}
+                                                            {isCurrentUser && <span className="text-primary font-normal ml-2">(You)</span>}
                                                         </p>
                                                         {/* Email and Telephone row */}
-                                                        <div className="flex items-center gap-3 text-xs text-slate-500">
+                                                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
                                                             <span>{member.profiles?.email || member.user_id.slice(0, 8) + '...'}</span>
                                                             {member.profiles?.telephone && (
                                                                 <span>• {member.profiles.telephone}</span>
@@ -457,12 +457,12 @@ export default function CrewPage() {
 
                                                 <div className="flex items-center gap-2">
                                                     {/* Joined Date */}
-                                                    <span className="text-[10px] text-slate-400 hidden sm:inline">
+                                                    <span className="text-[10px] text-muted-foreground hidden sm:inline">
                                                         {new Date(member.created_at).toLocaleDateString()}
                                                     </span>
 
                                                     {/* Role Badge */}
-                                                    <span className={`text-xs font-bold uppercase tracking-wider px-2 py-1 bg-slate-200 rounded ${roleConfig.color}`}>
+                                                    <span className={`text-xs font-bold uppercase tracking-wider px-2 py-1 bg-muted rounded ${roleConfig.color}`}>
                                                         {roleConfig.label}
                                                     </span>
 
@@ -516,9 +516,9 @@ export default function CrewPage() {
 
             {/* Edit Role Dialog */}
             <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                <DialogContent className="bg-white border border-slate-200 text-slate-900 shadow-lg">
+                <DialogContent className="bg-card border border-border text-foreground shadow-lg">
                     <DialogHeader>
-                        <DialogTitle className="uppercase tracking-wider font-bold text-slate-900">Edit Crew Member</DialogTitle>
+                        <DialogTitle className="uppercase tracking-wider font-bold text-foreground">Edit Crew Member</DialogTitle>
                     </DialogHeader>
                     <div className="py-4 space-y-4">
                         <div>
@@ -529,10 +529,10 @@ export default function CrewPage() {
                                 options={recruitableTeams}
                             />
                         </div>
-                        <div>
-                            <label className="text-xs uppercase text-slate-600 font-bold block mb-2">Rank</label>
+                        <div className="space-y-2">
+                            <label className="text-xs uppercase text-muted-foreground font-bold">Rank Assignment</label>
                             <Select value={editRole} onValueChange={setEditRole}>
-                                <SelectTrigger className="bg-white border-slate-300 text-slate-900">
+                                <SelectTrigger className="bg-background border-input text-foreground">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -548,7 +548,7 @@ export default function CrewPage() {
                                 type="tel"
                                 value={editTelephone}
                                 onChange={(e) => setEditTelephone(e.target.value)}
-                                className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
+                                className="bg-background border-input text-foreground placeholder:text-muted-foreground"
                                 placeholder="+212 600 000 000"
                             />
                         </div>
@@ -562,9 +562,9 @@ export default function CrewPage() {
 
             {/* Password Reset Dialog */}
             <Dialog open={resetOpen} onOpenChange={setResetOpen}>
-                <DialogContent className="bg-white border border-slate-200 text-slate-900 shadow-lg">
+                <DialogContent className="bg-card border border-border text-foreground shadow-lg">
                     <DialogHeader>
-                        <DialogTitle className="uppercase tracking-wider font-bold text-slate-900">Reset Crew Password</DialogTitle>
+                        <DialogTitle className="uppercase tracking-wider font-bold text-foreground">Reset Crew Password</DialogTitle>
                     </DialogHeader>
                     <div className="py-4">
                         <label className="text-xs uppercase text-slate-600 font-bold block mb-2">New Password</label>
@@ -572,8 +572,8 @@ export default function CrewPage() {
                             type="password"
                             value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
-                            className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
                             placeholder="Minimum 6 characters..."
+                            className="bg-background border-input text-foreground placeholder:text-muted-foreground"
                         />
                     </div>
                     <DialogFooter>

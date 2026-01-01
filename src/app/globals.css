@@ -94,53 +94,53 @@
 }
 
 .dark {
-  /* RETRO-FUTURISTIC DARK THEME */
-  --background: oklch(0.12 0.03 260); /* Deep Space Blue/Black */
-  --foreground: oklch(0.9 0.02 260);  /* Crisp Blue-White */
+  /* TOKYO NIGHT THEME */
+  --background: oklch(0.13 0.03 260); /* #1a1b26 - Tokyo Night Background */
+  --foreground: oklch(0.85 0.05 260); /* #a9b1d6 - Tokyo Night Foreground */
   
   /* Panels/Cards - slightly lighter deep blue */
-  --card: oklch(0.15 0.04 260); 
-  --card-foreground: oklch(0.9 0.02 260);
+  --card: oklch(0.16 0.04 260); /* #24283b - Tokyo Night Storm */
+  --card-foreground: oklch(0.85 0.05 260);
   
-  --popover: oklch(0.15 0.04 260);
-  --popover-foreground: oklch(0.9 0.02 260);
+  --popover: oklch(0.16 0.04 260);
+  --popover-foreground: oklch(0.85 0.05 260);
   
-  /* Primary Action - Neon Indigo */
-  --primary: oklch(0.6 0.2 280); 
-  --primary-foreground: oklch(0.1 0.05 260);
+  /* Primary Action - Tokyo Night Blue/Indigo */
+  --primary: oklch(0.65 0.15 250); /* #7aa2f7 */
+  --primary-foreground: oklch(0.13 0.03 260);
   
-  /* Secondary - Muted Purple/Grey */
-  --secondary: oklch(0.25 0.05 260);
-  --secondary-foreground: oklch(0.9 0.02 260);
+  /* Secondary - Tokyo Night Purple */
+  --secondary: oklch(0.65 0.18 300); /* #bb9af7 */
+  --secondary-foreground: oklch(0.13 0.03 260);
   
-  --muted: oklch(0.2 0.03 260);
-  --muted-foreground: oklch(0.6 0.05 260);
+  --muted: oklch(0.25 0.05 260); /* #414868 */
+  --muted-foreground: oklch(0.7 0.05 260); /* #787c99 */
   
-  --accent: oklch(0.25 0.08 260);
-  --accent-foreground: oklch(0.95 0.05 260);
+  --accent: oklch(0.65 0.15 180); /* #7dcfff - Cyan/Teal Accent */
+  --accent-foreground: oklch(0.13 0.03 260);
   
-  --destructive: oklch(0.6 0.2 25); /* Neon Red */
+  --destructive: oklch(0.65 0.2 25); /* #f7768e - Tokyo Night Red */
   
-  --border: oklch(0.25 0.05 260);
-  --input: oklch(0.2 0.05 260);
-  --ring: oklch(0.6 0.2 280); /* Focus Ring same as Primary */
+  --border: oklch(0.25 0.05 260); /* #414868 */
+  --input: oklch(0.25 0.05 260);
+  --ring: oklch(0.65 0.15 250); /* Focus Ring same as Primary */
 
-  /* Retro Charts */
-  --chart-1: oklch(0.6 0.2 280); /* Indigo */
-  --chart-2: oklch(0.7 0.15 180); /* Cyan */
-  --chart-3: oklch(0.65 0.2 320); /* Pink */
-  --chart-4: oklch(0.75 0.15 60); /* Amber */
-  --chart-5: oklch(0.7 0.2 300);  /* Purple */
+  /* Tokyo Night Charts */
+  --chart-1: oklch(0.65 0.15 250); /* #7aa2f7 - Blue */
+  --chart-2: oklch(0.65 0.15 180); /* #7dcfff - Cyan */
+  --chart-3: oklch(0.65 0.18 300); /* #bb9af7 - Purple */
+  --chart-4: oklch(0.75 0.15 60);  /* #e0af68 - Orange/Yellow */
+  --chart-5: oklch(0.65 0.2 140);  /* #9ece6a - Green */
   
   /* Sidebar - Darker contrast */
-  --sidebar: oklch(0.1 0.03 260);
-  --sidebar-foreground: oklch(0.8 0.02 260);
-  --sidebar-primary: oklch(0.6 0.2 280);
-  --sidebar-primary-foreground: oklch(0.1 0.05 260);
-  --sidebar-accent: oklch(0.18 0.05 260);
-  --sidebar-accent-foreground: oklch(0.95 0.05 260);
-  --sidebar-border: oklch(0.2 0.05 260);
-  --sidebar-ring: oklch(0.6 0.2 280);
+  --sidebar: oklch(0.11 0.03 260); /* #16161e - Slightly darker than bg */
+  --sidebar-foreground: oklch(0.8 0.05 260);
+  --sidebar-primary: oklch(0.65 0.15 250);
+  --sidebar-primary-foreground: oklch(0.13 0.03 260);
+  --sidebar-accent: oklch(0.16 0.04 260);
+  --sidebar-accent-foreground: oklch(0.9 0.05 260);
+  --sidebar-border: oklch(0.11 0.03 260);
+  --sidebar-ring: oklch(0.65 0.15 250);
 }
 
 @layer base {

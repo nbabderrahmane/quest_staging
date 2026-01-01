@@ -52,17 +52,17 @@ interface Option {
 }
 
 const URGENCY_COLORS: Record<string, string> = {
-    'Critical': 'bg-red-100 text-red-700 border-red-200',
-    'High': 'bg-orange-100 text-orange-700 border-orange-200',
-    'Medium': 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    'Low': 'bg-green-100 text-green-700 border-green-200',
+    'Critical': 'bg-destructive/10 text-destructive border-destructive/20',
+    'High': 'bg-orange-500/10 text-orange-500 border-orange-500/20',
+    'Medium': 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
+    'Low': 'bg-green-500/10 text-green-500 border-green-500/20',
 }
 
 const STATUS_CATEGORY_COLORS: Record<string, string> = {
-    'backlog': 'bg-slate-100 text-slate-600 border-slate-300',
-    'active': 'bg-blue-100 text-blue-600 border-blue-300',
-    'done': 'bg-green-100 text-green-600 border-green-300',
-    'archived': 'bg-gray-100 text-gray-500 border-gray-300',
+    'backlog': 'bg-muted text-muted-foreground border-border',
+    'active': 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+    'done': 'bg-green-500/10 text-green-500 border-green-500/20',
+    'archived': 'bg-muted/50 text-muted-foreground/50 border-border',
 }
 
 export default function PipelinePage() {
@@ -271,7 +271,7 @@ export default function PipelinePage() {
     }
 
     if (isLoading) {
-        return <div className="p-8 text-slate-500 animate-pulse font-mono">Loading Mission Pipeline...</div>
+        return <div className="p-8 text-muted-foreground animate-pulse font-mono">Loading Mission Pipeline...</div>
     }
 
     // Apply client-side filters
@@ -322,14 +322,14 @@ export default function PipelinePage() {
         .reduce((sum, t) => sum + (t.size?.xp_points || 0), 0)
 
     return (
-        <div className="min-h-screen bg-slate-50 -m-8 p-8 space-y-6">
-            <div className="flex flex-col md:flex-row items-start md:items-end justify-between border-b border-slate-200 pb-4 gap-4">
+        <div className="min-h-screen bg-background -m-8 p-8 space-y-6">
+            <div className="flex flex-col md:flex-row items-start md:items-end justify-between border-b border-border pb-4 gap-4">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-slate-900">Mission Pipeline</h1>
+                    <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-foreground">Mission Pipeline</h1>
                     <div className="flex flex-wrap items-center gap-2 md:gap-4 mt-1">
-                        <p className="text-slate-500 font-mono text-xs md:text-sm">Task Registry & Operations Center</p>
-                        <div className="hidden md:block h-4 w-[1px] bg-slate-300"></div>
-                        <div className="flex items-center gap-2 text-[10px] md:text-xs font-bold uppercase text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">
+                        <p className="text-muted-foreground font-mono text-xs md:text-sm">Task Registry & Operations Center</p>
+                        <div className="hidden md:block h-4 w-[1px] bg-border"></div>
+                        <div className="flex items-center gap-2 text-[10px] md:text-xs font-bold uppercase text-purple-500 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
                             <Zap className="h-3 w-3" />
                             Potential XP: {potentialXP}
                         </div>
@@ -342,7 +342,7 @@ export default function PipelinePage() {
                     {canCreate && (
                         <button
                             onClick={() => setCreateOpen(true)}
-                            className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-blue-600 text-white text-xs md:text-sm font-bold uppercase tracking-wider hover:bg-blue-700 transition-colors rounded"
+                            className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-primary text-primary-foreground text-xs md:text-sm font-bold uppercase tracking-wider hover:bg-primary/90 transition-colors rounded"
                         >
                             <Plus className="h-4 w-4" />
                             <span className="hidden md:inline">Create New Task</span>
@@ -356,48 +356,48 @@ export default function PipelinePage() {
             <div className="flex gap-2 flex-wrap">
                 <button
                     onClick={() => setQuickFilter('all')}
-                    className={`px-3 py-1.5 text-xs font-bold uppercase rounded transition-colors ${quickFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                    className={`px-3 py-1.5 text-xs font-bold uppercase rounded transition-colors ${quickFilter === 'all' ? 'bg-primary text-primary-foreground' : 'bg-card border border-border text-muted-foreground hover:bg-muted'}`}
                 >
                     All Tasks
                 </button>
                 <button
                     onClick={() => setQuickFilter('mine')}
-                    className={`px-3 py-1.5 text-xs font-bold uppercase rounded transition-colors ${quickFilter === 'mine' ? 'bg-purple-600 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                    className={`px-3 py-1.5 text-xs font-bold uppercase rounded transition-colors ${quickFilter === 'mine' ? 'bg-purple-600 text-white' : 'bg-card border border-border text-muted-foreground hover:bg-muted'}`}
                 >
                     🎯 My Missions
                 </button>
                 <button
                     onClick={() => setQuickFilter('unclaimed')}
-                    className={`px-3 py-1.5 text-xs font-bold uppercase rounded transition-colors ${quickFilter === 'unclaimed' ? 'bg-orange-600 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                    className={`px-3 py-1.5 text-xs font-bold uppercase rounded transition-colors ${quickFilter === 'unclaimed' ? 'bg-orange-600 text-white' : 'bg-card border border-border text-muted-foreground hover:bg-muted'}`}
                 >
                     👤 Unclaimed
                 </button>
                 <button
                     onClick={() => setQuickFilter('needs_info')}
-                    className={`px-3 py-1.5 text-xs font-bold uppercase rounded transition-colors ${quickFilter === 'needs_info' ? 'bg-red-600 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                    className={`px-3 py-1.5 text-xs font-bold uppercase rounded transition-colors ${quickFilter === 'needs_info' ? 'bg-destructive text-destructive-foreground' : 'bg-card border border-border text-muted-foreground hover:bg-muted'}`}
                 >
                     ⚠️ Needs Info
                 </button>
             </div>
 
             {/* Filter Bar */}
-            <div className="bg-white border border-slate-200 rounded-lg p-4 flex flex-wrap gap-4 items-center">
+            <div className="bg-card border border-border rounded-lg p-4 flex flex-wrap gap-4 items-center">
                 <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-                    <Search className="h-4 w-4 text-slate-400" />
+                    <Search className="h-4 w-4 text-muted-foreground" />
                     <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search tasks..."
-                        className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 px-3 py-2 bg-background border border-border rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
                     />
                 </div>
                 <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-slate-400" />
+                    <Filter className="h-4 w-4 text-muted-foreground" />
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="px-3 py-2 bg-background border border-border rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
                     >
                         <option value="">All Statuses</option>
                         <option value="backlog">Backlog</option>
@@ -410,7 +410,7 @@ export default function PipelinePage() {
                     <select
                         value={questFilter}
                         onChange={(e) => setQuestFilter(e.target.value)}
-                        className="px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="px-3 py-2 bg-background border border-border rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
                     >
                         <option value="_all">All Quests</option>
                         <option value="_none">No Quest</option>
@@ -423,7 +423,7 @@ export default function PipelinePage() {
                     <select
                         value={projectFilter}
                         onChange={(e) => setProjectFilter(e.target.value)}
-                        className="px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="px-3 py-2 bg-background border border-border rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
                     >
                         <option value="_all">All Projects</option>
                         <option value="_none">No Project</option>
@@ -436,7 +436,7 @@ export default function PipelinePage() {
                     <select
                         value={departmentFilter}
                         onChange={(e) => setDepartmentFilter(e.target.value)}
-                        className="px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="px-3 py-2 bg-background border border-border rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
                     >
                         <option value="_all">All Departments</option>
                         <option value="_none">No Department</option>
@@ -448,15 +448,15 @@ export default function PipelinePage() {
             </div>
 
             {/* Task List */}
-            <div className="bg-white border border-slate-200 rounded-lg shadow-sm">
-                <div className="px-4 py-3 border-b border-slate-200 bg-slate-50 flex items-center gap-2">
-                    <Scroll className="h-4 w-4 text-slate-500" />
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Pipeline Registry</h3>
+            <div className="bg-card border border-border rounded-lg shadow-sm">
+                <div className="px-4 py-3 border-b border-border bg-muted/10 flex items-center gap-2">
+                    <Scroll className="h-4 w-4 text-muted-foreground" />
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Pipeline Registry</h3>
                 </div>
                 <div className="p-4 overflow-auto max-h-[600px]">
                     <div className="space-y-3">
                         {filteredTasks.length === 0 ? (
-                            <p className="text-slate-500 text-sm text-center py-12">
+                            <p className="text-muted-foreground text-sm text-center py-12">
                                 No tasks match the current filters.
                             </p>
                         ) : (
@@ -464,12 +464,12 @@ export default function PipelinePage() {
                                 <div
                                     key={task.id}
                                     onClick={() => { setSelectedTaskId(task.id); setDetailOpen(true) }}
-                                    className="flex flex-col md:flex-row md:items-center justify-between p-3 md:p-4 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer gap-3 md:gap-0"
+                                    className="flex flex-col md:flex-row md:items-center justify-between p-3 md:p-4 bg-muted/5 border border-border rounded-lg hover:bg-muted/10 transition-colors cursor-pointer gap-3 md:gap-0"
                                 >
                                     <div className="flex items-start md:items-center gap-3 md:gap-4 flex-1 min-w-0">
                                         {/* Status Badge */}
                                         {task.status && (
-                                            <span className={`shrink-0 text-[10px] font-bold uppercase px-2 py-1 rounded border ${STATUS_CATEGORY_COLORS[task.status.category] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                                            <span className={`shrink-0 text-[10px] font-bold uppercase px-2 py-1 rounded border ${STATUS_CATEGORY_COLORS[task.status.category] || 'bg-muted text-muted-foreground border-border'}`}>
                                                 {task.status.name}
                                             </span>
                                         )}
@@ -479,11 +479,11 @@ export default function PipelinePage() {
 
                                         <div className="flex-1 min-w-0 space-y-1">
                                             <div className="flex flex-wrap items-center gap-2">
-                                                <p className="font-bold text-slate-900 text-sm md:text-base truncate max-w-full">{task.title}</p>
+                                                <p className="font-bold text-foreground text-sm md:text-base truncate max-w-full">{task.title}</p>
 
                                                 {/* Desktop Urgency */}
                                                 {task.urgency && (
-                                                    <span className={`hidden md:inline-block text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${URGENCY_COLORS[task.urgency.name] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                                                    <span className={`hidden md:inline-block text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${URGENCY_COLORS[task.urgency.name] || 'bg-muted text-muted-foreground border-border'}`}>
                                                         {task.urgency.name}
                                                     </span>
                                                 )}
@@ -492,43 +492,43 @@ export default function PipelinePage() {
                                             <div className="flex flex-wrap items-center gap-2">
                                                 {/* Mobile Urgency */}
                                                 {task.urgency && (
-                                                    <span className={`md:hidden text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${URGENCY_COLORS[task.urgency.name] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                                                    <span className={`md:hidden text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${URGENCY_COLORS[task.urgency.name] || 'bg-muted text-muted-foreground border-border'}`}>
                                                         {task.urgency.name}
                                                     </span>
                                                 )}
 
                                                 {task.quest && (
-                                                    <span className="text-[10px] font-mono text-blue-600 bg-blue-50 px-2 py-0.5 rounded truncate max-w-[100px]">
+                                                    <span className="text-[10px] font-mono text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded truncate max-w-[100px]">
                                                         {task.quest.name}
                                                     </span>
                                                 )}
                                                 {task.project && (
-                                                    <span className="text-[10px] font-mono text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-100 truncate max-w-[100px]">
+                                                    <span className="text-[10px] font-mono text-purple-500 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20 truncate max-w-[100px]">
                                                         {task.project.name}
                                                     </span>
                                                 )}
                                             </div>
 
                                             {task.description && (
-                                                <p className="text-xs text-slate-500 truncate">{task.description}</p>
+                                                <p className="text-xs text-muted-foreground truncate">{task.description}</p>
                                             )}
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between md:justify-end gap-3 md:ml-4 border-t md:border-t-0 border-slate-200 pt-2 md:pt-0 mt-1 md:mt-0">
+                                    <div className="flex items-center justify-between md:justify-end gap-3 md:ml-4 border-t md:border-t-0 border-border pt-2 md:pt-0 mt-1 md:mt-0">
                                         {/* Labels for mobile context if needed, but icons are self-explanatory */}
 
                                         {/* Size/XP Badge */}
                                         {task.size && (
-                                            <span className="flex items-center gap-1 text-xs font-mono text-purple-600 bg-purple-50 px-2 py-1 rounded">
+                                            <span className="flex items-center gap-1 text-xs font-mono text-purple-500 bg-purple-500/10 px-2 py-1 rounded">
                                                 <Zap className="h-3 w-3" />
                                                 {task.size.xp_points} XP
                                             </span>
                                         )}
 
                                         {/* Assignee */}
-                                        <div className="flex items-center gap-2 text-sm text-slate-600 md:min-w-[120px] justify-end">
-                                            <User className="h-4 w-4 text-slate-400" />
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground md:min-w-[120px] justify-end">
+                                            <User className="h-4 w-4 text-muted-foreground" />
                                             <span className="truncate max-w-[100px] md:max-w-none">{getAssigneeName(task.assignee)}</span>
                                         </div>
 
@@ -555,40 +555,40 @@ export default function PipelinePage() {
 
             {/* Create Task Modal */}
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-                <DialogContent className="bg-white border border-slate-200 text-slate-900 shadow-lg max-w-lg">
+                <DialogContent className="bg-card border border-border text-foreground shadow-lg max-w-lg">
                     <DialogHeader>
-                        <DialogTitle className="uppercase tracking-wider font-bold text-slate-900 flex items-center gap-2">
-                            <Target className="h-5 w-5 text-blue-600" />
+                        <DialogTitle className="uppercase tracking-wider font-bold text-foreground flex items-center gap-2">
+                            <Target className="h-5 w-5 text-primary" />
                             Create New Task
                         </DialogTitle>
                     </DialogHeader>
                     <form onSubmit={handleCreate} className="py-4 space-y-4">
                         <div>
-                            <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Task Title *</label>
+                            <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Task Title *</label>
                             <Input
                                 type="text"
                                 value={newTitle}
                                 onChange={(e) => setNewTitle(e.target.value)}
                                 placeholder="Enter task objective..."
                                 required
-                                className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
+                                className="bg-background border-input text-foreground placeholder:text-muted-foreground"
                             />
                         </div>
                         <div>
-                            <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Description</label>
+                            <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Description</label>
                             <textarea
                                 value={newDescription}
                                 onChange={(e) => setNewDescription(e.target.value)}
                                 placeholder="Optional task details..."
                                 rows={2}
-                                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                             />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Project</label>
+                                <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Project</label>
                                 <Select value={newProjectId} onValueChange={setNewProjectId}>
-                                    <SelectTrigger className="bg-white border-slate-300 text-slate-900">
+                                    <SelectTrigger className="bg-background border-input text-foreground">
                                         <SelectValue placeholder="Select project..." />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -600,9 +600,9 @@ export default function PipelinePage() {
                                 </Select>
                             </div>
                             <div>
-                                <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Department</label>
+                                <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Department</label>
                                 <Select value={newDepartmentId} onValueChange={setNewDepartmentId}>
-                                    <SelectTrigger className="bg-white border-slate-300 text-slate-900">
+                                    <SelectTrigger className="bg-background border-input text-foreground">
                                         <SelectValue placeholder="Select department..." />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -615,9 +615,9 @@ export default function PipelinePage() {
                             </div>
                         </div>
                         <div>
-                            <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Quest (Objective)</label>
+                            <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Quest (Objective)</label>
                             <Select value={newQuestId} onValueChange={setNewQuestId}>
-                                <SelectTrigger className="bg-white border-slate-300 text-slate-900">
+                                <SelectTrigger className="bg-background border-input text-foreground">
                                     <SelectValue placeholder="Select quest..." />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -636,9 +636,9 @@ export default function PipelinePage() {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Size (XP)</label>
+                                <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Size (XP)</label>
                                 <Select value={newSizeId} onValueChange={setNewSizeId}>
-                                    <SelectTrigger className="bg-white border-slate-300 text-slate-900">
+                                    <SelectTrigger className="bg-background border-input text-foreground">
                                         <SelectValue placeholder="Select size..." />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -655,9 +655,9 @@ export default function PipelinePage() {
                                 </Select>
                             </div>
                             <div>
-                                <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Urgency</label>
+                                <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Urgency</label>
                                 <Select value={newUrgencyId} onValueChange={setNewUrgencyId}>
-                                    <SelectTrigger className="bg-white border-slate-300 text-slate-900">
+                                    <SelectTrigger className="bg-background border-input text-foreground">
                                         <SelectValue placeholder="Select urgency..." />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -675,9 +675,9 @@ export default function PipelinePage() {
                             </div>
                         </div>
                         <div>
-                            <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Assign To</label>
+                            <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Assign To</label>
                             <Select value={newAssignee} onValueChange={setNewAssignee}>
-                                <SelectTrigger className="bg-white border-slate-300 text-slate-900">
+                                <SelectTrigger className="bg-background border-input text-foreground">
                                     <SelectValue placeholder="Unassigned" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -701,14 +701,14 @@ export default function PipelinePage() {
                             <button
                                 type="button"
                                 onClick={() => setCreateOpen(false)}
-                                className="px-4 py-2 text-sm font-bold uppercase text-slate-500 hover:text-slate-700"
+                                className="px-4 py-2 text-sm font-bold uppercase text-muted-foreground hover:text-foreground"
                             >
                                 Cancel
                             </button>
                             <button
                                 type="submit"
                                 disabled={isCreating || !newTitle}
-                                className="px-4 py-2 bg-blue-600 text-white text-sm font-bold uppercase rounded hover:bg-blue-700 disabled:opacity-50"
+                                className="px-4 py-2 bg-primary text-primary-foreground text-sm font-bold uppercase rounded hover:bg-primary/90 disabled:opacity-50"
                             >
                                 {isCreating ? 'Creating...' : 'Create New Task'}
                             </button>
@@ -719,26 +719,26 @@ export default function PipelinePage() {
 
             {/* Error Toast */}
             {error && (
-                <div className="fixed bottom-20 right-4 z-50 max-w-sm p-4 bg-red-50 border border-red-200 text-red-800 text-sm rounded-lg shadow-lg">
+                <div className="fixed bottom-20 right-4 z-50 max-w-sm p-4 bg-destructive text-destructive-foreground text-sm rounded-lg shadow-lg border border-destructive/20">
                     <div className="flex items-start justify-between gap-2">
                         <div>
-                            <p className="uppercase font-bold text-red-600 mb-1">Error</p>
+                            <p className="uppercase font-bold mb-1">Error</p>
                             <p>{error}</p>
                         </div>
-                        <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">✕</button>
+                        <button onClick={() => setError(null)} className="text-destructive-foreground/70 hover:text-destructive-foreground">✕</button>
                     </div>
                 </div>
             )}
 
             {/* Success Toast */}
             {success && (
-                <div className="fixed bottom-20 right-4 z-50 max-w-sm p-4 bg-green-50 border border-green-200 text-green-800 text-sm rounded-lg shadow-lg">
+                <div className="fixed bottom-20 right-4 z-50 max-w-sm p-4 bg-green-500 text-white text-sm rounded-lg shadow-lg border border-green-600/20">
                     <div className="flex items-start justify-between gap-2">
                         <div>
-                            <p className="uppercase font-bold text-green-600 mb-1">Success</p>
+                            <p className="uppercase font-bold mb-1">Success</p>
                             <p>{success}</p>
                         </div>
-                        <button onClick={() => setSuccess(null)} className="text-green-400 hover:text-green-600">✕</button>
+                        <button onClick={() => setSuccess(null)} className="text-white/70 hover:text-white">✕</button>
                     </div>
                 </div>
             )}

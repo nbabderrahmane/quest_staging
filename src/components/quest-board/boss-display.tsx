@@ -69,11 +69,11 @@ export function BossDisplay({ bossData, currentHealth, maxHealth, className }: B
             <div className="mt-2 text-center">
                 <span className={cn(
                     "text-xs font-mono uppercase tracking-widest font-bold",
-                    state === 'healthy' ? "text-green-400" : (state === 'bloody' ? "text-red-500 animate-pulse" : "text-slate-500 line-through")
+                    state === 'healthy' ? "text-green-500" : (state === 'bloody' ? "text-destructive animate-pulse" : "text-muted-foreground line-through")
                 )}>
                     {state === 'healthy' ? 'Boss Active' : (state === 'bloody' ? 'CRITICAL DAMAGE' : 'DEFEATED')}
                 </span>
-                <div className="text-[10px] text-slate-500 uppercase font-bold mt-1 tracking-wider opacity-70">
+                <div className="text-[10px] text-muted-foreground uppercase font-bold mt-1 tracking-wider opacity-70">
                     {activeBoss.name}
                 </div>
             </div>

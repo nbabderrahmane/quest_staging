@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { SidebarContent } from './sidebar-content'
 import { MobileNav } from './mobile-nav'
 import { QuestBossBar } from '@/components/dashboard/quest-boss-bar'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { Team } from '@/lib/types'
 import { PanelLeftClose, PanelLeft, EyeOff, LayoutTemplate } from 'lucide-react'
 
@@ -64,6 +65,11 @@ export function DashboardShell({ children, teams, activeTeam, userRole, user, pr
                             <LayoutTemplate className="h-4 w-4" />
                         </button>
                     )}
+                </div>
+
+                {/* Theme Toggle (Floating Top Right) */}
+                <div className="absolute top-4 right-4 z-[70] hidden md:block">
+                    <ThemeToggle />
                 </div>
 
                 {/* Scanline effect overlay */}

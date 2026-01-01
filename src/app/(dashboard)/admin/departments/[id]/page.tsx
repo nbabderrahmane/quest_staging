@@ -14,7 +14,7 @@ export default async function DepartmentDetailPage({ params }: { params: Promise
 
     // 1. Fetch Department first (ID only)
     const department = await getDepartment(id)
-    if (!department) return <div className="p-8 text-center text-slate-500">Department not found or access denied.</div>
+    if (!department) return <div className="p-8 text-center text-muted-foreground">Department not found or access denied.</div>
 
     // 2. Use the department's team_id as source of truth
     const teamId = department.team_id
@@ -44,14 +44,14 @@ export default async function DepartmentDetailPage({ params }: { params: Promise
     })) || []
 
     return (
-        <div className="min-h-screen bg-slate-50 -m-8 p-8 space-y-6">
-            <div className="flex items-center gap-4 border-b border-slate-200 pb-4">
-                <div className="h-12 w-12 bg-slate-100 rounded flex items-center justify-center text-slate-500">
+        <div className="min-h-screen bg-background -m-8 p-8 space-y-6">
+            <div className="flex items-center gap-4 border-b border-border pb-4">
+                <div className="h-12 w-12 bg-muted rounded flex items-center justify-center text-muted-foreground">
                     <Users className="h-6 w-6" />
                 </div>
                 <div>
-                    <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900">{department.name}</h1>
-                    <p className="text-slate-500 font-mono text-sm mt-1">Department Overview</p>
+                    <h1 className="text-3xl font-black uppercase tracking-tight text-foreground">{department.name}</h1>
+                    <p className="text-muted-foreground font-mono text-sm mt-1">Department Overview</p>
                 </div>
             </div>
 

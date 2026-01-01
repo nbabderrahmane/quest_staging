@@ -143,21 +143,21 @@ export default function BossesPage() {
         }
     }
 
-    if (isLoading) return <div className="p-8 text-slate-500 animate-pulse font-mono">Accessing Archives...</div>
+    if (isLoading) return <div className="p-8 text-muted-foreground animate-pulse font-mono">Accessing Archives...</div>
 
     const systemBosses = bosses.filter(b => b.is_system)
     const customBosses = bosses.filter(b => !b.is_system)
 
     return (
-        <div className="min-h-screen bg-slate-50 -m-8 p-8 space-y-8">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-4">
+        <div className="min-h-screen bg-background -m-8 p-8 space-y-8">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border pb-4">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-slate-900">Nemesis Registry</h1>
-                    <p className="text-slate-500 font-mono text-xs md:text-sm mt-1">Manage System & Custom Bosses</p>
+                    <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-foreground">Nemesis Registry</h1>
+                    <p className="text-muted-foreground font-mono text-xs md:text-sm mt-1">Manage System & Custom Bosses</p>
                 </div>
                 <button
                     onClick={() => setCreateOpen(!createOpen)}
-                    className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 text-white text-sm font-bold uppercase hover:bg-slate-800 rounded w-full md:w-auto"
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-bold uppercase hover:bg-primary/90 rounded w-full md:w-auto"
                 >
                     <Plus className="h-4 w-4" />
                     Add Custom Boss
@@ -166,39 +166,39 @@ export default function BossesPage() {
 
             {/* Create Form - Inline for simplicity or could be Dialog */}
             {createOpen && (
-                <div className="bg-white border border-slate-200 p-6 rounded-lg shadow-sm animate-in slide-in-from-top-4">
-                    <h3 className="uppercase font-bold text-slate-900 mb-4 flex items-center gap-2"><Upload className="h-4 w-4" /> New Custom Entry</h3>
+                <div className="bg-card border border-border p-6 rounded-lg shadow-sm animate-in slide-in-from-top-4">
+                    <h3 className="uppercase font-bold text-foreground mb-4 flex items-center gap-2"><Upload className="h-4 w-4" /> New Custom Entry</h3>
                     <form onSubmit={handleCreate} className="space-y-4 max-w-2xl">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="text-xs uppercase font-bold text-slate-500">Name</label>
-                                <Input value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. The Glitch" required />
+                                <label className="text-xs uppercase font-bold text-muted-foreground">Name</label>
+                                <Input value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. The Glitch" required className="bg-background border-input" />
                             </div>
                             <div>
-                                <label className="text-xs uppercase font-bold text-slate-500">Description</label>
-                                <Input value={newDesc} onChange={e => setNewDesc(e.target.value)} placeholder="Short bio..." />
+                                <label className="text-xs uppercase font-bold text-muted-foreground">Description</label>
+                                <Input value={newDesc} onChange={e => setNewDesc(e.target.value)} placeholder="Short bio..." className="bg-background border-input" />
                             </div>
                         </div>
 
                         <div className="grid grid-cols-3 gap-4">
-                            <div className="border-2 border-dashed border-slate-200 rounded p-4 text-center hover:bg-slate-50 transition-colors">
-                                <span className="text-xs font-bold uppercase text-green-600 block mb-2">Healthy State</span>
+                            <div className="border-2 border-dashed border-border rounded p-4 text-center hover:bg-muted/10 transition-colors">
+                                <span className="text-xs font-bold uppercase text-green-500 block mb-2">Healthy State</span>
                                 {imgHealthy ? (
                                     <img src={imgHealthy} className="h-16 w-16 mx-auto object-contain" />
                                 ) : (
                                     <Input type="file" accept="image/*" onChange={e => handleFileChange(e, setImgHealthy)} className="text-xs" />
                                 )}
                             </div>
-                            <div className="border-2 border-dashed border-slate-200 rounded p-4 text-center hover:bg-slate-50 transition-colors">
-                                <span className="text-xs font-bold uppercase text-orange-600 block mb-2">Bloody (&gt;75%)</span>
+                            <div className="border-2 border-dashed border-border rounded p-4 text-center hover:bg-muted/10 transition-colors">
+                                <span className="text-xs font-bold uppercase text-orange-500 block mb-2">Bloody (&gt;75%)</span>
                                 {imgBloody ? (
                                     <img src={imgBloody} className="h-16 w-16 mx-auto object-contain" />
                                 ) : (
                                     <Input type="file" accept="image/*" onChange={e => handleFileChange(e, setImgBloody)} className="text-xs" />
                                 )}
                             </div>
-                            <div className="border-2 border-dashed border-slate-200 rounded p-4 text-center hover:bg-slate-50 transition-colors">
-                                <span className="text-xs font-bold uppercase text-red-600 block mb-2">Dead (100%)</span>
+                            <div className="border-2 border-dashed border-border rounded p-4 text-center hover:bg-muted/10 transition-colors">
+                                <span className="text-xs font-bold uppercase text-destructive block mb-2">Dead (100%)</span>
                                 {imgDead ? (
                                     <img src={imgDead} className="h-16 w-16 mx-auto object-contain" />
                                 ) : (
@@ -208,8 +208,8 @@ export default function BossesPage() {
                         </div>
 
                         <div className="flex justify-end gap-2 pt-2">
-                            <button type="button" onClick={() => setCreateOpen(false)} className="text-xs font-bold uppercase text-slate-400 hover:text-slate-600">Cancel</button>
-                            <button disabled={isCreating} type="submit" className="px-4 py-2 bg-blue-600 text-white text-xs font-bold uppercase rounded hover:bg-blue-700 disabled:opacity-50">
+                            <button type="button" onClick={() => setCreateOpen(false)} className="text-xs font-bold uppercase text-muted-foreground hover:text-foreground">Cancel</button>
+                            <button disabled={isCreating} type="submit" className="px-4 py-2 bg-primary text-primary-foreground text-xs font-bold uppercase rounded hover:bg-primary/90 disabled:opacity-50">
                                 {isCreating ? 'Accessing...' : 'Register Boss'}
                             </button>
                         </div>
@@ -218,17 +218,17 @@ export default function BossesPage() {
             )}
 
             <div className="space-y-4">
-                <h2 className="text-sm font-bold uppercase text-slate-500 border-b border-slate-200 pb-2">System Bosses</h2>
+                <h2 className="text-sm font-bold uppercase text-muted-foreground border-b border-border pb-2">System Bosses</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {systemBosses.map(boss => (
-                        <div key={boss.id} className="bg-slate-100 border border-slate-200 p-4 rounded-lg flex items-center gap-4 opacity-75">
-                            <div className="w-16 h-16 relative bg-white rounded border border-slate-200">
+                        <div key={boss.id} className="bg-muted border border-border p-4 rounded-lg flex items-center gap-4 opacity-75">
+                            <div className="w-16 h-16 relative bg-card rounded border border-border">
                                 <Image src={boss.image_healthy} alt={boss.name} fill className="object-contain p-1" />
                             </div>
                             <div>
-                                <h3 className="font-bold text-slate-700">{boss.name}</h3>
-                                <p className="text-xs text-slate-500 font-mono">{boss.description}</p>
-                                <span className="inline-block mt-1 text-[10px] font-bold uppercase bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded">System Locked</span>
+                                <h3 className="font-bold text-foreground">{boss.name}</h3>
+                                <p className="text-xs text-muted-foreground font-mono">{boss.description}</p>
+                                <span className="inline-block mt-1 text-[10px] font-bold uppercase bg-background text-muted-foreground px-1.5 py-0.5 rounded">System Locked</span>
                             </div>
                         </div>
                     ))}
@@ -236,26 +236,26 @@ export default function BossesPage() {
             </div>
 
             <div className="space-y-4">
-                <h2 className="text-sm font-bold uppercase text-blue-500 border-b border-slate-200 pb-2 flex justify-between">
+                <h2 className="text-sm font-bold uppercase text-primary border-b border-border pb-2 flex justify-between">
                     <span>Custom Bosses</span>
                     <span className="text-xs font-mono">{customBosses.length}/10 Slots</span>
                 </h2>
                 {customBosses.length === 0 ? (
-                    <p className="text-sm text-slate-400 italic">No custom bosses registered.</p>
+                    <p className="text-sm text-muted-foreground italic">No custom bosses registered.</p>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {customBosses.map(boss => (
-                            <div key={boss.id} className="bg-white border border-slate-200 p-4 rounded-lg flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow relative group">
-                                <div className="w-16 h-16 relative bg-slate-50 rounded border border-slate-200">
+                            <div key={boss.id} className="bg-card border border-border p-4 rounded-lg flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow relative group">
+                                <div className="w-16 h-16 relative bg-muted/10 rounded border border-border">
                                     <Image src={boss.image_healthy} alt={boss.name} fill className="object-contain p-1" />
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="font-bold text-slate-900">{boss.name}</h3>
-                                    <p className="text-xs text-slate-500 font-mono truncate">{boss.description}</p>
+                                    <h3 className="font-bold text-foreground">{boss.name}</h3>
+                                    <p className="text-xs text-muted-foreground font-mono truncate">{boss.description}</p>
                                 </div>
                                 <button
                                     onClick={() => handleDelete(boss.id)}
-                                    className="absolute top-2 right-2 p-1.5 text-slate-300 hover:text-red-600 bg-white hover:bg-red-50 rounded border border-transparent hover:border-red-100 opacity-0 group-hover:opacity-100 transition-all"
+                                    className="absolute top-2 right-2 p-1.5 text-muted-foreground hover:text-destructive bg-card hover:bg-destructive/10 rounded border border-transparent hover:border-destructive/20 opacity-0 group-hover:opacity-100 transition-all"
                                 >
                                     <Trash2 className="h-4 w-4" />
                                 </button>
@@ -267,18 +267,18 @@ export default function BossesPage() {
 
             {/* Error Toast */}
             {error && (
-                <div className="fixed bottom-10 right-4 z-50 max-w-sm p-4 bg-red-50 border border-red-200 text-red-800 text-sm rounded-lg shadow-lg">
-                    <p className="uppercase font-bold text-red-600 mb-1">Error</p>
+                <div className="fixed bottom-10 right-4 z-50 max-w-sm p-4 bg-destructive text-destructive-foreground text-sm rounded-lg shadow-lg border border-destructive/20">
+                    <p className="uppercase font-bold mb-1">Error</p>
                     <p>{error}</p>
-                    <button onClick={() => setError(null)} className="absolute top-2 right-2 text-red-400 hover:text-red-600">✕</button>
+                    <button onClick={() => setError(null)} className="absolute top-2 right-2 text-destructive-foreground/70 hover:text-destructive-foreground">✕</button>
                 </div>
             )}
             {/* Success Toast */}
             {success && (
-                <div className="fixed bottom-10 right-4 z-50 max-w-sm p-4 bg-green-50 border border-green-200 text-green-800 text-sm rounded-lg shadow-lg">
-                    <p className="uppercase font-bold text-green-600 mb-1">Success</p>
+                <div className="fixed bottom-10 right-4 z-50 max-w-sm p-4 bg-green-500 text-white text-sm rounded-lg shadow-lg border border-green-600/20">
+                    <p className="uppercase font-bold mb-1">Success</p>
                     <p>{success}</p>
-                    <button onClick={() => setSuccess(null)} className="absolute top-2 right-2 text-green-400 hover:text-green-600">✕</button>
+                    <button onClick={() => setSuccess(null)} className="absolute top-2 right-2 text-white/70 hover:text-white">✕</button>
                 </div>
             )}
         </div>

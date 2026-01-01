@@ -60,17 +60,17 @@ interface QuestBoardClientProps {
 }
 
 const URGENCY_COLORS: Record<string, string> = {
-    'Critical': 'bg-red-100 text-red-700 border-red-200',
-    'High': 'bg-orange-100 text-orange-700 border-orange-200',
-    'Medium': 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    'Low': 'bg-green-100 text-green-700 border-green-200',
+    'Critical': 'bg-destructive/10 text-destructive border-destructive/20',
+    'High': 'bg-orange-500/10 text-orange-500 border-orange-500/20',
+    'Medium': 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
+    'Low': 'bg-green-500/10 text-green-500 border-green-500/20',
 }
 
 const STATUS_BG: Record<string, string> = {
-    'Backlog': 'bg-slate-100',
-    'In Progress': 'bg-blue-50',
-    'Review': 'bg-purple-50',
-    'Done': 'bg-green-50',
+    'Backlog': 'bg-muted/50',
+    'In Progress': 'bg-blue-500/5',
+    'Review': 'bg-purple-500/5',
+    'Done': 'bg-green-500/5',
 }
 
 export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, canEdit, crew, userId, userRole, bosses }: QuestBoardClientProps) {
@@ -221,10 +221,10 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 -m-8 p-8 space-y-6">
+        <div className="min-h-screen bg-background -m-8 p-8 space-y-6">
             {/* Control Bar */}
             {/* Control Bar */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-4">
                 <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6 w-full md:w-auto">
                     {/* Boss Visualization */}
                     <div className="hidden md:block">
@@ -236,8 +236,8 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
                     </div>
 
                     <div className="w-full md:w-auto">
-                        <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-slate-900">Quest Board</h1>
-                        <p className="text-slate-500 font-mono text-xs md:text-sm mt-1 mb-2">
+                        <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-foreground">Quest Board</h1>
+                        <p className="text-muted-foreground font-mono text-xs md:text-sm mt-1 mb-2">
                             {currentQuest ? currentQuest.name : 'Select a Quest'}
                         </p>
 
@@ -245,12 +245,12 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
                         {selectedQuestId && (
                             <div className="w-full md:w-64 space-y-1">
                                 <div className="flex justify-between text-xs font-bold uppercase">
-                                    <span className="text-red-600">Boss HP</span>
-                                    <span className="text-slate-400">{Math.round(bossHealthPercent)}%</span>
+                                    <span className="text-destructive">Boss HP</span>
+                                    <span className="text-muted-foreground">{Math.round(bossHealthPercent)}%</span>
                                 </div>
-                                <div className="h-4 w-full bg-slate-200 rounded-full overflow-hidden border border-slate-300">
+                                <div className="h-4 w-full bg-muted rounded-full overflow-hidden border border-border">
                                     <div
-                                        className={`h-full transition-all duration-500 ${bossHealthPercent < 25 ? 'bg-red-600 animate-pulse' : 'bg-red-500'}`}
+                                        className={`h-full transition-all duration-500 ${bossHealthPercent < 25 ? 'bg-destructive animate-pulse' : 'bg-red-500'}`}
                                         style={{ width: `${bossHealthPercent}%` }}
                                     />
                                 </div>
@@ -262,22 +262,22 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
                 <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 md:gap-4 w-full md:w-auto">
                     {/* Search Bar */}
                     <div className="relative w-full md:w-auto">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                             type="text"
                             placeholder="Search tasks..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10 w-full md:w-64 bg-white border-slate-300 text-slate-900"
+                            className="pl-10 w-full md:w-64 bg-background border-border text-foreground"
                         />
                     </div>
 
                     {/* Assignee Filter - Hidden for Analysts */}
                     {!isAnalyst && (
                         <Select value={selectedAssignee} onValueChange={setSelectedAssignee}>
-                            <SelectTrigger className="w-full md:w-[180px] bg-white border-slate-300 text-slate-900">
+                            <SelectTrigger className="w-full md:w-[180px] bg-background border-border text-foreground">
                                 <div className="flex items-center gap-2">
-                                    <User className="h-4 w-4 text-slate-500" />
+                                    <User className="h-4 w-4 text-muted-foreground" />
                                     <SelectValue placeholder="All Crew" />
                                 </div>
                             </SelectTrigger>
@@ -295,9 +295,9 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
 
                     {/* Quest Filter */}
                     <Select value={selectedQuestId} onValueChange={setSelectedQuestId}>
-                        <SelectTrigger className="w-full md:w-[220px] bg-white border-slate-300 text-slate-900">
+                        <SelectTrigger className="w-full md:w-[220px] bg-background border-border text-foreground">
                             <div className="flex items-center gap-2">
-                                <Target className="h-4 w-4 text-blue-600" />
+                                <Target className="h-4 w-4 text-primary" />
                                 <SelectValue placeholder="Select Quest" />
                             </div>
                         </SelectTrigger>
@@ -318,10 +318,10 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
 
             {/* Empty State */}
             {!selectedQuestId && (
-                <div className="bg-white border border-slate-200 rounded-lg p-12 text-center">
-                    <Target className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-bold text-slate-900">No Quest Selected</h3>
-                    <p className="text-slate-500 text-sm mt-1">
+                <div className="bg-card border border-border rounded-lg p-12 text-center">
+                    <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-bold text-foreground">No Quest Selected</h3>
+                    <p className="text-muted-foreground text-sm mt-1">
                         Select a quest from the dropdown to view its tasks.
                     </p>
                 </div>
@@ -342,17 +342,17 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
                             key={status.id}
                             onDrop={(e) => handleDrop(e, status.id)}
                             onDragOver={handleDragOver}
-                            className={`flex-shrink-0 w-80 ${STATUS_BG[status.name] || 'bg-slate-50'} border border-slate-200 rounded-lg`}
+                            className={`flex-shrink-0 w-80 ${STATUS_BG[status.name] || 'bg-muted/10'} border border-border rounded-lg`}
                         >
                             {/* Column Header */}
-                            <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+                            <div className="px-4 py-3 border-b border-border flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                    <Layers className="h-4 w-4 text-slate-500" />
-                                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">
+                                    <Layers className="h-4 w-4 text-muted-foreground" />
+                                    <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
                                         {status.name}
                                     </h3>
                                 </div>
-                                <span className="text-xs font-mono text-slate-500">
+                                <span className="text-xs font-mono text-muted-foreground">
                                     {tasksByStatus[status.id]?.length || 0}
                                 </span>
                             </div>
@@ -368,9 +368,9 @@ export function QuestBoardClient({ quests, statuses, sizes, urgencies, teamId, c
                                             draggable
                                             onDragStart={(e) => handleDragStart(e, task.id)}
                                             onClick={() => handleTaskClick(task.id)}
-                                            className="bg-white border border-slate-200 rounded-lg p-3 cursor-pointer active:cursor-grabbing shadow-sm hover:shadow hover:border-blue-300 transition-all"
+                                            className="bg-card border border-border rounded-lg p-3 cursor-pointer active:cursor-grabbing shadow-sm hover:shadow hover:border-primary/50 transition-all"
                                         >
-                                            <p className="font-semibold text-slate-900 text-sm">{task.title}</p>
+                                            <p className="font-semibold text-foreground text-sm">{task.title}</p>
 
                                             <div className="flex items-center gap-2 mt-2 flex-wrap">
                                                 {/* Urgency */}

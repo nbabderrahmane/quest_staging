@@ -63,57 +63,57 @@ export default function ReportingPage() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 -m-8 p-8 space-y-8">
+        <div className="min-h-screen bg-background -m-8 p-8 space-y-8">
             {/* Header */}
             <div>
-                <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900 flex items-center gap-3">
-                    <FileText className="h-8 w-8 text-blue-600" />
+                <h1 className="text-3xl font-black uppercase tracking-tight text-foreground flex items-center gap-3">
+                    <FileText className="h-8 w-8 text-primary" />
                     Mission Reporting
                 </h1>
-                <p className="text-slate-500 font-mono text-sm mt-1">Export mission data for external analysis.</p>
+                <p className="text-muted-foreground font-mono text-sm mt-1">Export mission data for external analysis.</p>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-8 max-w-2xl">
-                <div className="flex items-center gap-2 mb-6 text-slate-900 font-bold uppercase tracking-wider text-sm border-b border-slate-100 pb-2">
-                    <Activity className="h-4 w-4 text-blue-500" />
+            <div className="bg-card border border-border rounded-xl shadow-sm p-8 max-w-2xl">
+                <div className="flex items-center gap-2 mb-6 text-foreground font-bold uppercase tracking-wider text-sm border-b border-border pb-2">
+                    <Activity className="h-4 w-4 text-primary" />
                     Report Configuration
                 </div>
 
                 <div className="grid grid-cols-2 gap-6 mb-8">
                     <div>
-                        <label className="block text-xs uppercase font-bold text-slate-500 mb-2">Start Date</label>
+                        <label className="block text-xs uppercase font-bold text-muted-foreground mb-2">Start Date</label>
                         <div className="relative">
-                            <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                            <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                             <input
                                 type="date"
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono"
+                                className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary text-sm font-mono"
                             />
                         </div>
                     </div>
                     <div>
-                        <label className="block text-xs uppercase font-bold text-slate-500 mb-2">End Date</label>
+                        <label className="block text-xs uppercase font-bold text-muted-foreground mb-2">End Date</label>
                         <div className="relative">
-                            <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                            <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                             <input
                                 type="date"
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono"
+                                className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary text-sm font-mono"
                             />
                         </div>
                     </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                    <div className="text-xs text-slate-400 italic">
+                <div className="flex items-center justify-between pt-4 border-t border-border">
+                    <div className="text-xs text-muted-foreground italic">
                         Exports all 'Done' tasks within range.
                     </div>
                     <button
                         onClick={handleExport}
                         disabled={isLoading || !teamId}
-                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-bold uppercase tracking-wider rounded-lg hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transform active:scale-95"
+                        className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-bold uppercase tracking-wider rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transform active:scale-95"
                     >
                         {isLoading ? (
                             <span className="animate-pulse">Generating...</span>
@@ -127,7 +127,7 @@ export default function ReportingPage() {
                 </div>
 
                 {error && (
-                    <div className="mt-6 p-4 bg-red-50 border border-red-100 text-red-600 text-sm rounded-lg flex items-center gap-2">
+                    <div className="mt-6 p-4 bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg flex items-center gap-2">
                         <span className="font-bold">ERROR:</span> {error}
                     </div>
                 )}

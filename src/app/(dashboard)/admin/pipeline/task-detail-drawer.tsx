@@ -225,16 +225,16 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
 
     return (
         <Dialog open={open} onOpenChange={() => onClose()}>
-            <DialogContent className="bg-white border border-slate-200 text-slate-900 shadow-xl max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+            <DialogContent className="bg-background border border-border text-foreground shadow-xl max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
                 <div className="flex flex-col md:flex-row h-full min-h-0 md:min-h-[600px]">
                     {/* Left Column: Brief & Comms (100% Mobile, 60% Desktop) */}
                     {/* On mobile, take 60% height to show comms, let params take 40% */}
-                    <div className="w-full md:w-[60%] h-[60%] md:h-full flex flex-col border-b md:border-b-0 md:border-r border-slate-200 order-2 md:order-1">
+                    <div className="w-full md:w-[60%] h-[60%] md:h-full flex flex-col border-b md:border-b-0 md:border-r border-border order-2 md:order-1">
                         {/* Header */}
-                        <DialogHeader className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex-shrink-0">
+                        <DialogHeader className="px-6 py-4 border-b border-border bg-muted/30 flex-shrink-0">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <DialogTitle className="text-lg font-bold text-slate-900 pr-2">
+                                    <DialogTitle className="text-lg font-bold text-foreground pr-2">
                                         {task?.title || 'Loading...'}
                                     </DialogTitle>
                                     {task?.was_dropped && (
@@ -252,7 +252,7 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                         </DialogHeader>
 
                         {isLoading ? (
-                            <div className="p-8 text-center text-slate-500 animate-pulse">Loading task details...</div>
+                            <div className="p-8 text-center text-muted-foreground animate-pulse">Loading task details...</div>
                         ) : error ? (
                             <div className="p-8 text-center text-red-500 bg-red-50 m-6 rounded-lg border border-red-200">
                                 <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-50" />
@@ -262,12 +262,12 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                         ) : (
                             <>
                                 {/* Description Section */}
-                                <div className="px-6 py-4 border-b border-slate-200 bg-white flex-shrink-0 hidden md:block">
+                                <div className="px-6 py-4 border-b border-border bg-background flex-shrink-0 hidden md:block">
                                     {/* Hide description on mobile to save space? Or keep it? */}
                                     {/* Let's keep it but maybe compact */}
                                     <div className="flex items-center gap-2 mb-3">
-                                        <FileText className="h-4 w-4 text-slate-400" />
-                                        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Brief</h3>
+                                        <FileText className="h-4 w-4 text-muted-foreground" />
+                                        <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">Brief</h3>
                                     </div>
                                     {isEditingDesc && canEdit ? (
                                         <div className="space-y-2">
@@ -275,14 +275,14 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                                                 value={description}
                                                 onChange={(e) => setDescription(e.target.value)}
                                                 rows={4}
-                                                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                                className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                                                 placeholder="Add mission briefing..."
                                                 autoFocus
                                             />
                                             <div className="flex gap-2 justify-end">
                                                 <button
                                                     onClick={() => { setIsEditingDesc(false); setDescription(task?.description || '') }}
-                                                    className="px-3 py-1.5 text-xs font-bold uppercase text-slate-500 hover:text-slate-700"
+                                                    className="px-3 py-1.5 text-xs font-bold uppercase text-muted-foreground hover:text-foreground"
                                                 >
                                                     Cancel
                                                 </button>
@@ -298,12 +298,12 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                                     ) : (
                                         <div
                                             onClick={() => canEdit && setIsEditingDesc(true)}
-                                            className={`min-h-[60px] p-3 bg-slate-50 border border-slate-200 rounded-md text-sm text-slate-700 whitespace-pre-wrap ${canEdit ? 'cursor-pointer hover:bg-slate-100' : ''}`}
+                                            className={`min-h-[60px] p-3 bg-muted/30 border border-border rounded-md text-sm text-foreground whitespace-pre-wrap ${canEdit ? 'cursor-pointer hover:bg-muted/50' : ''}`}
                                         >
                                             {task?.description ? (
                                                 linkify(task.description)
                                             ) : (
-                                                <span className="text-slate-400 italic">
+                                                <span className="text-muted-foreground italic">
                                                     {canEdit ? 'Click to add mission briefing...' : 'No briefing provided.'}
                                                 </span>
                                             )}
@@ -313,12 +313,12 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
 
                                 {/* Mobile Only: Brief Toggle or just reduced header? */}
                                 {/* For simplicity, just rendering it same as desktop for now, relying on scrolling */}
-                                <div className="px-6 py-4 border-b border-slate-200 bg-white flex-shrink-0 md:hidden">
+                                <div className="px-6 py-4 border-b border-border bg-background flex-shrink-0 md:hidden">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <FileText className="h-4 w-4 text-slate-400" />
-                                        <span className="text-xs font-bold uppercase text-slate-700">Brief</span>
+                                        <FileText className="h-4 w-4 text-muted-foreground" />
+                                        <span className="text-xs font-bold uppercase text-foreground">Brief</span>
                                     </div>
-                                    <p className="text-xs text-slate-600 line-clamp-3" onClick={() => canEdit && setIsEditingDesc(true)}>
+                                    <p className="text-xs text-muted-foreground line-clamp-3" onClick={() => canEdit && setIsEditingDesc(true)}>
                                         {task?.description || 'No briefing.'}
                                     </p>
                                 </div>
@@ -326,18 +326,18 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
 
                                 {/* Comms Feed Section */}
                                 <div className="flex-1 flex flex-col min-h-0">
-                                    <div className="px-4 md:px-6 py-2 md:py-3 border-b border-slate-200 bg-slate-50 flex-shrink-0">
+                                    <div className="px-4 md:px-6 py-2 md:py-3 border-b border-border bg-muted/30 flex-shrink-0">
                                         <div className="flex items-center gap-2">
-                                            <MessageSquare className="h-4 w-4 text-slate-400" />
-                                            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Comms Feed</h3>
-                                            <span className="text-xs text-slate-400">({comments.length})</span>
+                                            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                                            <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">Comms Feed</h3>
+                                            <span className="text-xs text-muted-foreground">({comments.length})</span>
                                         </div>
                                     </div>
 
                                     {/* Comments List */}
-                                    <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 space-y-4 bg-white">
+                                    <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 space-y-4 bg-background/50">
                                         {comments.length === 0 ? (
-                                            <p className="text-center text-slate-400 text-sm py-8">
+                                            <p className="text-center text-muted-foreground text-sm py-8">
                                                 No comms yet. Start the conversation.
                                             </p>
                                         ) : (
@@ -350,18 +350,18 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
 
                                                 return (
                                                     <div key={comment.id} className="flex gap-3">
-                                                        <div className={`flex-shrink-0 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center ${roleColor}`}>
+                                                        <div className={`flex-shrink-0 w-8 h-8 rounded-full bg-muted/30 flex items-center justify-center ${roleColor}`}>
                                                             <RoleIcon className="h-4 w-4" />
                                                         </div>
                                                         <div className="flex-1 min-w-0">
                                                             <div className="flex items-baseline gap-2">
-                                                                <span className="font-bold text-slate-900 text-sm">{authorName}</span>
-                                                                <span className="text-xs text-slate-400 flex items-center gap-1">
+                                                                <span className="font-bold text-foreground text-sm">{authorName}</span>
+                                                                <span className="text-xs text-muted-foreground flex items-center gap-1">
                                                                     <Clock className="h-3 w-3" />
                                                                     {formatRelativeTime(comment.created_at)}
                                                                 </span>
                                                             </div>
-                                                            <p className="text-sm text-slate-700 mt-1 whitespace-pre-wrap break-words">
+                                                            <p className="text-sm text-foreground mt-1 whitespace-pre-wrap break-words">
                                                                 {linkify(comment.content)}
                                                             </p>
                                                         </div>
@@ -373,7 +373,7 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                                     </div>
 
                                     {/* Comment Input */}
-                                    <div className="px-4 md:px-6 py-3 md:py-4 border-t border-slate-200 bg-slate-50 flex-shrink-0">
+                                    <div className="px-4 md:px-6 py-3 md:py-4 border-t border-border bg-muted/30 flex-shrink-0">
                                         <div className="flex gap-2">
                                             <textarea
                                                 value={newComment}
@@ -381,7 +381,7 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                                                 onKeyDown={handleKeyDown}
                                                 placeholder="Write a message..."
                                                 rows={1}
-                                                className="flex-1 px-3 py-2 bg-white border border-slate-300 rounded-md text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none min-h-[40px] max-h-[100px]"
+                                                className="flex-1 px-3 py-2 bg-background border border-input rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none min-h-[40px] max-h-[100px]"
                                             />
                                             <button
                                                 onClick={handleSendComment}
@@ -446,7 +446,7 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                                         onValueChange={(val) => handleUpdateParameter('project_id', val)}
                                         disabled={!canEdit}
                                     >
-                                        <SelectTrigger className="bg-white border-slate-300">
+                                        <SelectTrigger className="bg-background border-input">
                                             <SelectValue placeholder="None" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -464,7 +464,7 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                                         onValueChange={(val) => handleUpdateParameter('department_id', val)}
                                         disabled={!canEdit}
                                     >
-                                        <SelectTrigger className="bg-white border-slate-300">
+                                        <SelectTrigger className="bg-background border-input">
                                             <SelectValue placeholder="None" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -485,7 +485,7 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                                     onValueChange={(val) => handleUpdateParameter('quest_id', val)}
                                     disabled={!canEdit}
                                 >
-                                    <SelectTrigger className="bg-white border-slate-300">
+                                    <SelectTrigger className="bg-background border-input">
                                         <SelectValue placeholder="No Quest" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -505,7 +505,7 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                                     onValueChange={(val) => handleUpdateParameter('size_id', val)}
                                     disabled={!canEdit}
                                 >
-                                    <SelectTrigger className="bg-white border-slate-300">
+                                    <SelectTrigger className="bg-background border-input">
                                         <SelectValue placeholder="No Size" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -525,7 +525,7 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                                     onValueChange={(val) => handleUpdateParameter('urgency_id', val)}
                                     disabled={!canEdit}
                                 >
-                                    <SelectTrigger className="bg-white border-slate-300">
+                                    <SelectTrigger className="bg-background border-input">
                                         <SelectValue placeholder="No Urgency" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -545,7 +545,7 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                                     onValueChange={(val) => handleUpdateParameter('assigned_to', val)}
                                     disabled={!canEdit}
                                 >
-                                    <SelectTrigger className="bg-white border-slate-300">
+                                    <SelectTrigger className="bg-background border-input">
                                         <SelectValue placeholder="Unassigned" />
                                     </SelectTrigger>
                                     <SelectContent>

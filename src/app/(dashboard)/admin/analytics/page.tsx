@@ -18,9 +18,9 @@ import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recha
 
 // Rank Configuration
 const RANKS = [
-    { name: 'Legendary', minXP: 5000, color: 'text-yellow-600 bg-yellow-100 border-yellow-200', icon: Crown },
-    { name: 'Vanguard', minXP: 2000, color: 'text-purple-600 bg-purple-100 border-purple-200', icon: Shield },
-    { name: 'Recruit', minXP: 0, color: 'text-slate-600 bg-slate-100 border-slate-200', icon: Star },
+    { name: 'Legendary', minXP: 5000, color: 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20', icon: Crown },
+    { name: 'Vanguard', minXP: 2000, color: 'text-purple-500 bg-purple-500/10 border-purple-500/20', icon: Shield },
+    { name: 'Recruit', minXP: 0, color: 'text-muted-foreground bg-muted border-border', icon: Star },
 ]
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#8dd1e1']
@@ -108,7 +108,7 @@ export default function AnalyticsPage() {
     }
 
     if (isLoading) {
-        return <div className="p-8 text-slate-500 animate-pulse font-mono">Deciphering Analytics...</div>
+        return <div className="p-8 text-muted-foreground animate-pulse font-mono">Deciphering Analytics...</div>
     }
 
     // Chart Data Preparation
@@ -116,22 +116,22 @@ export default function AnalyticsPage() {
     const xpData = deptAnalytics.map(d => ({ name: d.name, value: d.totalXP }))
 
     return (
-        <div className="min-h-screen bg-slate-50 -m-8 p-8 space-y-8">
+        <div className="min-h-screen bg-background -m-8 p-8 space-y-8">
             {/* Header */}
             <div>
-                <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900 flex items-center gap-3">
-                    <Activity className="h-8 w-8 text-blue-600" />
+                <h1 className="text-3xl font-black uppercase tracking-tight text-foreground flex items-center gap-3">
+                    <Activity className="h-8 w-8 text-primary" />
                     Unified Analytics System
                 </h1>
                 <div className="flex justify-between items-end">
-                    <p className="text-slate-500 font-mono text-sm mt-1">Alliance Performance & Strategic Intelligence</p>
+                    <p className="text-muted-foreground font-mono text-sm mt-1">Alliance Performance & Strategic Intelligence</p>
 
                     <div className="flex gap-2">
                         {/* Filters */}
                         <select
                             value={filters.questId}
                             onChange={(e) => setFilters(prev => ({ ...prev, questId: e.target.value }))}
-                            className="bg-white border border-slate-200 text-xs font-bold uppercase rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="bg-card border border-border text-foreground text-xs font-bold uppercase rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary"
                         >
                             <option value="all">All Quests</option>
                             {availableQuests.map(q => (
@@ -143,7 +143,7 @@ export default function AnalyticsPage() {
                             <select
                                 value={filters.assigneeId}
                                 onChange={(e) => setFilters(prev => ({ ...prev, assigneeId: e.target.value }))}
-                                className="bg-white border border-slate-200 text-xs font-bold uppercase rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="bg-card border border-border text-foreground text-xs font-bold uppercase rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary"
                             >
                                 <option value="all">All Crew</option>
                                 {availableCrew.map(c => (
@@ -158,7 +158,7 @@ export default function AnalyticsPage() {
                                 loadData()
                                 setTimeout(() => setIsRefreshing(false), 1000)
                             }}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded text-xs font-bold uppercase hover:bg-slate-50 hover:text-blue-600 transition-colors"
+                            className="flex items-center gap-2 px-3 py-1.5 bg-card text-muted-foreground border border-border rounded text-xs font-bold uppercase hover:bg-muted hover:text-primary transition-colors"
                         >
                             <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
                             Refresh
@@ -169,12 +169,12 @@ export default function AnalyticsPage() {
 
             {/* Section 1: Alliance Pulse */}
             <section className="space-y-4">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-blue-500" />
+                <h2 className="text-sm font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-primary" />
                     Alliance Pulse
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden group">
+                    <div className="bg-card p-6 rounded-xl border border-border shadow-sm relative overflow-hidden group">
                         <div className="absolute right-0 top-0 opacity-5 group-hover:opacity-10 transition-opacity">
                             <Zap className="w-32 h-32 -mr-8 -mt-8" />
                         </div>
@@ -182,13 +182,13 @@ export default function AnalyticsPage() {
                             <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
                                 <Zap className="h-5 w-5" />
                             </div>
-                            <h3 className="text-xs font-bold uppercase text-slate-500 tracking-wider">Alliance Velocity</h3>
+                            <h3 className="text-xs font-bold uppercase text-muted-foreground tracking-wider">Alliance Velocity</h3>
                         </div>
-                        <p className="text-3xl font-black text-slate-900">{analytics?.velocity.toLocaleString() ?? 0} <span className="text-sm font-normal text-slate-400">XP</span></p>
-                        <p className="text-xs text-slate-400 mt-1">Last 7 Days Output</p>
+                        <p className="text-3xl font-black text-foreground">{analytics?.velocity.toLocaleString() ?? 0} <span className="text-sm font-normal text-muted-foreground">XP</span></p>
+                        <p className="text-xs text-muted-foreground mt-1">Last 7 Days Output</p>
                     </div>
 
-                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden group">
+                    <div className="bg-card p-6 rounded-xl border border-border shadow-sm relative overflow-hidden group">
                         <div className="absolute right-0 top-0 opacity-5 group-hover:opacity-10 transition-opacity">
                             <Target className="w-32 h-32 -mr-8 -mt-8" />
                         </div>
@@ -196,13 +196,13 @@ export default function AnalyticsPage() {
                             <div className="p-2 bg-green-50 text-green-600 rounded-lg">
                                 <Target className="h-5 w-5" />
                             </div>
-                            <h3 className="text-xs font-bold uppercase text-slate-500 tracking-wider">Global Success Rate</h3>
+                            <h3 className="text-xs font-bold uppercase text-muted-foreground tracking-wider">Global Success Rate</h3>
                         </div>
-                        <p className="text-3xl font-black text-slate-900">{analytics?.successRate ? analytics.successRate.toFixed(1) : '0.0'}%</p>
-                        <p className="text-xs text-slate-400 mt-1">Mission Completion Ratio</p>
+                        <p className="text-3xl font-black text-foreground">{analytics?.successRate ? analytics.successRate.toFixed(1) : '0.0'}%</p>
+                        <p className="text-xs text-muted-foreground mt-1">Mission Completion Ratio</p>
                     </div>
 
-                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden group">
+                    <div className="bg-card p-6 rounded-xl border border-border shadow-sm relative overflow-hidden group">
                         <div className="absolute right-0 top-0 opacity-5 group-hover:opacity-10 transition-opacity">
                             <AlertTriangle className="w-32 h-32 -mr-8 -mt-8" />
                         </div>
@@ -210,24 +210,24 @@ export default function AnalyticsPage() {
                             <div className="p-2 bg-orange-50 text-orange-600 rounded-lg">
                                 <AlertTriangle className="h-5 w-5" />
                             </div>
-                            <h3 className="text-xs font-bold uppercase text-slate-500 tracking-wider">Blocked Units</h3>
+                            <h3 className="text-xs font-bold uppercase text-muted-foreground tracking-wider">Blocked Units</h3>
                         </div>
-                        <p className="text-3xl font-black text-slate-900">{analytics?.blockedUnits ?? 0}</p>
-                        <p className="text-xs text-slate-400 mt-1">Missions needing info</p>
+                        <p className="text-3xl font-black text-foreground">{analytics?.blockedUnits ?? 0}</p>
+                        <p className="text-xs text-muted-foreground mt-1">Missions needing info</p>
                     </div>
                 </div>
             </section>
 
             {/* Section 2: Department Intelligence (NEW) */}
             <section className="space-y-4">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-blue-500" />
+                <h2 className="text-sm font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-primary" />
                     Department Intelligence
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Task Count Chart */}
-                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                        <h3 className="text-xs font-bold uppercase text-slate-500 tracking-wider mb-4">Task Distribution</h3>
+                    <div className="bg-card p-6 rounded-xl border border-border shadow-sm">
+                        <h3 className="text-xs font-bold uppercase text-muted-foreground tracking-wider mb-4">Task Distribution</h3>
                         <div className="h-64 w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
@@ -256,8 +256,8 @@ export default function AnalyticsPage() {
                     </div>
 
                     {/* XP Chart */}
-                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                        <h3 className="text-xs font-bold uppercase text-slate-500 tracking-wider mb-4">XP Contribution</h3>
+                    <div className="bg-card p-6 rounded-xl border border-border shadow-sm">
+                        <h3 className="text-xs font-bold uppercase text-muted-foreground tracking-wider mb-4">XP Contribution</h3>
                         <div className="h-64 w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
@@ -289,15 +289,15 @@ export default function AnalyticsPage() {
 
             {/* Section 3: Crew Performance & Load */}
             <section className="space-y-4">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 flex items-center gap-2">
-                    <Users className="h-4 w-4 text-blue-500" />
+                <h2 className="text-sm font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+                    <Users className="h-4 w-4 text-primary" />
                     Crew Performance & Load
                 </h2>
-                <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead>
-                                <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold uppercase text-slate-500 tracking-wider">
+                                <tr className="bg-muted/50 border-b border-border text-xs font-bold uppercase text-muted-foreground tracking-wider">
                                     <th className="px-6 py-3 w-16 text-center">#</th>
                                     <th className="px-6 py-3">Operative</th>
                                     <th className="px-6 py-3 text-center">Tasks</th>
@@ -306,7 +306,7 @@ export default function AnalyticsPage() {
                                     <th className="px-6 py-3 text-right">Completion Rate</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100">
+                            <tbody className="divide-y divide-border">
                                 {leaderboard.map((entry, index) => {
                                     const rankConfig = getRankConfig(entry.rank)
                                     const RankIcon = rankConfig.icon
@@ -314,22 +314,22 @@ export default function AnalyticsPage() {
                                     const loadPercent = Math.min((entry.current_load / 1000) * 100, 100)
 
                                     return (
-                                        <tr key={entry.user_id} className="hover:bg-slate-50/80 transition-colors">
-                                            <td className="px-6 py-4 text-center text-slate-400 font-mono text-xs">
+                                        <tr key={entry.user_id} className="hover:bg-muted/50 transition-colors">
+                                            <td className="px-6 py-4 text-center text-muted-foreground font-mono text-xs">
                                                 {index + 1}
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className="font-bold text-slate-900">
+                                                <div className="font-bold text-foreground">
                                                     {entry.first_name || entry.last_name
                                                         ? `${entry.first_name || ''} ${entry.last_name || ''}`.trim()
                                                         : (entry.email || 'Unknown Operative')}
                                                 </div>
-                                                <div className="text-xs text-slate-500">{entry.role}</div>
+                                                <div className="text-xs text-muted-foreground">{entry.role}</div>
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <div className="flex flex-col items-center">
-                                                    <span className="font-bold text-slate-900">{entry.tasks_done} <span className="text-slate-400 text-xs font-normal">/ {entry.total_tasks_assigned}</span></span>
-                                                    <span className="text-[10px] uppercase text-slate-400">DONE</span>
+                                                    <span className="font-bold text-foreground">{entry.tasks_done} <span className="text-muted-foreground text-xs font-normal">/ {entry.total_tasks_assigned}</span></span>
+                                                    <span className="text-[10px] uppercase text-muted-foreground">DONE</span>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
@@ -341,9 +341,9 @@ export default function AnalyticsPage() {
                                             <td className="px-6 py-4">
                                                 <div className="w-full max-w-xs">
                                                     <div className="flex justify-between text-xs mb-1">
-                                                        <span className="font-mono font-bold text-slate-700">{entry.current_load} XP</span>
+                                                        <span className="font-mono font-bold text-foreground">{entry.current_load} XP</span>
                                                     </div>
-                                                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                    <div className="h-2 bg-muted rounded-full overflow-hidden">
                                                         <div
                                                             className={`h-full rounded-full ${loadPercent > 80 ? 'bg-red-500' : 'bg-blue-500'}`}
                                                             style={{ width: `${loadPercent}%` }}
@@ -353,8 +353,8 @@ export default function AnalyticsPage() {
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex flex-col items-end">
-                                                    <span className={`font-black text-lg ${entry.completion_rate >= 80 ? 'text-green-600' : entry.completion_rate < 50 ? 'text-orange-500' : 'text-slate-900'}`}>{entry.completion_rate}%</span>
-                                                    <span className="text-xs text-slate-400 font-mono">Rate</span>
+                                                    <span className={`font-black text-lg ${entry.completion_rate >= 80 ? 'text-green-500' : entry.completion_rate < 50 ? 'text-orange-500' : 'text-foreground'}`}>{entry.completion_rate}%</span>
+                                                    <span className="text-xs text-muted-foreground font-mono">Rate</span>
                                                 </div>
                                             </td>
                                         </tr>
@@ -362,7 +362,7 @@ export default function AnalyticsPage() {
                                 })}
                                 {leaderboard.length === 0 && (
                                     <tr>
-                                        <td colSpan={6} className="px-6 py-8 text-center text-slate-400 italic">No crew data found.</td>
+                                        <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground italic">No crew data found.</td>
                                     </tr>
                                 )}
                             </tbody>
@@ -373,26 +373,26 @@ export default function AnalyticsPage() {
 
             {/* Section 4: Quest Intelligence */}
             <section className="space-y-4">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 flex items-center gap-2">
-                    <Briefcase className="h-4 w-4 text-blue-500" />
+                <h2 className="text-sm font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+                    <Briefcase className="h-4 w-4 text-primary" />
                     Quest Intelligence
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {questIntel.map(quest => (
-                        <div key={quest.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-4">
+                        <div key={quest.id} className="bg-card p-5 rounded-xl border border-border shadow-sm flex flex-col gap-4">
                             <div>
-                                <h3 className="font-bold text-slate-900 truncate" title={quest.name}>{quest.name}</h3>
-                                <p className="text-xs text-slate-500 font-mono mt-1">Total XP: {quest.total_xp}</p>
+                                <h3 className="font-bold text-foreground truncate" title={quest.name}>{quest.name}</h3>
+                                <p className="text-xs text-muted-foreground font-mono mt-1">Total XP: {quest.total_xp}</p>
                             </div>
 
                             <div className="space-y-3">
                                 {/* Success Rate */}
                                 <div>
                                     <div className="flex justify-between text-xs mb-1">
-                                        <span className="text-slate-500">Success Rate</span>
-                                        <span className="font-bold text-slate-900">{quest.successRate.toFixed(1)}%</span>
+                                        <span className="text-muted-foreground">Success Rate</span>
+                                        <span className="font-bold text-foreground">{quest.successRate.toFixed(1)}%</span>
                                     </div>
-                                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                                         <div className="h-full bg-green-500 rounded-full" style={{ width: `${quest.successRate}%` }} />
                                     </div>
                                 </div>
@@ -400,21 +400,21 @@ export default function AnalyticsPage() {
                                 {/* Drop Rate */}
                                 <div>
                                     <div className="flex justify-between text-xs mb-1">
-                                        <span className="text-slate-500">Drop Rate</span>
-                                        <span className="font-bold text-slate-900">{quest.dropRate.toFixed(1)}%</span>
+                                        <span className="text-muted-foreground">Drop Rate</span>
+                                        <span className="font-bold text-foreground">{quest.dropRate.toFixed(1)}%</span>
                                     </div>
-                                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                        <div className="h-full bg-red-400 rounded-full" style={{ width: `${quest.dropRate}%` }} />
+                                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                                        <div className="h-full bg-destructive rounded-full" style={{ width: `${quest.dropRate}%` }} />
                                     </div>
                                 </div>
 
                                 {/* Urgency Pressure */}
                                 <div>
                                     <div className="flex justify-between text-xs mb-1">
-                                        <span className="text-slate-500">Urgency Pressure</span>
-                                        <span className="font-bold text-slate-900">{quest.urgencyPressure.toFixed(1)}%</span>
+                                        <span className="text-muted-foreground">Urgency Pressure</span>
+                                        <span className="font-bold text-foreground">{quest.urgencyPressure.toFixed(1)}%</span>
                                     </div>
-                                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                                         <div className="h-full bg-orange-500 rounded-full" style={{ width: `${quest.urgencyPressure}%` }} />
                                     </div>
                                 </div>
@@ -422,7 +422,7 @@ export default function AnalyticsPage() {
                         </div>
                     ))}
                     {questIntel.length === 0 && (
-                        <div className="col-span-full py-8 text-center text-slate-400 italic bg-white rounded-xl border border-slate-200 border-dashed">
+                        <div className="col-span-full py-8 text-center text-muted-foreground italic bg-card rounded-xl border border-border border-dashed">
                             No active quest intelligence available.
                         </div>
                     )}

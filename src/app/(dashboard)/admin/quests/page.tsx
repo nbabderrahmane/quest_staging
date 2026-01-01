@@ -258,15 +258,15 @@ export default function QuestsPage() {
     }
 
     if (isLoading) {
-        return <div className="p-8 text-slate-500 animate-pulse font-mono">Loading Quest Objectives...</div>
+        return <div className="p-8 text-muted-foreground animate-pulse font-mono">Loading Quest Objectives...</div>
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 -m-8 p-8 space-y-6">
-            <div className="flex items-end justify-between border-b border-slate-200 pb-4">
+        <div className="min-h-screen bg-background -m-8 p-8 space-y-6">
+            <div className="flex items-end justify-between border-b border-border pb-4">
                 <div>
-                    <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900">Quest Objectives</h1>
-                    <p className="text-slate-500 font-mono text-sm mt-1">Strategic Milestones & Sprints</p>
+                    <h1 className="text-3xl font-black uppercase tracking-tight text-foreground">Quest Objectives</h1>
+                    <p className="text-muted-foreground font-mono text-sm mt-1">Strategic Milestones & Sprints</p>
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="text-xs font-mono text-blue-600 uppercase font-bold">
@@ -275,7 +275,7 @@ export default function QuestsPage() {
                     {canManage && (
                         <button
                             onClick={() => setCreateOpen(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-bold uppercase tracking-wider hover:bg-blue-700 transition-colors rounded"
+                            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-bold uppercase tracking-wider hover:bg-primary/90 transition-colors rounded"
                         >
                             <Plus className="h-4 w-4" />
                             Initiate Quest
@@ -288,14 +288,14 @@ export default function QuestsPage() {
             <div className="flex gap-2">
                 <button
                     onClick={() => setViewMode('active')}
-                    className={`flex items-center gap-2 px-4 py-2 text-sm font-bold uppercase rounded-t-lg transition-colors ${viewMode === 'active' ? 'bg-white border-t border-x border-slate-200 text-blue-600' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                    className={`flex items-center gap-2 px-4 py-2 text-sm font-bold uppercase rounded-t-lg transition-colors ${viewMode === 'active' ? 'bg-card border-t border-x border-border text-primary' : 'bg-muted/50 text-muted-foreground hover:bg-muted'}`}
                 >
                     <Target className="h-4 w-4" />
                     Active Objectives
                 </button>
                 <button
                     onClick={() => setViewMode('archived')}
-                    className={`flex items-center gap-2 px-4 py-2 text-sm font-bold uppercase rounded-t-lg transition-colors ${viewMode === 'archived' ? 'bg-white border-t border-x border-slate-200 text-slate-600' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                    className={`flex items-center gap-2 px-4 py-2 text-sm font-bold uppercase rounded-t-lg transition-colors ${viewMode === 'archived' ? 'bg-card border-t border-x border-border text-foreground' : 'bg-muted/50 text-muted-foreground hover:bg-muted'}`}
                 >
                     <Archive className="h-4 w-4" />
                     Archived
@@ -303,17 +303,17 @@ export default function QuestsPage() {
             </div>
 
             {/* Quest List */}
-            <div className="bg-white border border-slate-200 rounded-lg shadow-sm rounded-tl-none">
-                <div className="px-4 py-3 border-b border-slate-200 bg-slate-50 flex items-center gap-2">
-                    {viewMode === 'active' ? <Target className="h-4 w-4 text-slate-500" /> : <Archive className="h-4 w-4 text-slate-500" />}
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">
+            <div className="bg-card border border-border rounded-lg shadow-sm rounded-tl-none">
+                <div className="px-4 py-3 border-b border-border bg-muted/10 flex items-center gap-2">
+                    {viewMode === 'active' ? <Target className="h-4 w-4 text-muted-foreground" /> : <Archive className="h-4 w-4 text-muted-foreground" />}
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
                         {viewMode === 'active' ? 'Objectives Registry' : 'Archived Quests'}
                     </h3>
                 </div>
                 <div className="p-4 overflow-auto max-h-[800px]">
                     <div className="space-y-4">
                         {quests.length === 0 ? (
-                            <p className="text-slate-500 text-sm text-center py-12">
+                            <p className="text-muted-foreground text-sm text-center py-12">
                                 {viewMode === 'active' ? 'No active quests found.' : 'No archived quests found.'}
                             </p>
                         ) : (
@@ -321,8 +321,8 @@ export default function QuestsPage() {
                                 <div
                                     key={quest.id}
                                     className={`flex flex-col p-4 border rounded-lg transition-colors ${quest.is_active
-                                        ? 'bg-slate-50 border-slate-200 shadow-sm'
-                                        : 'bg-slate-100 border-slate-200 opacity-60' // Reduced opacity for inactive
+                                        ? 'bg-card border-border shadow-sm'
+                                        : 'bg-muted/30 border-border opacity-70' // Reduced opacity for inactive
                                         }`}
                                 >
                                     {/* Quest Header */}
@@ -332,24 +332,24 @@ export default function QuestsPage() {
                                             <button
                                                 onClick={() => viewMode === 'active' && handleToggleActive(quest)}
                                                 disabled={viewMode === 'archived'}
-                                                className={`mt-1 p-1 rounded ${quest.is_active ? 'text-green-600' : 'text-slate-400'}`}
+                                                className={`mt-1 p-1 rounded ${quest.is_active ? 'text-green-500' : 'text-muted-foreground'}`}
                                                 title={quest.is_active ? 'Active' : 'Archived'}
                                             >
                                                 {quest.is_active ? <CheckCircle className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
                                             </button>
 
                                             <div className="flex-1 min-w-0">
-                                                <h4 className="font-bold text-slate-900 text-lg flex items-center gap-3">
+                                                <h4 className="font-bold text-foreground text-lg flex items-center gap-3">
                                                     {quest.name}
-                                                    {quest.is_active && <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Active</span>}
-                                                    {quest.is_archived && <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Archived</span>}
+                                                    {quest.is_active && <span className="text-[10px] bg-green-500/10 text-green-500 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Active</span>}
+                                                    {quest.is_archived && <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Archived</span>}
                                                 </h4>
                                                 {quest.description && (
-                                                    <p className="text-sm text-slate-600 mt-1">{quest.description}</p>
+                                                    <p className="text-sm text-muted-foreground mt-1">{quest.description}</p>
                                                 )}
 
                                                 {/* Quest Stats / Metadata inside header */}
-                                                <div className="flex items-center gap-4 mt-2 text-xs text-slate-500 font-mono">
+                                                <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground font-mono">
                                                     <div className="flex items-center gap-1.5">
                                                         <Calendar className="h-3 w-3" />
                                                         <span>{formatDate(quest.start_date)} → {formatDate(quest.end_date)}</span>
@@ -367,7 +367,7 @@ export default function QuestsPage() {
                                             {viewMode === 'active' && !quest.is_active && canDeploy && (
                                                 <button
                                                     onClick={() => handleToggleActive(quest)}
-                                                    className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-xs font-bold uppercase rounded hover:bg-green-700 transition-colors"
+                                                    className="flex items-center gap-1 px-3 py-1.5 bg-green-500 text-white text-xs font-bold uppercase rounded hover:bg-green-600 transition-colors"
                                                     title="Deploy Quest"
                                                 >
                                                     <Rocket className="h-3 w-3" />
@@ -377,7 +377,7 @@ export default function QuestsPage() {
                                             {viewMode === 'active' && quest.is_active && canDeploy && (
                                                 <button
                                                     onClick={() => handleToggleActive(quest)}
-                                                    className="px-3 py-1.5 bg-white border border-slate-300 text-slate-600 text-xs font-bold uppercase rounded hover:bg-slate-50 transition-colors"
+                                                    className="px-3 py-1.5 bg-background border border-border text-muted-foreground text-xs font-bold uppercase rounded hover:bg-muted transition-colors"
                                                 >
                                                     Recall
                                                 </button>
@@ -388,7 +388,7 @@ export default function QuestsPage() {
                                                     {viewMode === 'active' && (
                                                         <button
                                                             onClick={() => handleArchive(quest.id)}
-                                                            className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded"
+                                                            className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded"
                                                             title="Archive"
                                                         >
                                                             <ArrowDownToLine className="h-4 w-4" />
@@ -397,17 +397,17 @@ export default function QuestsPage() {
                                                     {viewMode === 'archived' && (
                                                         <button
                                                             onClick={() => handleUnarchive(quest.id)}
-                                                            className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded"
+                                                            className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-500/10 rounded"
                                                             title="Restore"
                                                         >
                                                             <RefreshCcw className="h-4 w-4" />
                                                         </button>
                                                     )}
-                                                    <button onClick={() => handleEditOpen(quest)} className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Edit">
+                                                    <button onClick={() => handleEditOpen(quest)} className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-500/10 rounded" title="Edit">
                                                         <Edit className="h-4 w-4" />
                                                     </button>
                                                     {isOwner && (
-                                                        <button onClick={() => handleDelete(quest.id)} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded" title="Delete">
+                                                        <button onClick={() => handleDelete(quest.id)} className="p-1.5 text-destructive/70 hover:text-destructive hover:bg-destructive/10 rounded" title="Delete">
                                                             <Trash2 className="h-4 w-4" />
                                                         </button>
                                                     )}
@@ -418,22 +418,22 @@ export default function QuestsPage() {
 
                                     {/* Linked Tasks List - Only if has tasks */}
                                     {quest.tasks && quest.tasks.length > 0 && (
-                                        <div className="mt-4 pt-4 border-t border-slate-200/50">
-                                            <h5 className="text-xs font-bold uppercase text-slate-400 mb-2 pl-1">Mission Log</h5>
+                                        <div className="mt-4 pt-4 border-t border-border">
+                                            <h5 className="text-xs font-bold uppercase text-muted-foreground mb-2 pl-1">Mission Log</h5>
                                             <div className="space-y-1">
                                                 {quest.tasks.map(task => (
-                                                    <div key={task.id} className="flex items-center justify-between px-3 py-2 bg-white/50 rounded border border-slate-200/50 hover:bg-white hover:border-slate-300 transition-colors">
+                                                    <div key={task.id} className="flex items-center justify-between px-3 py-2 bg-muted/20 rounded border border-border hover:bg-muted/40 transition-colors">
                                                         <div className="flex items-center gap-3">
-                                                            <div className={`w-2 h-2 rounded-full ${task.status?.category === 'done' ? 'bg-green-500' : task.status?.category === 'active' ? 'bg-blue-500' : 'bg-slate-300'}`} />
-                                                            <span className={`text-sm font-medium ${task.status?.category === 'done' ? 'text-slate-500 line-through' : 'text-slate-700'}`}>
+                                                            <div className={`w-2 h-2 rounded-full ${task.status?.category === 'done' ? 'bg-green-500' : task.status?.category === 'active' ? 'bg-blue-500' : 'bg-muted-foreground'}`} />
+                                                            <span className={`text-sm font-medium ${task.status?.category === 'done' ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
                                                                 {task.title}
                                                             </span>
                                                         </div>
                                                         <div className="flex items-center gap-3 text-xs">
-                                                            <span className="text-slate-400 font-mono uppercase bg-slate-100 px-1.5 py-0.5 rounded">
+                                                            <span className="text-muted-foreground font-mono uppercase bg-muted px-1.5 py-0.5 rounded">
                                                                 {task.status?.name || 'Unknown'}
                                                             </span>
-                                                            <div className="flex items-center gap-1.5 text-slate-500 w-24 justify-end truncate">
+                                                            <div className="flex items-center gap-1.5 text-muted-foreground w-24 justify-end truncate">
                                                                 <span className="truncate">
                                                                     {task.assignee?.first_name
                                                                         ? `${task.assignee.first_name} ${task.assignee.last_name || ''}`
@@ -455,37 +455,37 @@ export default function QuestsPage() {
 
             {/* Create Quest Modal */}
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-                <DialogContent className="bg-white border border-slate-200 text-slate-900 shadow-lg max-w-lg">
+                <DialogContent className="bg-card border border-border text-foreground shadow-lg max-w-lg">
                     <DialogHeader>
-                        <DialogTitle className="uppercase tracking-wider font-bold text-slate-900 flex items-center gap-2">
-                            <Target className="h-5 w-5 text-blue-600" />
+                        <DialogTitle className="uppercase tracking-wider font-bold text-foreground flex items-center gap-2">
+                            <Target className="h-5 w-5 text-primary" />
                             Initiate Quest
                         </DialogTitle>
                     </DialogHeader>
                     <form onSubmit={handleCreate} className="py-4 space-y-4">
                         <div>
-                            <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Quest Name *</label>
+                            <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Quest Name *</label>
                             <Input
                                 type="text"
                                 value={newName}
                                 onChange={(e) => setNewName(e.target.value)}
                                 placeholder="e.g. Alpha Sprint, Beta Launch..."
                                 required
-                                className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
+                                className="bg-background border-input text-foreground placeholder:text-muted-foreground"
                             />
                         </div>
                         <div>
-                            <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Description</label>
+                            <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Description</label>
                             <textarea
                                 value={newDescription}
                                 onChange={(e) => setNewDescription(e.target.value)}
                                 placeholder="Optional objective summary..."
                                 rows={3}
-                                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                             />
                         </div>
                         <div>
-                            <label className="text-xs uppercase text-slate-600 font-bold block mb-2 flex items-center gap-1">
+                            <label className="text-xs uppercase text-muted-foreground font-bold block mb-2 flex items-center gap-1">
                                 <Skull className="h-3 w-3" />
                                 Nemesis (Boss)
                             </label>
@@ -493,21 +493,21 @@ export default function QuestsPage() {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Start Date</label>
+                                <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Start Date</label>
                                 <Input
                                     type="date"
                                     value={newStartDate}
                                     onChange={(e) => setNewStartDate(e.target.value)}
-                                    className="bg-white border-slate-300 text-slate-900"
+                                    className="bg-background border-input text-foreground"
                                 />
                             </div>
                             <div>
-                                <label className="text-xs uppercase text-slate-600 font-bold block mb-1">End Date</label>
+                                <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">End Date</label>
                                 <Input
                                     type="date"
                                     value={newEndDate}
                                     onChange={(e) => setNewEndDate(e.target.value)}
-                                    className="bg-white border-slate-300 text-slate-900"
+                                    className="bg-background border-input text-foreground"
                                 />
                             </div>
                         </div>
@@ -515,14 +515,14 @@ export default function QuestsPage() {
                             <button
                                 type="button"
                                 onClick={() => setCreateOpen(false)}
-                                className="px-4 py-2 text-sm font-bold uppercase text-slate-500 hover:text-slate-700"
+                                className="px-4 py-2 text-sm font-bold uppercase text-muted-foreground hover:text-foreground"
                             >
                                 Cancel
                             </button>
                             <button
                                 type="submit"
                                 disabled={isCreating || !newName}
-                                className="px-4 py-2 bg-blue-600 text-white text-sm font-bold uppercase rounded hover:bg-blue-700 disabled:opacity-50"
+                                className="px-4 py-2 bg-primary text-primary-foreground text-sm font-bold uppercase rounded hover:bg-primary/90 disabled:opacity-50"
                             >
                                 {isCreating ? 'Creating...' : 'Initiate Quest'}
                             </button>
@@ -533,31 +533,31 @@ export default function QuestsPage() {
 
             {/* Edit Quest Modal */}
             <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                <DialogContent className="bg-white border border-slate-200 text-slate-900 shadow-lg max-w-lg">
+                <DialogContent className="bg-card border border-border text-foreground shadow-lg max-w-lg">
                     <DialogHeader>
-                        <DialogTitle className="uppercase tracking-wider font-bold text-slate-900">Edit Quest</DialogTitle>
+                        <DialogTitle className="uppercase tracking-wider font-bold text-foreground">Edit Quest</DialogTitle>
                     </DialogHeader>
                     <div className="py-4 space-y-4">
                         <div>
-                            <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Quest Name</label>
+                            <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Quest Name</label>
                             <Input
                                 type="text"
                                 value={editName}
                                 onChange={(e) => setEditName(e.target.value)}
-                                className="bg-white border-slate-300 text-slate-900"
+                                className="bg-background border-input text-foreground"
                             />
                         </div>
                         <div>
-                            <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Description</label>
+                            <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Description</label>
                             <textarea
                                 value={editDescription}
                                 onChange={(e) => setEditDescription(e.target.value)}
                                 rows={3}
-                                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                             />
                         </div>
                         <div>
-                            <label className="text-xs uppercase text-slate-600 font-bold block mb-2 flex items-center gap-1">
+                            <label className="text-xs uppercase text-muted-foreground font-bold block mb-2 flex items-center gap-1">
                                 <Skull className="h-3 w-3" />
                                 Nemesis (Boss)
                             </label>
@@ -565,28 +565,28 @@ export default function QuestsPage() {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="text-xs uppercase text-slate-600 font-bold block mb-1">Start Date</label>
+                                <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Start Date</label>
                                 <Input
                                     type="date"
                                     value={editStartDate}
                                     onChange={(e) => setEditStartDate(e.target.value)}
-                                    className="bg-white border-slate-300 text-slate-900"
+                                    className="bg-background border-input text-foreground"
                                 />
                             </div>
                             <div>
-                                <label className="text-xs uppercase text-slate-600 font-bold block mb-1">End Date</label>
+                                <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">End Date</label>
                                 <Input
                                     type="date"
                                     value={editEndDate}
                                     onChange={(e) => setEditEndDate(e.target.value)}
-                                    className="bg-white border-slate-300 text-slate-900"
+                                    className="bg-background border-input text-foreground"
                                 />
                             </div>
                         </div>
                     </div>
                     <DialogFooter>
-                        <button onClick={() => setEditOpen(false)} className="px-4 py-2 text-sm font-bold uppercase text-slate-500 hover:text-slate-700">Cancel</button>
-                        <button onClick={handleEditSave} className="px-4 py-2 bg-blue-600 text-white text-sm font-bold uppercase rounded hover:bg-blue-700">Save Changes</button>
+                        <button onClick={() => setEditOpen(false)} className="px-4 py-2 text-sm font-bold uppercase text-muted-foreground hover:text-foreground">Cancel</button>
+                        <button onClick={handleEditSave} className="px-4 py-2 bg-primary text-primary-foreground text-sm font-bold uppercase rounded hover:bg-primary/90">Save Changes</button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
