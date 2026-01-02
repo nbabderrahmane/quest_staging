@@ -14,13 +14,21 @@ export default function SelectDashboardPage() {
     useEffect(() => {
         async function checkRoles() {
             const data = await getUnifiedUserRoles()
+            console.log('[Select Dashboard] Role Check:', data)
             if (!data.userId) {
                 router.push('/login')
                 return
             }
             if (!data.requiresSelection) {
-                // If they don't have dual roles, push them to their correct dashboard
-                router.push(data.isStaff ? '/quest-board' : '/portal/dashboard')
+                // Not dual-role: send to appropriate dashboard
+                if (data.isStaff) {
+                    router.push('/quest-board')
+                } else if (data.isClient) {
+                    router.push('/portal/dashboard')
+                } else {
+                    // No roles at all - shouldn't happen, but go to login
+                    router.push('/login')
+                }
                 return
             }
             setRoles({ isStaff: data.isStaff, isClient: data.isClient })

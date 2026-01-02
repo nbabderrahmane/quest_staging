@@ -143,7 +143,7 @@ export async function getClientDashboardData() {
     // Run profile and staff check in parallel
     const [profileRes, staffRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user.id).single(),
-        supabaseAdmin.from('team_members').select('id').eq('user_id', user.id).limit(1)
+        supabaseAdmin.from('team_members').select('user_id').eq('user_id', user.id).limit(1)
     ])
 
     const profile = profileRes.data
@@ -204,7 +204,7 @@ export async function checkUserRoles() {
     if (!user) return { isStaff: false, isClient: false }
 
     const [staffRes, clientRes] = await Promise.all([
-        supabase.from('team_members').select('id').eq('user_id', user.id).limit(1),
+        supabase.from('team_members').select('user_id').eq('user_id', user.id).limit(1),
         supabase.from('client_members').select('id').eq('user_id', user.id).limit(1)
     ])
 

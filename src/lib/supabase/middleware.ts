@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // Public routes that don't need auth check at all
-const PUBLIC_ROUTES = ['/login', '/portal/login', '/auth/callback', '/auth/signout']
+const PUBLIC_ROUTES = ['/login', '/portal/login', '/auth/callback', '/auth/signout', '/demo']
 
 export async function updateSession(request: NextRequest) {
     const path = request.nextUrl.pathname
