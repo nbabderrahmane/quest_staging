@@ -10,6 +10,7 @@ import { Plus, Scroll, User, Zap, Target, Trash2, Search, Filter } from 'lucide-
 import { getTasks, createTask, getCrewForAssignment, getQuestsForDropdown, deleteTask, getProjectsForDropdown, getDepartmentsForDropdown, getClientsForDropdown } from './actions'
 import { TaskDetailDrawer } from './task-detail-drawer'
 import { CreateTaskDialog } from '@/components/dashboard/create-task-dialog'
+import { Size, Urgency, Status } from '@/lib/types'
 
 interface Task {
     id: string
@@ -18,9 +19,9 @@ interface Task {
     created_at: string
     needs_info?: boolean
     assigned_to?: string | null
-    status?: { id: string; name: string; category: string } | null
-    size?: { id: string; name: string; xp_points: number } | null
-    urgency?: { id: string; name: string; color: string } | null
+    status?: Status | null
+    size?: Size | null
+    urgency?: Urgency | null
     assignee?: { id: string; email: string; first_name: string | null; last_name: string | null } | null
     quest?: { id: string; name: string } | null
     project?: { id: string; name: string } | null
@@ -79,14 +80,9 @@ export default function PipelinePage() {
     const [success, setSuccess] = useState<string | null>(null)
     const router = useRouter()
 
-    // Forge data for dropdowns
-    // Note: CreateTaskDialog expects 'statuses' as well, which are part of initial load but not in original state here?
-    // We might need to fetch statuses if passing to CreateTaskDialog.
-    // The original code passed 'statuses' to CreateTaskDialog in my previous thought, but here state variables are sizes, urgencies...
-    // I need to fetch statuses too!
-    const [statuses, setStatuses] = useState<any[]>([])
-    const [sizes, setSizes] = useState<ForgeItem[]>([])
-    const [urgencies, setUrgencies] = useState<ForgeItem[]>([])
+    const [statuses, setStatuses] = useState<Status[]>([])
+    const [sizes, setSizes] = useState<Size[]>([])
+    const [urgencies, setUrgencies] = useState<Urgency[]>([])
     const [crew, setCrew] = useState<CrewMember[]>([])
     const [questOptions, setQuestOptions] = useState<QuestOption[]>([])
     const [projectOptions, setProjectOptions] = useState<Option[]>([])
@@ -168,25 +164,25 @@ export default function PipelinePage() {
             // Fetch sizes
             const { data: sizesData } = await supabase
                 .from('sizes')
-                .select('id, name, xp_points')
+                .select('id, name, xp_points, team_id, sort_order, is_active')
                 .eq('team_id', cleanTeamId)
                 .order('xp_points', { ascending: true })
-            if (sizesData) setSizes(sizesData)
+            if (sizesData) setSizes(sizesData as unknown as Size[])
 
             // Fetch urgencies
             const { data: urgenciesData } = await supabase
                 .from('urgencies')
-                .select('id, name, color')
+                .select('id, name, color, weight, team_id, is_active')
                 .eq('team_id', cleanTeamId)
-            if (urgenciesData) setUrgencies(urgenciesData)
+            if (urgenciesData) setUrgencies(urgenciesData as unknown as Urgency[])
 
             // Fetch statuses
             const { data: statusData } = await supabase
                 .from('statuses')
-                .select('id, name, category, rank')
+                .select('id, name, category, rank, team_id, sort_order, is_active')
                 .eq('team_id', cleanTeamId)
                 .order('rank', { ascending: true })
-            if (statusData) setStatuses(statusData)
+            if (statusData) setStatuses(statusData as unknown as Status[])
 
             // Fetch crew for assignment
             const crewData = await getCrewForAssignment(cleanTeamId)
