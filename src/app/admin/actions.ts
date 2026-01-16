@@ -58,7 +58,7 @@ export async function getStatuses(teamId: string) {
 
 // Ship Quest Doctrine: Unified CRUD payload
 // All create functions accept: name, team_id, sort_order, category (when applicable)
-export async function createStatus(prevState: any, formData: FormData) {
+export async function createStatus(prevState: unknown, formData: FormData) {
     const teamId = formData.get('teamId') as string
     const name = formData.get('name') as string
     const category = formData.get('category') as string
@@ -80,12 +80,12 @@ export async function createStatus(prevState: any, formData: FormData) {
 
         revalidatePath('/admin')
         return { success: true }
-    } catch (e: any) {
-        return { success: false, error: e.message }
+    } catch (e: unknown) {
+        return { success: false, error: e instanceof Error ? e.message : String(e) }
     }
 }
 
-export async function updateStatus(prevState: any, formData: FormData) {
+export async function updateStatus(prevState: unknown, formData: FormData) {
     const id = formData.get('id') as string
     const teamId = formData.get('teamId') as string
     const name = formData.get('name') as string
@@ -97,8 +97,8 @@ export async function updateStatus(prevState: any, formData: FormData) {
         if (error) return { success: false, error: error.message }
         revalidatePath('/admin')
         return { success: true }
-    } catch (e: any) {
-        return { success: false, error: e.message }
+    } catch (e: unknown) {
+        return { success: false, error: e instanceof Error ? e.message : String(e) }
     }
 }
 
@@ -110,8 +110,8 @@ export async function toggleItemActive(table: 'statuses' | 'sizes' | 'urgencies'
         if (error) return { success: false, error: `[${error.code}] ${error.message}` }
         revalidatePath('/admin')
         return { success: true }
-    } catch (e: any) {
-        return { success: false, error: e.message }
+    } catch (e: unknown) {
+        return { success: false, error: e instanceof Error ? e.message : String(e) }
     }
 }
 
@@ -120,24 +120,26 @@ export async function updateItem(
     table: 'statuses' | 'sizes' | 'urgencies',
     id: string,
     teamId: string,
-    data: Record<string, any>
+    data: Record<string, unknown>
 ) {
     try {
         const supabase = await checkAdmin(teamId)
         // Remove id and team_id from update data to prevent cross-team modifications
-        const { id: _id, team_id: _tid, created_at: _ca, ...updateData } = data
+        const { id: _id, team_id: _tid, created_at: _ca, ...rest } = data
+        const updateData = rest
 
         const { error } = await supabase
             .from(table)
-            .update(updateData)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .update(updateData as any) // Explicit cast required for dynamic table update
             .eq('id', id)
             .eq('team_id', teamId) // Doctrine: always scope by team_id
 
         if (error) return { success: false, error: `[${error.code}] ${error.message}` }
         revalidatePath('/admin')
         return { success: true }
-    } catch (e: any) {
-        return { success: false, error: e.message }
+    } catch (e: unknown) {
+        return { success: false, error: e instanceof Error ? e.message : String(e) }
     }
 }
 
@@ -148,7 +150,7 @@ export async function getSizes(teamId: string) {
     return (data || []) as Size[]
 }
 
-export async function createSize(prevState: any, formData: FormData) {
+export async function createSize(prevState: unknown, formData: FormData) {
     const teamId = formData.get('teamId') as string
     const name = formData.get('name') as string
     const xp = parseInt(formData.get('xp') as string) || 0
@@ -168,8 +170,8 @@ export async function createSize(prevState: any, formData: FormData) {
         }
         revalidatePath('/admin')
         return { success: true }
-    } catch (e: any) {
-        return { success: false, error: e.message }
+    } catch (e: unknown) {
+        return { success: false, error: e instanceof Error ? e.message : String(e) }
     }
 }
 
@@ -180,7 +182,7 @@ export async function getUrgencies(teamId: string) {
     return (data || []) as Urgency[]
 }
 
-export async function createUrgency(prevState: any, formData: FormData) {
+export async function createUrgency(prevState: unknown, formData: FormData) {
     const teamId = formData.get('teamId') as string
     const name = formData.get('name') as string
     const weight = parseInt(formData.get('weight') as string) || 0
@@ -199,8 +201,8 @@ export async function createUrgency(prevState: any, formData: FormData) {
         }
         revalidatePath('/admin')
         return { success: true }
-    } catch (e: any) {
-        return { success: false, error: e.message }
+    } catch (e: unknown) {
+        return { success: false, error: e instanceof Error ? e.message : String(e) }
     }
 }
 
@@ -211,7 +213,7 @@ export async function getQuestStatuses(teamId: string) {
     return data || []
 }
 
-export async function createQuestStatus(prevState: any, formData: FormData) {
+export async function createQuestStatus(prevState: unknown, formData: FormData) {
     const teamId = formData.get('teamId') as string
     const name = formData.get('name') as string
     const color = formData.get('color') as string || 'blue'
@@ -230,8 +232,8 @@ export async function createQuestStatus(prevState: any, formData: FormData) {
         }
         revalidatePath('/admin')
         return { success: true }
-    } catch (e: any) {
-        return { success: false, error: e.message }
+    } catch (e: unknown) {
+        return { success: false, error: e instanceof Error ? e.message : String(e) }
     }
 }
 
@@ -242,8 +244,8 @@ export async function deleteQuestStatus(id: string, teamId: string) {
         if (error) return { success: false, error: error.message }
         revalidatePath('/admin')
         return { success: true }
-    } catch (e: any) {
-        return { success: false, error: e.message }
+    } catch (e: unknown) {
+        return { success: false, error: e instanceof Error ? e.message : String(e) }
     }
 }
 

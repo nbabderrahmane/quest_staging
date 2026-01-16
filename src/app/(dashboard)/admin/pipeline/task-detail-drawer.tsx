@@ -122,6 +122,7 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
     const commentsEndRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
+        console.log('[TaskDetailDrawer] Mounted', { taskId, canEdit, teamId })
         async function loadTask() {
             if (!taskId || !open) return
             setIsLoading(true)
@@ -129,9 +130,11 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
             const result = await getTaskWithComments(taskId, teamId)
             if ('error' in result) {
                 console.error(result.error)
-                setError(result.error || 'Failed to load task')
+                const errorMsg = (result as any).refId ? `${result.error} (Ref: ${(result as any).refId})` : (result.error || 'Failed to load task')
+                setError(errorMsg)
                 setTask(null)
             } else {
+                console.log('[TaskDetailDrawer] Task loaded', { id: result.task?.id, assigned_to: result.task?.assigned_to })
                 setTask(result.task)
                 setComments(result.comments)
                 setDescription(result.task?.description || '')
@@ -161,6 +164,8 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
             if (!('error' in updated)) {
                 setComments(updated.comments)
             }
+        } else {
+            alert((result as any).refId ? `Failed to send comment. (Ref: ${(result as any).refId})` : 'Failed to send comment.')
         }
     }
 
@@ -173,6 +178,8 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
 
         if (result.success) {
             setTask(prev => prev ? { ...prev, description } : null)
+        } else {
+            alert((result as any).refId ? `Failed to save description. (Ref: ${(result as any).refId})` : 'Failed to save description.')
         }
     }
 
@@ -200,7 +207,8 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
         if (result.success) {
             setTask(prev => prev ? { ...prev, was_dropped: true } : null)
         } else {
-            alert('Failed to abort mission.')
+            const msg = (result as any).refId ? `Failed to abort mission. (Ref: ${(result as any).refId})` : 'Failed to abort mission.'
+            alert(msg)
         }
     }
 
@@ -212,7 +220,8 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
         if (result.success) {
             setTask(prev => prev ? { ...prev, was_dropped: false } : null)
         } else {
-            alert('Failed to reactivate mission.')
+            const msg = (result as any).refId ? `Failed to reactivate mission. (Ref: ${(result as any).refId})` : 'Failed to reactivate mission.'
+            alert(msg)
         }
     }
 
@@ -236,9 +245,9 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                         <div className="px-6 py-6 border-b border-border bg-muted/20 flex-shrink-0">
                             <div className="flex justify-between items-start">
                                 <div className="space-y-1">
-                                    <h2 className="text-xl font-black text-foreground pr-2 uppercase tracking-tighter">
+                                    <DialogTitle className="text-xl font-black text-foreground pr-2 uppercase tracking-tighter">
                                         {task?.title || 'Loading...'}
-                                    </h2>
+                                    </DialogTitle>
                                     {task?.was_dropped && (
                                         <span className="inline-block px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold uppercase rounded border border-red-200">
                                             Mission Aborted

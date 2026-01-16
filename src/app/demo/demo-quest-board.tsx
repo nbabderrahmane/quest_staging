@@ -68,7 +68,7 @@ const STATUS_BG: Record<string, string> = {
     'Done': 'bg-green-500/5',
 }
 
-export function DemoQuestBoard({ quests, statuses, sizes, urgencies, crew, bosses, clients }: DemoQuestBoardProps) {
+export function DemoQuestBoard({ quests, statuses, sizes: _sizes, urgencies: _urgencies, crew, bosses: _bosses, clients: _clients }: DemoQuestBoardProps) {
     const [tasks, setTasks] = useState<Task[]>(DEMO_TASKS as Task[])
     const [selectedQuestId, setSelectedQuestId] = useState<string>(quests[0]?.id || '')
     const [searchQuery, setSearchQuery] = useState('')

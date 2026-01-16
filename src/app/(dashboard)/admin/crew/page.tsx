@@ -115,11 +115,11 @@ export default function CrewPage() {
             setRecruitableTeams(myManagedTeams)
 
             // Fetch crew using clean UUID
-            const crewData = await getCrewMembers(cleanTeamId)
-            if ('error' in crewData) {
-                setError(crewData.error)
+            const crewRes = await getCrewMembers(cleanTeamId)
+            if (!crewRes.success) {
+                setError(crewRes.error.message)
             } else {
-                setCrew(crewData)
+                setCrew(crewRes.data)
             }
             setIsLoading(false)
         }
@@ -159,7 +159,7 @@ export default function CrewPage() {
             setCrew(prev => prev.filter(m => m.user_id !== userId))
             setSuccess('OPERATIVE REMOVED: Crew member has been discharged from the alliance.')
         } else {
-            setError(result.error || 'Removal failed')
+            setError(result.error.message || 'Removal failed')
         }
     }
 
@@ -171,7 +171,7 @@ export default function CrewPage() {
             setNewPassword('')
             setSuccess('PASSWORD RESET: Crew member credentials have been updated.')
         } else {
-            setError(result.error || 'Password reset failed')
+            setError(result.error.message || 'Password reset failed')
         }
     }
 
@@ -184,7 +184,7 @@ export default function CrewPage() {
             ))
             setSuccess(`OPERATIVE ${!currentActive ? 'ACTIVATED' : 'DEACTIVATED'}: Status updated.`)
         } else {
-            setError(result.error || 'Toggle failed')
+            setError(result.error.message || 'Toggle failed')
         }
     }
 
@@ -199,7 +199,7 @@ export default function CrewPage() {
         setIsInviting(true)
 
         let successCount = 0
-        let errors = []
+        const errors = []
 
         for (const tid of inviteTeamIds) {
             const result = await inviteCrewMember(tid, inviteEmail, inviteRole, invitePassword, {
@@ -208,7 +208,7 @@ export default function CrewPage() {
                 telephone: inviteTelephone || undefined
             })
             if (result.success) successCount++
-            else errors.push(result.error)
+            else errors.push(result.error.message)
         }
 
         setIsInviting(false)
@@ -223,8 +223,8 @@ export default function CrewPage() {
             setInviteRole('analyst')
             // Refresh crew list
             if (teamId) {
-                const crewData = await getCrewMembers(teamId)
-                if (!('error' in crewData)) setCrew(crewData)
+                const crewRes = await getCrewMembers(teamId)
+                if (crewRes.success) setCrew(crewRes.data)
             }
         } else {
             setError(errors[0] || 'Recruitment failed')
@@ -240,8 +240,8 @@ export default function CrewPage() {
 
         // Fetch user's current memberships
         const result = await getUserMemberships(member.user_id)
-        if (result.success && result.memberships) {
-            setEditTeamIds(result.memberships.map((m: any) => m.team_id))
+        if (result.success && result.data) {
+            setEditTeamIds(result.data.map((m: any) => m.team_id))
         }
     }
 
@@ -266,7 +266,7 @@ export default function CrewPage() {
             setEditOpen(false)
             setSuccess('Member updated successfully.')
         } else {
-            setError(result.error || 'Update failed')
+            setError(result.error.message || 'Update failed')
         }
     }
 

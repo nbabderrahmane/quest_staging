@@ -39,20 +39,20 @@ export default function ReportingPage() {
         try {
             const result = await exportAnalyticsToCSV(teamId, startDate, endDate)
 
-            if (result.error) {
-                setError(result.error)
-            } else if (result.success && result.csv) {
+            if (!result.success) {
+                setError(result.error.message)
+            } else if (result.success && result.data) {
                 // Trigger Download
-                const blob = new Blob([result.csv], { type: 'text/csv;charset=utf-8;' })
+                const blob = new Blob([result.data.csv], { type: 'text/csv;charset=utf-8;' })
                 const url = URL.createObjectURL(blob)
                 const link = document.createElement('a')
                 link.href = url
-                link.setAttribute('download', result.filename || 'report.csv')
+                link.setAttribute('download', result.data.filename || 'report.csv')
                 document.body.appendChild(link)
                 link.click()
                 document.body.removeChild(link)
 
-                setSuccess(`Report generated successfully! (${result.filename})`)
+                setSuccess(`Report generated successfully! (${result.data.filename})`)
             }
         } catch (err) {
             setError('An unexpected system failure occurred.')

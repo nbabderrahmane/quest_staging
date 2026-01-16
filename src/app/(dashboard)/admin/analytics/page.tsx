@@ -70,27 +70,27 @@ export default function AnalyticsPage() {
         setUserRole(role)
 
         // Parallel fetch with filters
-        const [analyticsData, leaderboardData, questData, departmentData] = await Promise.all([
+        const [analyticsRes, leaderboardRes, questRes, departmentRes] = await Promise.all([
             getGlobalAnalytics(selectedTeamCookie, filters),
             getLeaderboard(selectedTeamCookie, { questId: filters.questId }),
             getQuestIntelligence(selectedTeamCookie, filters),
             getDepartmentAnalytics(selectedTeamCookie, { questId: filters.questId })
         ])
 
-        if (analyticsData) setAnalytics(analyticsData)
-        if (leaderboardData) setLeaderboard(leaderboardData)
-        if (departmentData) setDeptAnalytics(departmentData)
+        if (analyticsRes.success && analyticsRes.data) setAnalytics(analyticsRes.data)
+        if (leaderboardRes.success && leaderboardRes.data) setLeaderboard(leaderboardRes.data)
+        if (departmentRes.success && departmentRes.data) setDeptAnalytics(departmentRes.data)
 
-        if (questData) {
-            setQuestIntel(questData)
+        if (questRes.success && questRes.data) {
+            setQuestIntel(questRes.data)
             if (filters.questId === 'all') {
-                setAvailableQuests(questData.map(q => ({ id: q.id, name: q.name })))
+                setAvailableQuests(questRes.data.map(q => ({ id: q.id, name: q.name })))
             }
         }
 
         // Populate Crew Options
-        if (leaderboardData && filters.assigneeId === 'all') {
-            setAvailableCrew(leaderboardData.map(l => ({
+        if (leaderboardRes.success && leaderboardRes.data && filters.assigneeId === 'all') {
+            setAvailableCrew(leaderboardRes.data.map(l => ({
                 id: l.user_id,
                 name: `${l.first_name || ''} ${l.last_name || ''}`.trim() || 'Unknown Agent'
             })))

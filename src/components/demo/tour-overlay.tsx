@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useDemoContext, TOUR_STEPS } from '@/contexts/demo-context'
 import { X, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react'
@@ -19,26 +19,16 @@ export function TourOverlay() {
         getCurrentTourStep,
     } = useDemoContext()
 
-    const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 })
-    const [targetRect, setTargetRect] = useState<DOMRect | null>(null)
+
 
     const step = getCurrentTourStep()
 
-    useEffect(() => {
-        if (!step) return
-
-        // Find the target element
-        const targetEl = document.querySelector(step.target)
-        if (!targetEl) return
-
-        const rect = targetEl.getBoundingClientRect()
-        setTargetRect(rect)
-
-        // Calculate tooltip position based on step.position
+    // Calculate position from rect - extracted to avoid setState in effect
+    const calculatePosition = useCallback((rect: DOMRect, position: string) => {
         let top = 0
         let left = 0
 
-        switch (step.position) {
+        switch (position) {
             case 'bottom':
                 top = rect.bottom + 16
                 left = rect.left + rect.width / 2
@@ -56,11 +46,29 @@ export function TourOverlay() {
                 left = rect.right + 16
                 break
         }
+        return { top, left }
+    }, [])
 
-        setTooltipPosition({ top, left })
+    // Compute measurements synchronously during render
+    // This avoids setState in effects while still being reactive to step changes
+    const measurements = (() => {
+        if (typeof window === 'undefined' || !step) return null
+        const targetEl = document.querySelector(step.target)
+        if (!targetEl) return null
+        const rect = targetEl.getBoundingClientRect()
+        return {
+            targetRect: rect,
+            tooltipPosition: calculatePosition(rect, step.position)
+        }
+    })()
 
-        // Scroll into view if needed
-        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    // Separate effect for scrolling (side effect only)
+    useEffect(() => {
+        if (!step) return
+        const targetEl = document.querySelector(step.target)
+        if (targetEl) {
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
     }, [step])
 
     // Tour completed state
@@ -75,7 +83,7 @@ export function TourOverlay() {
                     <div className="text-6xl mb-4">🎉</div>
                     <h2 className="text-2xl font-bold mb-2">Tour Complete!</h2>
                     <p className="text-muted-foreground mb-6">
-                        You've seen the basics. Ready to supercharge your team?
+                        You&apos;ve seen the basics. Ready to supercharge your team?
                     </p>
                     <div className="flex gap-3 justify-center">
                         <button
@@ -103,14 +111,14 @@ export function TourOverlay() {
         <>
             {/* Backdrop with hole for target */}
             <div className="fixed inset-0 z-[90] pointer-events-none">
-                {targetRect && (
+                {measurements?.targetRect && (
                     <div
                         className="absolute border-2 border-primary rounded-lg animate-pulse"
                         style={{
-                            top: targetRect.top - 4,
-                            left: targetRect.left - 4,
-                            width: targetRect.width + 8,
-                            height: targetRect.height + 8,
+                            top: measurements.targetRect.top - 4,
+                            left: measurements.targetRect.left - 4,
+                            width: measurements.targetRect.width + 8,
+                            height: measurements.targetRect.height + 8,
                             boxShadow: '0 0 0 9999px rgba(0,0,0,0.5)',
                         }}
                     />
@@ -126,8 +134,8 @@ export function TourOverlay() {
                     exit={{ opacity: 0 }}
                     className="fixed z-[100] w-80"
                     style={{
-                        top: tooltipPosition.top,
-                        left: tooltipPosition.left,
+                        top: measurements?.tooltipPosition.top || 0,
+                        left: measurements?.tooltipPosition.left || 0,
                         transform: step.position === 'top'
                             ? 'translate(-50%, -100%)'
                             : step.position === 'left'
@@ -180,12 +188,12 @@ export function TourOverlay() {
                     {/* Arrow */}
                     <div
                         className={`absolute w-3 h-3 bg-card border border-border rotate-45 ${step.position === 'bottom'
-                                ? '-top-1.5 left-1/2 -translate-x-1/2 border-r-0 border-b-0'
-                                : step.position === 'top'
-                                    ? '-bottom-1.5 left-1/2 -translate-x-1/2 border-l-0 border-t-0'
-                                    : step.position === 'left'
-                                        ? '-right-1.5 top-1/2 -translate-y-1/2 border-l-0 border-b-0'
-                                        : '-left-1.5 top-1/2 -translate-y-1/2 border-r-0 border-t-0'
+                            ? '-top-1.5 left-1/2 -translate-x-1/2 border-r-0 border-b-0'
+                            : step.position === 'top'
+                                ? '-bottom-1.5 left-1/2 -translate-x-1/2 border-l-0 border-t-0'
+                                : step.position === 'left'
+                                    ? '-right-1.5 top-1/2 -translate-y-1/2 border-l-0 border-b-0'
+                                    : '-left-1.5 top-1/2 -translate-y-1/2 border-r-0 border-t-0'
                             }`}
                     />
                 </motion.div>

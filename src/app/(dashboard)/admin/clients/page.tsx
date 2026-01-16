@@ -6,6 +6,16 @@ import { Briefcase, Plus, Search, Loader2, Building, Trash2 } from 'lucide-react
 import { Client } from '@/lib/types'
 import { useRouter } from 'next/navigation'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Input } from '@/components/ui/input'
 
 export default function AdminClientsPage() {
@@ -22,6 +32,7 @@ export default function AdminClientsPage() {
     const [teamId, setTeamId] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState<string | null>(null)
+    const [deleteClientId, setDeleteClientId] = useState<string | null>(null)
     const router = useRouter()
 
     useEffect(() => {
@@ -140,19 +151,19 @@ export default function AdminClientsPage() {
         }
     }
 
-    async function handleDeleteClient(id: string) {
-        if (!confirm('Are you sure you want to delete this client? Tasks assigned to this client will be unassigned.')) return
+    async function confirmDeleteClient() {
+        if (!deleteClientId) return
 
         try {
             const supabase = createClient()
             const { error } = await supabase
                 .from('clients')
                 .delete()
-                .eq('id', id)
+                .eq('id', deleteClientId)
 
             if (error) throw error
 
-            setClients(clients.filter(c => c.id !== id))
+            setClients(clients.filter(c => c.id !== deleteClientId))
             setSuccess('Client deleted successfully')
             router.refresh()
             setTimeout(() => setSuccess(null), 3000)
@@ -161,6 +172,7 @@ export default function AdminClientsPage() {
             setError('Failed to delete client')
             setTimeout(() => setError(null), 4000)
         }
+        setDeleteClientId(null)
     }
 
     const filteredClients = clients.filter(c =>
@@ -319,16 +331,28 @@ export default function AdminClientsPage() {
                 !isLoading && clients.length > 0 && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {filteredClients.map((client) => (
-                            <div key={client.id} className="bg-card border border-border rounded-xl shadow-sm hover:shadow-md transition-shadow group p-6 cursor-pointer" onClick={() => router.push(`/admin/clients/${client.id}`)}>
-                                <div className="flex flex-row items-center justify-between pb-2 space-y-0 mb-4">
+                            <div key={client.id} className="bg-card border border-border rounded-xl shadow-sm hover:shadow-md transition-shadow group p-6 relative">
+                                <div
+                                    onClick={() => router.push(`/admin/clients/${client.id}`)}
+                                    className="absolute inset-0 z-0 cursor-pointer"
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-label={`View details for ${client.name}`}
+                                />
+                                <div className="flex flex-row items-center justify-between pb-2 space-y-0 mb-4 z-10 relative pointer-events-none">
+                                    <div className="flex-1"></div> {/* Spacer to push delete button right if needed, or just let absolute positioning handle it. Actually the original had flex row justify-between. */}
                                     <button
-                                        className="p-2 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded ml-auto"
-                                        onClick={(e) => { e.stopPropagation(); handleDeleteClient(client.id) }}
+                                        className="p-2 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded ml-auto pointer-events-auto relative z-20 cursor-pointer"
+                                        onClick={(e) => {
+                                            e.preventDefault()
+                                            e.stopPropagation();
+                                            setDeleteClientId(client.id)
+                                        }}
                                     >
                                         <Trash2 className="h-4 w-4" />
                                     </button>
                                 </div>
-                                <div className="flex items-center gap-3 mb-4">
+                                <div className="flex items-center gap-3 mb-4 pointer-events-none">
                                     <div className="p-3 bg-primary/10 rounded-full text-primary">
                                         <Briefcase className="h-6 w-6" />
                                     </div>
@@ -347,7 +371,7 @@ export default function AdminClientsPage() {
                                     </div>
                                 </div>
 
-                                <div className="space-y-2 text-sm text-muted-foreground border-t border-border pt-4">
+                                <div className="space-y-2 text-sm text-muted-foreground border-t border-border pt-4 pointer-events-none">
                                     {client.email && (
                                         <div className="flex items-center gap-2">
                                             <span className="font-mono text-xs uppercase text-slate-500">EMAIL:</span>
@@ -375,6 +399,21 @@ export default function AdminClientsPage() {
                     </div>
                 )
             }
+
+            <AlertDialog open={!!deleteClientId} onOpenChange={(open) => !open && setDeleteClientId(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Client?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete this client? Tasks assigned to this client will be unassigned.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDeleteClient} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
             {/* Error Toast */}
             {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { LogOut, User, Phone, Lock, Save } from 'lucide-react'
+import { User, Phone, Lock, Save } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { updateUserProfile } from '@/app/user-actions'

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { handleUnifiedLogin } from './actions'
 import { useRouter } from 'next/navigation'
-import { Loader2, User, Briefcase } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 
 export default function LoginPage() {
     const router = useRouter()

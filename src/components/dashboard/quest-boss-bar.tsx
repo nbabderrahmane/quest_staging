@@ -14,12 +14,14 @@ export function QuestBossBar({ teamId }: { teamId: string }) {
         async function load() {
             console.log('🔥 BossBar: Fetching progress for team', teamId)
             try {
-                const data = await getActiveQuestProgress(teamId)
-                if (data) {
-                    console.log('🔥 BossBar: Data received', data)
-                    setProgress(data)
+                const result = await getActiveQuestProgress(teamId)
+                if (result.success) {
+                    if (result.data) {
+                        console.log('🔥 BossBar: Data received', result.data)
+                        setProgress(result.data)
+                    }
                 } else {
-                    console.log('🔥 BossBar: No data returned')
+                    console.log('🔥 BossBar: No data returned or error', result.error)
                 }
             } catch (err) {
                 console.error('🔥 BossBar: Fetch error', err)
@@ -47,8 +49,15 @@ export function QuestBossBar({ teamId }: { teamId: string }) {
             )
             .subscribe()
 
+        // 20s Polling fallback (Requested by User)
+        const interval = setInterval(() => {
+            console.log('🔥 BossBar: 20s interval refresh')
+            load()
+        }, 20000)
+
         return () => {
             supabase.removeChannel(channel)
+            clearInterval(interval)
         }
     }, [teamId, supabase])
 

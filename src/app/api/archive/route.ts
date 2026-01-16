@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getRoleContext } from '@/lib/role-service'
 
 export async function GET(req: NextRequest) {
@@ -13,21 +14,16 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Determine Team ID (from Query Param or Cookie fallback is risky in API, prefer Header or strictly Param)
-    // For simplicity and alignment with Dashboard, we'll try to extract from cookie manually if not in param
-    // However, best practice is explicit query param.
     const url = new URL(req.url)
-    let teamId = url.searchParams.get('teamId')
+    const teamId = url.searchParams.get('teamId')
 
     if (!teamId) {
-        // Fallback: This might be fragile in pure API calls without browser context, but works for "Browser-based API testing"
-        // Logic to parse cookie string if absolutely needed, but let's enforce Param for 'Pro' robustness.
         console.warn('⚠️ Archive API: Missing teamId param')
         return NextResponse.json({ error: 'Missing teamId parameter' }, { status: 400 })
     }
 
     // Security Check
-    const ctx = await getRoleContext(teamId!)
+    const ctx = await getRoleContext(teamId)
     if (!ctx || !['owner', 'admin'].includes(ctx.role || '')) {
         console.error(`❌ Archive API: Access Denied for user ${user.id} on team ${teamId}`)
         return NextResponse.json({ error: 'Forbidden: Insufficient privileges' }, { status: 403 })
@@ -35,18 +31,13 @@ export async function GET(req: NextRequest) {
 
     console.log(`🔒 Archive API: Access Granted (${ctx.role})`)
 
-    const { createClient: createAdminClient } = await import('@supabase/supabase-js')
-    const supabaseAdmin = createAdminClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        { auth: { autoRefreshToken: false, persistSession: false } }
-    )
+    const supabaseAdmin = createAdminClient()
 
     try {
         // Parallel Fetching for Snapshot
         const [questsRes, tasksRes, profilesRes] = await Promise.all([
             supabaseAdmin.from('quests').select('*').eq('team_id', teamId),
-            supabaseAdmin.from('tasks').select('*').eq('team_id', teamId).order('created_at', { ascending: false }).limit(5000), // Cap for perf
+            supabaseAdmin.from('tasks').select('*').eq('team_id', teamId).order('created_at', { ascending: false }).limit(5000),
             supabaseAdmin.from('profiles').select('id, first_name, last_name, email, total_xp').order('total_xp', { ascending: false })
         ])
 
@@ -68,7 +59,7 @@ export async function GET(req: NextRequest) {
             },
             data: {
                 quests: questsRes.data,
-                tasks: tasksRes.data, // Contains history
+                tasks: tasksRes.data,
                 profiles: profilesRes.data
             }
         }
@@ -77,8 +68,9 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json(snapshot)
 
-    } catch (err: any) {
-        console.error('💥 Archive API: System Failure', err)
-        return NextResponse.json({ error: 'Internal System Error', details: err.message }, { status: 500 })
+    } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        console.error('💥 Archive API: System Failure', errorMessage)
+        return NextResponse.json({ error: 'Internal System Error', details: errorMessage }, { status: 500 })
     }
 }

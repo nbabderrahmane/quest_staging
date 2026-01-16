@@ -8,7 +8,7 @@ import { getUnifiedUserRoles } from '@/app/actions/auth'
 
 export default function SelectDashboardPage() {
     const [loading, setLoading] = useState(true)
-    const [roles, setRoles] = useState<{ isStaff: boolean, isClient: boolean } | null>(null)
+    // Roles state removed - only used for loading/redirect logic in useEffect
     const router = useRouter()
 
     useEffect(() => {
@@ -31,7 +31,7 @@ export default function SelectDashboardPage() {
                 }
                 return
             }
-            setRoles({ isStaff: data.isStaff, isClient: data.isClient })
+            // Dual role user reached here - just stop loading to show selection UI
             setLoading(false)
         }
         checkRoles()

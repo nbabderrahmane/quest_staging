@@ -72,6 +72,7 @@ export interface Quest {
     status_id?: string | null
     start_date?: string | null
     end_date?: string | null
+    boss_skin?: string
     created_at: string
     // Expanded Relations
     status?: QuestStatus

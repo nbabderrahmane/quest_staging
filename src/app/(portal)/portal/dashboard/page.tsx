@@ -45,7 +45,10 @@ export default function PortalDashboard() {
 
     async function loadDashboard() {
         try {
-            const dashboardData = await getClientDashboardData()
+            const result = await getClientDashboardData()
+            if (!result.success) throw new Error(result.error.message)
+            const dashboardData = result.data
+
             setData(dashboardData)
 
             if (dashboardData.shouldChangePassword) {
@@ -74,8 +77,8 @@ export default function PortalDashboard() {
             if (dashboardData.isStaff) {
                 setIsStaff(true)
             }
-        } catch (e) {
-            console.error('Error loading dashboard:', e)
+        } catch (e: any) {
+            console.error('Error loading dashboard:', e.message || e)
         } finally {
             setLoading(false)
         }
@@ -147,7 +150,7 @@ export default function PortalDashboard() {
                 setNewTicketDesc('')
             } else {
                 // @ts-ignore
-                throw new Error(res.error)
+                throw new Error(res.error.message)
             }
         } catch (e: any) {
             alert(e.message || 'Failed to create ticket')
@@ -398,7 +401,7 @@ export default function PortalDashboard() {
                                     setShouldChangePassword(false)
                                 } else {
                                     // @ts-ignore
-                                    alert(res.error)
+                                    alert(res.error.message)
                                 }
                             }}
                             className="w-full py-2 text-sm font-bold bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50"
@@ -480,12 +483,13 @@ export default function PortalDashboard() {
                                 setIsUpdatingProfile(true)
                                 try {
                                     // Update Phone
-                                    await updateProfile({ phone: profilePhone })
+                                    const profRes = await updateProfile({ phone: profilePhone })
+                                    if (!profRes.success) throw new Error(profRes.error.message)
 
                                     // Update Password if provided
                                     if (profilePassword.trim()) {
                                         const res = await updateClientPassword(profilePassword)
-                                        if (!res.success) throw new Error(res.error)
+                                        if (!res.success) throw new Error(res.error.message)
                                     }
 
                                     alert('Profile updated successfully!')

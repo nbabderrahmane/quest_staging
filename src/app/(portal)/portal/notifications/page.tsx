@@ -5,25 +5,34 @@ import { getNotifications, markNotificationRead } from '../../actions'
 import { Loader2, Bell, Check, ArrowLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
+interface Notification {
+    id: string
+    title: string
+    message: string
+    is_read: boolean
+    created_at: string
+    resource_type: string
+    resource_id: string
+}
+
 export default function NotificationsPage() {
-    const [notifications, setNotifications] = useState<any[]>([])
+    const [notifications, setNotifications] = useState<Notification[]>([])
     const [loading, setLoading] = useState(true)
     const router = useRouter()
 
     useEffect(() => {
+        async function loadData() {
+            try {
+                const data = await getNotifications()
+                setNotifications(data)
+            } catch (e) {
+                console.error(e)
+            } finally {
+                setLoading(false)
+            }
+        }
         loadData()
     }, [])
-
-    async function loadData() {
-        try {
-            const data = await getNotifications()
-            setNotifications(data)
-        } catch (e) {
-            console.error(e)
-        } finally {
-            setLoading(false)
-        }
-    }
 
     async function handleMarkRead(id: string) {
         // Optimistic update

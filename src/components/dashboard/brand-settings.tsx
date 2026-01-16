@@ -57,7 +57,7 @@ export function BrandSettings({ team, userRole }: BrandSettingsProps) {
             setLogoKey(Date.now()) // Force refresh
             router.refresh()
         } else {
-            setError(result.error || 'Upload failed')
+            setError(result.error?.message || 'Upload failed')
         }
     }
 

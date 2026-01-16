@@ -1,12 +1,11 @@
 'use client'
 
-import Link from 'next/link'
 import Image from 'next/image'
 import TeamSwitcher from './team-switcher'
 import { BrandSettings } from '@/components/dashboard/brand-settings'
 import { UserNav } from './user-nav'
 import { NavItem } from '@/components/ui/nav-item'
-import { LayoutDashboard, ScrollText, BarChart3, Settings, Flag, List, Briefcase, Building2, Skull } from 'lucide-react'
+import { LayoutDashboard, ScrollText, BarChart3, Settings, Flag, List, Briefcase, Building2, Skull, Terminal } from 'lucide-react'
 import { Team } from '@/lib/types'
 
 interface SidebarContentProps {
@@ -68,6 +67,7 @@ export function SidebarContent({ teams, activeTeam, userRole, user, profile, onN
                     <NavItem href="/admin/bosses" icon={<Skull className="h-4 w-4" />} onClick={onNavigate}>Nemesis Registry</NavItem>
                 )}
                 <NavItem href="/admin/crew" icon={<Settings className="h-4 w-4" />} onClick={onNavigate}>Crew Deck</NavItem>
+                <NavItem href="/admin/settings/developer" icon={<Terminal className="h-4 w-4" />} onClick={onNavigate}>Developer API</NavItem>
             </nav>
 
             {/* User Footer */}

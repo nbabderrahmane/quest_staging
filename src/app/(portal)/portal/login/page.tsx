@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, Suspense, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Loader2, ArrowRight, CheckCircle, AlertCircle, Briefcase, User as UserIcon } from 'lucide-react'
+import { Loader2, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react'
 import Image from 'next/image'
 import { Input } from '@/components/ui/input'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { getUnifiedUserRoles } from '@/app/actions/auth'
+import { signUpWithInvite, acceptClientInvite } from '@/app/(portal)/actions'
+// Dialog components removed - unused
 
 function PortalLoginContent() {
     const [email, setEmail] = useState('')
@@ -15,67 +17,68 @@ function PortalLoginContent() {
     const [inviteToken, setInviteToken] = useState<string | null>(null)
     const [inviteStatus, setInviteStatus] = useState<'checking' | 'valid' | 'invalid' | null>(null)
     const [isSignUp, setIsSignUp] = useState(false)
-    const [currentUser, setCurrentUser] = useState<any>(null)
+    const [currentUser, setCurrentUser] = useState<{ email?: string } | null>(null)
     const [alreadyMember, setAlreadyMember] = useState(false)
 
     const router = useRouter()
     const searchParams = useSearchParams()
 
-    useEffect(() => {
-        const token = searchParams.get('invite')
-        checkSession()
-        if (token) {
-            setInviteToken(token)
-            verifyInvite(token)
-            setIsSignUp(true)
-        }
-    }, [searchParams])
-
-    async function checkSession() {
+    const checkSession = useCallback(async () => {
         const supabase = createClient()
         const { data: { user } } = await supabase.auth.getUser()
         setCurrentUser(user)
 
         // If logged in and no invite, check if we should show role select or redirect
         if (user && !searchParams.get('invite')) {
-            const roles = await checkRolesAction()
+            const roles = await getUnifiedUserRoles()
             if (roles.requiresSelection) {
                 router.push('/select-dashboard')
             } else if (roles.isClient) {
                 // router.push('/portal/dashboard')
             }
         }
-    }
+    }, [searchParams, router])
 
-    async function verifyInvite(token: string) {
-        setInviteStatus('checking')
-        const supabase = createClient()
-        const { data, error } = await supabase
-            .from('client_invitations')
-            .select('email, status, expires_at, client_id')
-            .eq('token', token)
-            .single()
+    useEffect(() => {
+        const token = searchParams.get('invite')
 
-        if (error || !data || data.status !== 'pending' || new Date(data.expires_at) < new Date()) {
-            setInviteStatus('invalid')
-        } else {
-            setInviteStatus('valid')
-            setEmail(data.email || '')
+        async function verifyInvite(token: string) {
+            setInviteStatus('checking')
+            const supabase = createClient()
+            const { data, error } = await supabase
+                .from('client_invitations')
+                .select('email, status, expires_at, client_id')
+                .eq('token', token)
+                .single()
 
-            // Check if already a member if logged in
-            const { data: { user } } = await supabase.auth.getUser()
-            if (user) {
-                const { data: member } = await supabase
-                    .from('client_members')
-                    .select('id')
-                    .eq('client_id', data.client_id)
-                    .eq('user_id', user.id)
-                    .maybeSingle()
+            if (error || !data || data.status !== 'pending' || new Date(data.expires_at) < new Date()) {
+                setInviteStatus('invalid')
+            } else {
+                setInviteStatus('valid')
+                setEmail(data.email || '')
 
-                if (member) setAlreadyMember(true)
+                // Check if already a member if logged in
+                const { data: { user } } = await supabase.auth.getUser()
+                if (user) {
+                    const { data: member } = await supabase
+                        .from('client_members')
+                        .select('id')
+                        .eq('client_id', data.client_id)
+                        .eq('user_id', user.id)
+                        .maybeSingle()
+
+                    if (member) setAlreadyMember(true)
+                }
             }
         }
-    }
+
+        checkSession()
+        if (token) {
+            setInviteToken(token)
+            verifyInvite(token)
+            setIsSignUp(true)
+        }
+    }, [searchParams, router, checkSession])
 
     async function handleAuth(e: React.FormEvent) {
         e.preventDefault()
@@ -89,7 +92,9 @@ function PortalLoginContent() {
 
                 if (!res.success) {
                     // 2. If User Exists, Try to Log In instead
-                    if (res.code === 'USER_EXISTS') {
+                    // 2. If User Exists, Try to Log In instead
+                    // Use 'CONFLICT' which is returned by portal/actions.ts for user exists
+                    if (res.error.code === 'CONFLICT' || (res.error.code as any) === 'USER_EXISTS') {
                         const { error: loginError } = await supabase.auth.signInWithPassword({
                             email,
                             password
@@ -100,11 +105,11 @@ function PortalLoginContent() {
                         }
 
                         // Link Invite to existing user
-                        const linkRes = await acceptInviteAction(inviteToken, email)
-                        if (!linkRes.success) throw new Error(linkRes.error)
+                        const linkRes = await acceptClientInvite(inviteToken, email)
+                        if (!linkRes.success) throw new Error(linkRes.error.message)
 
                         // Check roles
-                        const roles = await checkRolesAction()
+                        const roles = await getUnifiedUserRoles()
                         if (roles.requiresSelection) {
                             router.push('/select-dashboard')
                         } else {
@@ -113,7 +118,7 @@ function PortalLoginContent() {
                         return
                     }
 
-                    throw new Error(res.error)
+                    throw new Error(res.error.message)
                 }
 
                 // 3. If Sign Up Success, Log In immediately
@@ -125,7 +130,7 @@ function PortalLoginContent() {
                 if (loginError) throw loginError
 
                 // Check roles
-                const roles = await checkRolesAction()
+                const roles = await getUnifiedUserRoles()
                 if (roles.requiresSelection) {
                     router.push('/select-dashboard')
                 } else {
@@ -140,20 +145,20 @@ function PortalLoginContent() {
                 if (error) throw error
 
                 if (inviteToken) {
-                    const res = await acceptInviteAction(inviteToken, email)
-                    if (!res.success) throw new Error(res.error)
+                    const res = await acceptClientInvite(inviteToken, email)
+                    if (!res.success) throw new Error(res.error.message)
                 }
 
                 // Check roles
-                const roles = await checkRolesAction()
+                const roles = await getUnifiedUserRoles()
                 if (roles.requiresSelection) {
                     router.push('/select-dashboard')
                 } else {
                     router.push('/portal/dashboard')
                 }
             }
-        } catch (error: any) {
-            alert(error.message)
+        } catch (error: unknown) {
+            alert(error instanceof Error ? error.message : String(error))
         } finally {
             setLoading(false)
         }
@@ -163,18 +168,19 @@ function PortalLoginContent() {
         if (!inviteToken) return
         setLoading(true)
         try {
-            const res = await acceptInviteAction(inviteToken, currentUser.email)
-            if (!res.success) throw new Error(res.error)
+            if (!currentUser?.email) throw new Error('User email not available')
+            const res = await acceptClientInvite(inviteToken, currentUser?.email || '')
+            if (!res.success) throw new Error(res.error.message)
 
             // Check roles after joining
-            const roles = await checkRolesAction()
+            const roles = await getUnifiedUserRoles()
             if (roles.requiresSelection) {
                 router.push('/select-dashboard')
             } else {
                 router.push('/portal/dashboard')
             }
-        } catch (e: any) {
-            alert(e.message)
+        } catch (e: unknown) {
+            alert(e instanceof Error ? e.message : String(e))
         } finally {
             setLoading(false)
         }
@@ -221,7 +227,7 @@ function PortalLoginContent() {
                         </div>
                         <button
                             onClick={async () => {
-                                const roles = await checkRolesAction()
+                                const roles = await getUnifiedUserRoles()
                                 if (roles.requiresSelection) {
                                     router.push('/select-dashboard')
                                 } else {
@@ -305,7 +311,7 @@ function PortalLoginContent() {
 
                 {!inviteToken && (
                     <div className="text-center text-sm text-muted-foreground">
-                        Don't have an account? Ask your agency for an invite.
+                        Don&apos;t have an account? Ask your agency for an invite.
                     </div>
                 )}
             </div>
@@ -313,17 +319,7 @@ function PortalLoginContent() {
     )
 }
 
-// Server Action Import
-import { acceptClientInvite, signUpWithInvite } from '../../actions'
-import { getUnifiedUserRoles } from '@/app/actions/auth'
 
-async function acceptInviteAction(token: string, email: string) {
-    return await acceptClientInvite(token, email)
-}
-
-async function checkRolesAction() {
-    return await getUnifiedUserRoles()
-}
 
 
 export default function PortalLoginPage() {

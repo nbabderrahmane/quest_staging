@@ -1,36 +1,40 @@
 # Code Inventory
 
-## SQL System (`system/`)
-- `99_security_sweep.sql`: [CRITICAL] Master security migration (Strict RLS, Team Isolation, Profile Privacy).
-- `schema.sql`: Core database definition.
-- `*_init_*.sql`: Feature modules (Projects, Departments, Teams, Quests).
+> Last updated: 2026-01-14
 
-## UI Components (`src/components/ui`)
-- `window-card.tsx`: [NEW] Main container component with retro border and title bar.
-- `metric-card.tsx`: [NEW] Display component for single statistics with delta.
-- `nav-item.tsx`: [NEW] Sidebar navigation link with active state animation.
-- `empty-state.tsx`: [NEW] Placeholder component for empty lists/pages.
-- `button.tsx`: Standard shadcn button (to be updated/used).
-- `input.tsx`, `select.tsx`, `tabs.tsx`, `dialog.tsx`: Standard form elements (styled via globals.css).
-- `card.tsx`: shadcn base card (mostly replaced by WindowCard for main UI).
+## Core Application Structure
 
-## Dashboard Components (`src/components/dashboard`)
-- `layout.tsx`: Main dashboard wrapper, Sidebar definition.
-- `team-switcher.tsx`: Dropdown for switching active team.
+### Entry Points
+| Path | Purpose |
+|---|---|
+| `/login` | Staff authentication |
+| `/portal/login` | Client portal authentication |
+| `/demo` | Guided demo mode |
+| `/quest-board` | Main staff dashboard |
+| `/admin/*` | Admin management pages |
+| `/portal/*` | Client portal |
+| `/api/v1/tasks` | RESTful API |
 
-## Admin Components (`src/components/admin`)
-- `data-table.tsx`: Reusable table for reference data.
+### Key Modules
+| Module | Location | Purpose |
+|---|---|---|
+| Server Actions | `src/app/actions/`, `src/app/(portal)/actions.ts` | Business logic |
+| API Routes | `src/app/api/v1/` | External API layer |
+| Role Service | `src/lib/role-service.ts` | Centralized RBAC |
+| Admin Client | `src/lib/supabase/admin.ts` | Service role DB access |
+| Auth Utils | `src/lib/auth-utils.ts`, `src/lib/auth/api-key.ts` | Authentication helpers |
 
-## Key Pages (`src/app`)
-- `/quest-board`: [Active] Main Kanban board (currently placeholder).
-- `/backlog`: [Active] Quest backlog (currently placeholder).
-- `/analytics`: [Active] System stats (currently placeholder with mocked metrics).
-- `/admin`: [Active] "The Forge" - System configuration (Statuses, Sizes, Urgencies).
+### Component Library
+| Path | Contents |
+|---|---|
+| `src/components/ui/` | Reusable UI primitives (shadcn/ui based) |
+| `src/components/dashboard/` | Staff dashboard components |
+| `src/components/admin/` | Admin page components |
+| `src/components/demo/` | Demo mode components |
 
-## Utilities (`src/lib`)
-- `supabase/client.ts`: Client-side Supabase client.
-- `supabase/server.ts`: Server-side Supabase client.
-- `supabase/middleware.ts`: Edge-compatible session management with env validation.
-- `role-service.ts`: Backend RBAC and Team Context verification.
-- `types.ts`: TypeScript definitions for DB entities.
-- `utils.ts`: Tailwind class merger.
+---
+
+## Removed Components
+
+### Remote MCP Server (removed 2026-01-14)
+Previously located at `server/mcp-remote/`. Will be rebuilt separately.

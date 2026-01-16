@@ -2,12 +2,19 @@
 
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
 import confetti from 'canvas-confetti'
-import { useState, useOptimistic, startTransition } from "react"
+import { useState, startTransition, useEffect, useCallback } from "react"
+import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { Quest, Status, Task, Size, Urgency } from "@/lib/types"
 import { BoardColumn } from "./board-column"
 import { TaskCard } from "./task-card"
 import { updateTaskStatus } from "@/app/(dashboard)/quest-board/actions"
 import { CreateTaskDialog } from "./create-task-dialog"
+
+interface CrewMember {
+    user_id: string
+    first_name: string | null
+    last_name: string | null
+}
 
 interface QuestBoardProps {
     quest: Quest
@@ -16,7 +23,7 @@ interface QuestBoardProps {
     sizes: Size[]
     urgencies: Urgency[]
     teamId: string
-    crew: any[]
+    crew: CrewMember[]
     canEdit: boolean
     userId: string
     userRole: string
@@ -25,8 +32,25 @@ interface QuestBoardProps {
 export function QuestBoard({ quest, initialTasks, statuses, sizes, urgencies, teamId, crew, userRole }: QuestBoardProps) {
     const [tasks, setTasks] = useState(initialTasks)
     const [activeId, setActiveId] = useState<string | null>(null)
-    const [isCreateOpen, setIsCreateOpen] = useState(false)
-    const [newTaskStatusId, setNewTaskStatusId] = useState<string | undefined>(undefined)
+
+    // URL State Management for Dialogs
+    const router = useRouter()
+    const pathname = usePathname()
+    const searchParams = useSearchParams()
+
+    const isCreateOpen = searchParams?.get('action') === 'create-task'
+    const newTaskStatusId = searchParams?.get('statusId') || undefined
+
+    const setIsCreateOpen = useCallback((open: boolean) => {
+        const params = new URLSearchParams(searchParams?.toString())
+        if (open) {
+            params.set('action', 'create-task')
+        } else {
+            params.delete('action')
+            params.delete('statusId')
+        }
+        router.replace(`${pathname}?${params.toString()}`)
+    }, [pathname, router, searchParams])
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -120,7 +144,7 @@ export function QuestBoard({ quest, initialTasks, statuses, sizes, urgencies, te
                                     <option value="all">ALL CREW</option>
                                     <option value="unassigned">UNASSIGNED</option>
                                     <hr />
-                                    {(crew || []).map((member: any) => (
+                                    {(crew || []).map((member) => (
                                         <option key={member.user_id} value={member.user_id}>
                                             {member.first_name} {member.last_name}
                                         </option>
@@ -164,8 +188,10 @@ export function QuestBoard({ quest, initialTasks, statuses, sizes, urgencies, te
                             status={status}
                             tasks={filteredTasks.filter(t => t.status_id === status.id)}
                             onAddTask={status.category === 'backlog' ? () => {
-                                setNewTaskStatusId(status.id)
-                                setIsCreateOpen(true)
+                                const params = new URLSearchParams(searchParams?.toString())
+                                params.set('action', 'create-task')
+                                params.set('statusId', status.id)
+                                router.replace(`${pathname}?${params.toString()}`)
                             } : undefined}
                         />
                     ))}

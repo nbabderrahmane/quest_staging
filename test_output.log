@@ -1,0 +1,36 @@
+
+> ship-quest@0.1.0 test
+> playwright test
+
+[1A[2K[2m[WebServer] [22m[33m[1m⚠[22m[39m Warning: Next.js inferred your workspace root, but it may not be correct.
+[2m[WebServer] [22m We detected multiple lockfiles and selected the directory of /Users/abderrahmanenaciribennani/dev/package-lock.json as the root directory.
+[2m[WebServer] [22m To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+[2m[WebServer] [22m   See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+[2m[WebServer] [22m Detected additional lockfiles: 
+[2m[WebServer] [22m   * /Users/abderrahmanenaciribennani/dev/ship-quest/package-lock.json
+[2m[WebServer] [22m
+
+
+Running 15 tests using 5 workers
+
+[1A[2K[1/15] [chromium] › tests/regression.spec.ts:55:9 › Ship Quest Legacy - Regression Suite › Navigation: System Pages
+[1A[2K[2/15] [chromium] › tests/regression.spec.ts:128:9 › Ship Quest Legacy - Regression Suite › Admin Modules: Crew & Quests
+[1A[2K[3/15] [chromium] › tests/regression.spec.ts:70:9 › Ship Quest Legacy - Regression Suite › Critical Path: Create & Abandon Task
+[1A[2K[4/15] [chromium] › tests/regression.spec.ts:40:9 › Ship Quest Legacy - Regression Suite › Feature: Quest Board & Gamification
+[1A[2K[5/15] [chromium] › tests/regression.spec.ts:27:9 › Ship Quest Legacy - Regression Suite › Critical Path: Login & Dashboard Access
+[1A[2K[6/15] [firefox] › tests/regression.spec.ts:27:9 › Ship Quest Legacy - Regression Suite › Critical Path: Login & Dashboard Access
+[1A[2K[7/15] [firefox] › tests/regression.spec.ts:40:9 › Ship Quest Legacy - Regression Suite › Feature: Quest Board & Gamification
+[1A[2K[8/15] [firefox] › tests/regression.spec.ts:55:9 › Ship Quest Legacy - Regression Suite › Navigation: System Pages
+[1A[2K[9/15] [firefox] › tests/regression.spec.ts:70:9 › Ship Quest Legacy - Regression Suite › Critical Path: Create & Abandon Task
+[1A[2K[10/15] [firefox] › tests/regression.spec.ts:128:9 › Ship Quest Legacy - Regression Suite › Admin Modules: Crew & Quests
+[1A[2K[11/15] [webkit] › tests/regression.spec.ts:27:9 › Ship Quest Legacy - Regression Suite › Critical Path: Login & Dashboard Access
+[1A[2K[12/15] [webkit] › tests/regression.spec.ts:40:9 › Ship Quest Legacy - Regression Suite › Feature: Quest Board & Gamification
+[1A[2K[13/15] [webkit] › tests/regression.spec.ts:55:9 › Ship Quest Legacy - Regression Suite › Navigation: System Pages
+[1A[2K[14/15] [webkit] › tests/regression.spec.ts:70:9 › Ship Quest Legacy - Regression Suite › Critical Path: Create & Abandon Task
+[1A[2K[15/15] [webkit] › tests/regression.spec.ts:128:9 › Ship Quest Legacy - Regression Suite › Admin Modules: Crew & Quests
+[1A[2K  15 passed (26.2s)
+
+To open last HTML report run:
+[36m[39m
+[36m  npx playwright show-report[39m
+[36m[39m

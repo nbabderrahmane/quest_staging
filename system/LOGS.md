@@ -1,35 +1,23 @@
-# Project Logs - Ship Quest
+# System Logs
 
-## [2025-12-25] Phase 0: Initialization
-- Initialized Next.js 14+ project (App Router, TypeScript, TailwindCSS).
-- Created System Vault (`system/` directory).
-- Installed core dependencies (`shadcn-ui`, `dnd-kit`, `framer-motion`, `lucide-react`, `recharts`, `tanstack-query`).
-- Configured shadcn/ui with **Neutral** base color (fallback from Slate for reliability).
-- Cleaned up failed initial installation and successfully re-initialized.
+## 2026-01-14: Production Hardening Review
+- **Removed**: `server/mcp-remote` (will be rebuilt separately)
+- **Fixed**: Build failure caused by MCP SDK type resolution
+- **Fixed**: React hooks violations in `tour-overlay.tsx` and `team-switcher.tsx`
+- **Fixed**: RUNBOOK.md documentation (was corrupted with debug output)
+- **Refactored**: API routes to use centralized `createAdminClient`
+- **Fixed**: Multiple lint errors (371 → 303 remaining)
+  - Removed unused imports across dashboard components
+  - Fixed `any` types in key files (safe-action, database.types, api-key-generator)
+  - Fixed empty interface in textarea.tsx
+- **Verification**: Build passes, core functionality preserved
 
-## [2025-12-25] Phase 2: System Configuration & UI Overhaul
-- **System Admin**: Verified database schema and seeded initial data. Created Admin page functionality for Statuses, Sizes, and Urgencies.
-- **Navigation Fixes**: Resolved 404 errors by creating placeholder pages for `/quest-board`, `/backlog`, and `/analytics`. Updated Sidebar to point to correct routes.
-- **UI/UX Overhaul (Retro-Futuristic)**:
-  - **Design System**: Implemented "Deep Space / Retro" dark theme in `globals.css` with neon accents (indigo/cyan) and boxy UI variables.
-  - **Components**: Created reusable retro components (`WindowCard`, `MetricCard`, `NavItem`).
-  - **Refactoring**: Updated Layout and Admin pages.
-
-## [2025-12-25] Phase 3: Tasks + Quest Board
-- **Database**: Defined `quests` and `tasks` schema with RLS policies in `system/schema.sql`.
-- **Backend**: Implemented Server Actions for Quest and Task CRUD operations (`createQuest`, `createTask`, `updateTaskStatus`).
-- **Frontend**:
-  - **Quest Board**: Built Drag-and-Drop Kanban board using `@dnd-kit`.
-  - **Components**: Created `TaskCard` (with XP/Urgency indicators) and `CreateTaskDialog`.
-  - **Metrics**: Added Total vs Completed XP tracking to the board header.
-- **Game Loop**: Established the flow of "Initialize Quest" -> "Add Tasks" -> "Complete Tasks" -> "XP Profit".
-
-## [2025-12-29] Phase 6.5: Security & Deployment Hardening
-- **Security Sweep**:
-  - Investigated and patched schema leaks (Direct SQL + Action patching).
-  - Enforced `team_id` checks on `updateStatus`, `toggleItemActive`, `updateTaskStatus`, `assignTaskToMember`, and `toggleQuestActive`.
-  - Upgraded RLS to "Strict Team Isolation" for `profiles`, `task_comments` and all operational tables via `099_security_sweep.sql`.
-- **Infrastructure**:
-  - Patched `middleware.ts` to strictly handle missing environment variables in Edge Runtime (Vercel deployment fix).
-  - Removed deprecated middleware patterns to support Next.js 16 Edge Runtime.
-  - Verified build correctness.
+## 2026-01-08: Remote MCP Server Implementation
+- **Added**: `server/mcp-remote` standalone Node.js application.
+- **Architecture**: Express-based server implementing MCP over SSE.
+- **Features**:
+  - Bearer Token Authentication.
+  - Per-connection session management.
+  - Proxy to Ship Quest `/api/v1` endpoints.
+  - Read-Only mode support.
+- **Refactoring**: Switched from high-level `McpServer` helper to low-level `Server` class for compatibility with `@modelcontextprotocol/sdk` v0.6.0.

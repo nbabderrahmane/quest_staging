@@ -5,11 +5,23 @@ import Link from 'next/link'
 import { Briefcase, Plus, Trash2 } from 'lucide-react'
 import { createProject, deleteProject } from './actions'
 
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+
 export default function ProjectsClient({ projects, teamId, canManage }: { projects: any[], teamId: string, canManage: boolean }) {
     const [isCreating, setIsCreating] = useState(false)
     const [newName, setNewName] = useState('')
     const [description, setDescription] = useState('')
     const [error, setError] = useState<string | null>(null)
+    const [deleteId, setDeleteId] = useState<string | null>(null)
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -25,12 +37,13 @@ export default function ProjectsClient({ projects, teamId, canManage }: { projec
         }
     }
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to terminate this project?')) return
-        const result = await deleteProject(id, teamId)
+    const confirmDelete = async () => {
+        if (!deleteId) return
+        const result = await deleteProject(deleteId, teamId)
         if (!result.success) {
             alert(result.error)
         }
+        setDeleteId(null)
     }
 
     return (
@@ -94,12 +107,15 @@ export default function ProjectsClient({ projects, teamId, canManage }: { projec
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {projects.map(proj => (
-                    <Link href={`/admin/projects/${proj.id}`} key={proj.id} className="bg-card border border-border rounded-lg p-4 flex items-center justify-between group hover:border-primary/50 transition-all shadow-sm cursor-pointer">
-                        <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 bg-muted rounded flex items-center justify-center text-muted-foreground">
+                    <div key={proj.id} className="bg-card border border-border rounded-lg p-4 flex items-center justify-between group hover:border-primary/50 transition-all shadow-sm relative">
+                        <Link href={`/admin/projects/${proj.id}`} className="absolute inset-0 z-0 text-transparent">
+                            View
+                        </Link>
+                        <div className="flex items-center gap-3 z-10 pointer-events-none">
+                            <div className="h-10 w-10 bg-muted rounded flex items-center justify-center text-muted-foreground pointer-events-auto">
                                 <Briefcase className="h-5 w-5" />
                             </div>
-                            <div className="min-w-0">
+                            <div className="min-w-0 pointer-events-auto">
                                 <h3 className="font-bold text-foreground truncate">{proj.name}</h3>
                                 {proj.description && (
                                     <p className="text-xs text-muted-foreground truncate max-w-[200px]">{proj.description}</p>
@@ -111,14 +127,14 @@ export default function ProjectsClient({ projects, teamId, canManage }: { projec
                                 onClick={(e) => {
                                     e.preventDefault()
                                     e.stopPropagation()
-                                    handleDelete(proj.id)
+                                    setDeleteId(proj.id)
                                 }}
-                                className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity p-2"
+                                className="relative z-20 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity p-2 cursor-pointer"
                             >
                                 <Trash2 className="h-4 w-4" />
                             </button>
                         )}
-                    </Link>
+                    </div>
                 ))}
 
                 {projects.length === 0 && !isCreating && (
@@ -128,6 +144,21 @@ export default function ProjectsClient({ projects, teamId, canManage }: { projec
                     </div>
                 )}
             </div>
+
+            <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Terminate Project?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the project and all associated tasks.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">Terminate</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }

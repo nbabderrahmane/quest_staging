@@ -1,7 +1,7 @@
 'use client'
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
+// Badge removed - unused
 import { Switch } from "@/components/ui/switch"
 
 interface DataTableProps<T> {
@@ -44,7 +44,7 @@ export function DataTable<T extends { id: string, is_active?: boolean }>({
                             <TableRow key={item.id} className="border-slate-800 hover:bg-slate-800/50">
                                 {columns.map((col) => (
                                     <TableCell key={col.key} className="text-slate-200">
-                                        {col.render ? col.render(item) : (item as any)[col.key]}
+                                        {col.render ? col.render(item) : String((item as Record<string, unknown>)[col.key] ?? '')}
                                     </TableCell>
                                 ))}
                                 <TableCell className="text-right">

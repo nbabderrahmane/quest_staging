@@ -2,34 +2,53 @@
 
 import { Team } from '@/lib/types'
 import { createTeam } from '@/app/teams/actions'
-import { useState, useEffect } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { PlusCircle, ChevronsUpDown, Check } from 'lucide-react'
+
+// Helper to get cookie value on client
+function getTeamFromCookie(): string | null {
+    if (typeof document === 'undefined') return null
+    const cookieValue = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('selected_team='))
+        ?.split('=')[1]
+    return cookieValue || null
+}
+
+// Helper to set cookie
+function setTeamCookie(teamId: string) {
+    document.cookie = `selected_team=${teamId}; path=/; max-age=31536000`
+}
 
 export default function TeamSwitcher({ teams = [], userRole = 'member' }: { teams: Team[], userRole?: string }) {
     const [isOpen, setIsOpen] = useState(false)
-    const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null)
 
-    // Initialize from cookie or default to first team
+    // Compute initial team ID
+    // Safe for SSR: default to first team if available, otherwise null
+    const [selectedTeamId, setSelectedTeamId] = useState<string | null>(() => {
+        if (teams.length > 0) return teams[0].id
+        return null
+    })
+
+    // Hydrate from cookie on client side only
     useEffect(() => {
-        const cookieValue = document.cookie
-            .split('; ')
-            .find(row => row.startsWith('selected_team='))
-            ?.split('=')[1]
-
+        const cookieValue = getTeamFromCookie()
         if (cookieValue && teams.some(t => t.id === cookieValue)) {
             setSelectedTeamId(cookieValue)
         } else if (teams.length > 0) {
-            // Auto-set cookie to first team if not set
+            // Ensure cookie is set to the default if missing
             const firstTeamId = teams[0].id
-            setSelectedTeamId(firstTeamId)
-            document.cookie = `selected_team=${firstTeamId}; path=/; max-age=31536000`
+            setTeamCookie(firstTeamId)
+            // No need to set state if it's already the default, but let's be safe if logic changes
+            if (teams.some(t => t.id === firstTeamId) && selectedTeamId !== firstTeamId) {
+                setSelectedTeamId(firstTeamId)
+            }
         }
     }, [teams])
 
     const handleSelectTeam = (teamId: string) => {
         setSelectedTeamId(teamId)
-        // Set the cookie with 1 year expiry
-        document.cookie = `selected_team=${teamId}; path=/; max-age=31536000`
+        setTeamCookie(teamId)
         setIsOpen(false)
         // Reload to apply new team context
         window.location.reload()

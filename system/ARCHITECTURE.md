@@ -1,44 +1,60 @@
-# System Architecture - Ship Quest
+# System Architecture
 
-## Tech Stack
-- **Framework**: Next.js 14 (App Router)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS + CSS Variables
-- **UI Components**: shadcn/ui (base), Custom "Retro-Futuristic" components
-- **Motion**: framer-motion
-- **State Management**: React Query (Server State), Local State (React hooks)
-- **Database**: Supabase (PostgreSQL)
-- **Auth**: Supabase Auth
+> Last updated: 2026-01-14
 
-## Design System (Retro-Futuristic)
-- **Theme**: "Deep Space" Dark Mode (Default)
-  - Background: `oklch(0.12 0.03 260)` (Deep Blue/Black)
-  - Foreground: `oklch(0.9 0.02 260)` (Crisp Blue-White)
-  - Primary: `oklch(0.6 0.2 280)` (Neon Indigo)
-- **Core Principles**:
-  - **Boxy UI**: Sharp corners (`rounded-none` or very small radius).
-  - **Chrome**: Visible borders, title bars on cards.
-  - **Typography**: Sans-serif for UI, Monospace for data/metrics.
-  - **Motion**: Subtle, quick entry animations (opacity/slide).
-  - **Micro-interactions**: Hover flows, active state indicators.
+## Overview
 
-## Directory Structure
-- `src/app`: Routes and Pages (App Router).
-- `src/components`:
-  - `ui`: Base components (`WindowCard`, `MetricCard`, `Button`, etc.).
-  - `dashboard`: Layout specific components (`Sidebar`, `TeamSwitcher`).
-  - `admin`: Admin specific components (`DataTable`).
-- `src/lib`: Utilities (`supabase`, `utils`, `types`).
-- `system`: Documentation vault.
+Ship Quest is a gamified project management platform with two user types:
+- **Staff**: Team members who manage tasks through the Quest Board
+- **Clients**: External users who submit and track tickets through the Portal
 
-## Data Flow
-- **Server Components**: Fetch initial data.
-- **Client Components**: Handle interactivity and mutations (Server Actions).
-- **Supabase**: Direct DB access via RLS policies.
+## Core Architecture
 
-## Security Architecture
-- **Team Isolation**: Strict "Zero-Leak" Policy.
-  - **RLS**: All operational tables (`tasks`, `quests`, `team_members`, `projects`, etc.) enforce `team_id` checks at the database row level.
-  - **Profile Privacy**: Profiles are only visible to users sharing at least one team with the target profile.
-  - **Server Actions**: All mutations explicitly verify `team_id` and role context (`getRoleContext`) before execution.
-- **Middleware**: Edge-compatible session management with strict environment variable validation.
+```mermaid
+graph TB
+    subgraph "Frontend (Next.js 16)"
+        A[Staff Dashboard] --> E[Server Actions]
+        B[Client Portal] --> E
+        C[API Routes] --> F[Supabase Admin]
+    end
+    
+    subgraph "Backend (Supabase)"
+        G[(PostgreSQL)]
+        H[RLS Policies]
+        I[Auth]
+    end
+    
+    E --> G
+    F --> G
+```
+
+## Authentication Flow
+
+1. **Staff Login**: Email/password via Supabase Auth → Cookie session
+2. **Client Login**: Email/password, may use invite tokens
+3. **API Access**: API Key header (`x-api-key`) → Hash validation → User context
+
+## Key Design Decisions
+
+### Role-Based Access Control
+- Centralized in `src/lib/role-service.ts`
+- Roles: `owner`, `admin`, `manager`, `analyst`
+- Team-scoped (one user can have different roles in different teams)
+
+### Admin Client Usage
+- Service role client in `src/lib/supabase/admin.ts`
+- Used when bypassing RLS is required (e.g., cross-table queries, API key validation)
+- All API routes use this centralized client
+
+### Server Actions vs API Routes
+- **Server Actions**: Used for UI interactions (form submissions, data fetching)
+- **API Routes**: Used for external integrations (automation tools, AI agents)
+
+---
+
+## Future: AI Agent Integration
+
+The MCP (Model Context Protocol) server was removed for rebuild. When reimplemented:
+- Will use SSE transport for server-to-client communication
+- Bearer token authentication
+- Proxy to `/api/v1` endpoints

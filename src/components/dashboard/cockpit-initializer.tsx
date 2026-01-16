@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { initializeTeamConfiguration, signOut } from '@/app/teams/actions'
 import { WindowCard } from '@/components/ui/window-card'
-import { Terminal, LogOut, Check, ChevronRight } from 'lucide-react'
+import { Terminal, LogOut, ChevronRight } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 
 interface CockpitInitializerProps {
@@ -43,7 +43,13 @@ export function CockpitInitializer({ teamId, teamName, userRole }: CockpitInitia
     }
 
     // Helper to update state items safely
-    const updateItem = (setter: any, list: any[], index: number, field: string, value: any) => {
+    const updateItem = <T extends Record<string, unknown>>(
+        setter: React.Dispatch<React.SetStateAction<T[]>>,
+        list: T[],
+        index: number,
+        field: keyof T,
+        value: T[keyof T]
+    ) => {
         const newList = [...list]
         newList[index] = { ...newList[index], [field]: value }
         setter(newList)

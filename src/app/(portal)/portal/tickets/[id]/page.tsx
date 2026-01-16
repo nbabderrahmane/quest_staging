@@ -1,14 +1,22 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'
+import { useState, useEffect, use, useCallback } from 'react'
 import { getTicketDetails, addClientComment, approveTicket, requestChanges } from '../../../actions'
 import { Loader2, ArrowLeft, Send, CheckCircle, XCircle, MessageSquare } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Input } from '@/components/ui/input'
+import { Task, Status } from '@/lib/types'
+
+interface Comment {
+    id: string
+    content: string
+    created_at: string
+    profiles?: { first_name: string, last_name: string }
+}
 
 export default function TicketDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id: taskId } = use(params)
-    const [task, setTask] = useState<any>(null)
+    const [task, setTask] = useState<(Task & { status?: Status & { color?: string }, comments?: Comment[] }) | null>(null)
     const [loading, setLoading] = useState(true)
 
     // Actions
@@ -20,32 +28,33 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
 
     const router = useRouter()
 
-    useEffect(() => {
-        loadData()
-    }, [taskId])
-
-    async function loadData() {
+    const loadData = useCallback(async () => {
         try {
             const data = await getTicketDetails(taskId)
             setTask(data)
-        } catch (e) {
+        } catch (e: unknown) {
             console.error(e)
             // router.push('/portal/dashboard')
         } finally {
             setLoading(false)
         }
-    }
+    }, [taskId])
+
+    useEffect(() => {
+        loadData()
+    }, [loadData])
 
     async function handleComment(e: React.FormEvent) {
         e.preventDefault()
         if (!commentText.trim()) return
         setSubmittingComment(true)
         try {
-            await addClientComment(taskId, commentText)
+            const result = await addClientComment(taskId, commentText)
+            if (!result.success) throw new Error(result.error.message)
             setCommentText('')
             loadData()
-        } catch (e: any) {
-            alert(e.message)
+        } catch (e: unknown) {
+            alert(e instanceof Error ? e.message : String(e))
         } finally {
             setSubmittingComment(false)
         }
@@ -55,10 +64,11 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         if (!confirm('Are you sure you want to validate this ticket? It will be marked as Done.')) return
         setProcessingAction(true)
         try {
-            await approveTicket(taskId)
+            const result = await approveTicket(taskId)
+            if (!result.success) throw new Error(result.error.message)
             loadData()
-        } catch (e: any) {
-            alert(e.message)
+        } catch (e: unknown) {
+            alert(e instanceof Error ? e.message : String(e))
         } finally {
             setProcessingAction(false)
         }
@@ -68,12 +78,13 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         if (!rejectReason.trim()) return
         setProcessingAction(true)
         try {
-            await requestChanges(taskId, rejectReason)
+            const result = await requestChanges(taskId, rejectReason)
+            if (!result.success) throw new Error(result.error.message)
             setShowRejectInput(false)
             setRejectReason('')
             loadData()
-        } catch (e: any) {
-            alert(e.message)
+        } catch (e: unknown) {
+            alert(e instanceof Error ? e.message : String(e))
         } finally {
             setProcessingAction(false)
         }
@@ -187,7 +198,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
 
                             <div className="space-y-6 mb-6 max-h-[400px] overflow-y-auto pr-2">
                                 {task.comments && task.comments.length > 0 ? (
-                                    task.comments.map((comment: any) => (
+                                    task.comments.map((comment: Comment) => (
                                         <div key={comment.id} className="flex gap-3">
                                             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">
                                                 {comment.profiles?.first_name?.[0] || 'U'}

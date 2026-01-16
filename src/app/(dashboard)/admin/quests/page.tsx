@@ -3,6 +3,16 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Input } from '@/components/ui/input'
 import { BossSelector } from '@/components/quest-board/boss-selector'
 import { Plus, Target, Calendar, Trash2, Edit, CheckCircle, Circle, Rocket, Archive, ArrowDownToLine, RefreshCcw, Skull } from 'lucide-react'
@@ -64,6 +74,16 @@ export default function QuestsPage() {
     const [editStartDate, setEditStartDate] = useState('')
     const [editEndDate, setEditEndDate] = useState('')
 
+    // Confirmation Dialog State
+    const [confirmOpen, setConfirmOpen] = useState(false)
+    const [confirmConfig, setConfirmConfig] = useState<{
+        title: string
+        description: string
+        action: () => Promise<void>
+        type: 'destructive' | 'default'
+        confirmText: string
+    } | null>(null)
+
     const canManage = ['owner', 'admin', 'manager'].includes(userRole)
     const canDeploy = ['owner', 'admin', 'manager'].includes(userRole)
     const isOwner = userRole === 'owner'
@@ -98,11 +118,11 @@ export default function QuestsPage() {
             setTeamId(cleanTeamId)
             setUserRole(activeMembership.role)
 
-            const questData = await getQuestObjectives(cleanTeamId, viewMode === 'archived')
-            if ('error' in questData) {
-                setError(questData.error)
+            const questRes = await getQuestObjectives(cleanTeamId, viewMode === 'archived')
+            if (!questRes.success) {
+                setError(questRes.error.message)
             } else {
-                setQuests(questData)
+                setQuests(questRes.data)
             }
 
             const bossData = await getBosses(cleanTeamId)
@@ -156,12 +176,12 @@ export default function QuestsPage() {
             setNewBossSkin('generic_monster')
             setNewStartDate('')
             setNewEndDate('')
-            const questData = await getQuestObjectives(teamId)
-            if (!('error' in questData)) {
-                setQuests(questData)
+            const questRes = await getQuestObjectives(teamId)
+            if (questRes.success) {
+                setQuests(questRes.data)
             }
         } else {
-            setError(result.error || 'Quest creation failed')
+            setError(result.error.message || 'Quest creation failed')
         }
     }
 
@@ -189,12 +209,12 @@ export default function QuestsPage() {
         if (result.success) {
             setSuccess('QUEST UPDATED: Objective modified.')
             setEditOpen(false)
-            const questData = await getQuestObjectives(teamId)
-            if (!('error' in questData)) {
-                setQuests(questData)
+            const questRes = await getQuestObjectives(teamId)
+            if (questRes.success) {
+                setQuests(questRes.data)
             }
         } else {
-            setError(result.error || 'Update failed')
+            setError(result.error.message || 'Update failed')
         }
     }
 
@@ -209,40 +229,54 @@ export default function QuestsPage() {
 
         if (result.success) {
             // Refresh all quests since activating one deactivates others
-            const questData = await getQuestObjectives(teamId)
-            if (!('error' in questData)) {
-                setQuests(questData)
+            const questRes = await getQuestObjectives(teamId)
+            if (questRes.success) {
+                setQuests(questRes.data)
             }
             setSuccess(`QUEST ${!quest.is_active ? 'DEPLOYED' : 'RECALLED'}.`)
         } else {
-            setError(result.error || 'Deployment failed')
+            setError(result.error.message || 'Deployment failed')
         }
     }
 
-    const handleDelete = async (questId: string) => {
+    const handleDelete = (questId: string) => {
         if (!teamId) return
-        if (!confirm('ABANDON QUEST: This will also orphan all linked tasks. Continue?')) return
-
-        const result = await deleteQuestObjective(questId, teamId)
-        if (result.success) {
-            setQuests(prev => prev.filter(q => q.id !== questId))
-            setSuccess('QUEST ABANDONED: Objective removed.')
-        } else {
-            setError(result.error || 'Deletion failed')
-        }
+        setConfirmConfig({
+            title: 'ABANDON QUEST?',
+            description: 'This will permanently delete the quest and orphan all linked tasks. This action cannot be undone.',
+            type: 'destructive',
+            confirmText: 'Abandon Quest',
+            action: async () => {
+                const result = await deleteQuestObjective(questId, teamId)
+                if (result.success) {
+                    setQuests(prev => prev.filter(q => q.id !== questId))
+                    setSuccess('QUEST ABANDONED: Objective removed.')
+                } else {
+                    setError(result.error.message || 'Deletion failed')
+                }
+            }
+        })
+        setConfirmOpen(true)
     }
 
-    const handleArchive = async (questId: string) => {
+    const handleArchive = (questId: string) => {
         if (!teamId) return
-        if (!confirm('ARCHIVE QUEST: This quest will be hidden from selection and analytics. Continue?')) return
-
-        const result = await archiveQuest(questId, teamId)
-        if (result.success) {
-            setQuests(prev => prev.filter(q => q.id !== questId))
-            setSuccess('QUEST ARCHIVED: Objective moved to archives.')
-        } else {
-            setError(result.error || 'Archival failed')
-        }
+        setConfirmConfig({
+            title: 'ARCHIVE QUEST?',
+            description: 'This quest will be hidden from the active registry and analytics. You can restore it later from the Archives.',
+            type: 'default',
+            confirmText: 'Archive Quest',
+            action: async () => {
+                const result = await archiveQuest(questId, teamId)
+                if (result.success) {
+                    setQuests(prev => prev.filter(q => q.id !== questId))
+                    setSuccess('QUEST ARCHIVED: Objective moved to archives.')
+                } else {
+                    setError(result.error.message || 'Archival failed')
+                }
+            }
+        })
+        setConfirmOpen(true)
     }
 
     const handleUnarchive = async (questId: string) => {
@@ -253,7 +287,7 @@ export default function QuestsPage() {
             setQuests(prev => prev.filter(q => q.id !== questId))
             setSuccess('QUEST RESTORED: Objective moved back to active registry.')
         } else {
-            setError(result.error || 'Restoration failed')
+            setError(result.error.message || 'Restoration failed')
         }
     }
 
@@ -590,6 +624,33 @@ export default function QuestsPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Confirmation Dialog */}
+            <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="uppercase tracking-wider font-bold">{confirmConfig?.title}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {confirmConfig?.description}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel className="font-bold uppercase text-xs">Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={async (e) => {
+                                e.preventDefault()
+                                if (confirmConfig?.action) {
+                                    await confirmConfig.action()
+                                    setConfirmOpen(false)
+                                }
+                            }}
+                            className={`font-bold uppercase text-xs ${confirmConfig?.type === 'destructive' ? 'bg-destructive hover:bg-destructive/90' : 'bg-primary hover:bg-primary/90'}`}
+                        >
+                            {confirmConfig?.confirmText}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
             {/* Error Toast */}
             {error && (

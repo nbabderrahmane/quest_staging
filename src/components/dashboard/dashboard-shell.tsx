@@ -73,7 +73,7 @@ export function DashboardShell({ children, teams, activeTeam, userRole, user, pr
                 </div>
 
                 {/* Scanline effect overlay */}
-                <div className="fixed inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.05)_50%),linear-gradient(90deg,rgba(255,0,0,0.01),rgba(0,255,0,0.01),rgba(0,0,255,0.01))] z-50 bg-[length:100%_2px,3px_100%] opacity-20" />
+                <div className="fixed inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.05)_50%),linear-gradient(90deg,rgba(255,0,0,0.01),rgba(0,255,0,0.01),rgba(0,0,255,0.01))] z-40 bg-[length:100%_2px,3px_100%] opacity-20" />
 
                 {/* Boss Bar with Close Button */}
                 {activeTeam && isHeroBarVisible && (

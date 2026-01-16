@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Plus, Scroll, User, Zap, Target, Trash2, Search, Filter } from 'lucide-react'
 import { getTasks, createTask, getCrewForAssignment, getQuestsForDropdown, deleteTask, getProjectsForDropdown, getDepartmentsForDropdown, getClientsForDropdown } from './actions'
 import { TaskDetailDrawer } from './task-detail-drawer'
+import { CreateTaskDialog } from '@/components/dashboard/create-task-dialog'
 
 interface Task {
     id: string
@@ -33,6 +34,8 @@ interface CrewMember {
     email: string
     first_name: string | null
     last_name: string | null
+    // Map to user_id for CreateTaskDialog compatibility if needed, or just use id
+    user_id?: string
 }
 
 interface ForgeItem {
@@ -77,6 +80,11 @@ export default function PipelinePage() {
     const router = useRouter()
 
     // Forge data for dropdowns
+    // Note: CreateTaskDialog expects 'statuses' as well, which are part of initial load but not in original state here?
+    // We might need to fetch statuses if passing to CreateTaskDialog.
+    // The original code passed 'statuses' to CreateTaskDialog in my previous thought, but here state variables are sizes, urgencies...
+    // I need to fetch statuses too!
+    const [statuses, setStatuses] = useState<any[]>([])
     const [sizes, setSizes] = useState<ForgeItem[]>([])
     const [urgencies, setUrgencies] = useState<ForgeItem[]>([])
     const [crew, setCrew] = useState<CrewMember[]>([])
@@ -87,16 +95,6 @@ export default function PipelinePage() {
 
     // Create Modal State
     const [createOpen, setCreateOpen] = useState(false)
-    const [newTitle, setNewTitle] = useState('')
-    const [newDescription, setNewDescription] = useState('')
-    const [newQuestId, setNewQuestId] = useState<string>('')
-    const [newSizeId, setNewSizeId] = useState<string>('')
-    const [newUrgencyId, setNewUrgencyId] = useState<string>('')
-    const [newAssignee, setNewAssignee] = useState<string>('')
-    const [newProjectId, setNewProjectId] = useState<string>('')
-    const [newDepartmentId, setNewDepartmentId] = useState<string>('')
-    const [newClientId, setNewClientId] = useState<string>('')
-    const [isCreating, setIsCreating] = useState(false)
 
     // Task Detail Drawer State
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
@@ -115,8 +113,6 @@ export default function PipelinePage() {
     const canCreate = ['owner', 'admin', 'manager', 'analyst'].includes(userRole)
     const isOwner = userRole === 'owner'
     const isAnalyst = userRole === 'analyst'
-
-
 
 
     useEffect(() => {
@@ -184,14 +180,31 @@ export default function PipelinePage() {
                 .eq('team_id', cleanTeamId)
             if (urgenciesData) setUrgencies(urgenciesData)
 
+            // Fetch statuses
+            const { data: statusData } = await supabase
+                .from('statuses')
+                .select('id, name, category, rank')
+                .eq('team_id', cleanTeamId)
+                .order('rank', { ascending: true })
+            if (statusData) setStatuses(statusData)
+
             // Fetch crew for assignment
             const crewData = await getCrewForAssignment(cleanTeamId)
-            setCrew(crewData)
+            setCrew(crewData.map(c => ({ ...c, user_id: c.id }))) // Ensure user_id mapping
 
             setIsLoading(false)
         }
         load()
     }, [])
+
+    const refreshTasks = async () => {
+        if (!teamId) return
+        const taskData = await getTasks(teamId)
+        if (!('error' in taskData)) {
+            setTasks(taskData)
+        }
+        router.refresh()
+    }
 
     useEffect(() => {
         if (error) {
@@ -215,56 +228,6 @@ export default function PipelinePage() {
         return assignee.email
     }
 
-    const handleCreate = async (e: React.FormEvent) => {
-        e.preventDefault()
-        if (!teamId || !newTitle) return
-
-        const questValue = (newQuestId && newQuestId !== '_none') ? newQuestId : undefined
-        const sizeValue = newSizeId || undefined
-        const urgencyValue = newUrgencyId || undefined
-        const assigneeValue = (newAssignee && newAssignee !== '_none') ? newAssignee : undefined
-        const projectValue = (newProjectId && newProjectId !== '_none') ? newProjectId : undefined
-        const departmentValue = (newDepartmentId && newDepartmentId !== '_none') ? newDepartmentId : undefined
-        const clientValue = (newClientId && newClientId !== '_none') ? newClientId : undefined
-
-        setIsCreating(true)
-        const result = await createTask(teamId, {
-            title: newTitle,
-            description: newDescription || undefined,
-            quest_id: questValue,
-            size_id: sizeValue,
-            urgency_id: urgencyValue,
-            assigned_to: assigneeValue,
-            project_id: projectValue,
-            department_id: departmentValue,
-            client_id: clientValue
-        })
-        setIsCreating(false)
-
-        if (result.success) {
-            const questInfo = result.questName ? ` Assigned to ${result.questName}.` : ''
-            setSuccess(`TASK DEPLOYED: New mission added to Pipeline.${questInfo}`)
-            setCreateOpen(false)
-            setNewTitle('')
-            setNewDescription('')
-            setNewQuestId('')
-            setNewSizeId('')
-            setNewUrgencyId('')
-            setNewAssignee('')
-            setNewProjectId('')
-            setNewDepartmentId('')
-            setNewClientId('')
-            // Refresh tasks
-            const taskData = await getTasks(teamId)
-            if (!('error' in taskData)) {
-                setTasks(taskData)
-            }
-            router.refresh()
-        } else {
-            setError(result.error || 'Task creation failed')
-        }
-    }
-
     const handleDelete = async (taskId: string) => {
         if (!teamId) return
         if (!confirm('ABANDON TASK: This action cannot be undone.')) return
@@ -275,7 +238,7 @@ export default function PipelinePage() {
             setSuccess('TASK ABANDONED: Mission removed from records.')
             router.refresh()
         } else {
-            setError(result.error || 'Deletion failed')
+            setError(result.error?.message || 'Deletion failed')
         }
     }
 
@@ -501,9 +464,6 @@ export default function PipelinePage() {
                                             </span>
                                         )}
 
-                                        {/* Mobile: Urgency moved here for better visibility ?? Or keep alongside status? */}
-                                        {/* Keeping order but ensuring wrapping */}
-
                                         <div className="flex-1 min-w-0 space-y-1">
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <p className="font-bold text-foreground text-sm md:text-base truncate max-w-full">{task.title}</p>
@@ -548,8 +508,6 @@ export default function PipelinePage() {
                                     </div>
 
                                     <div className="flex items-center justify-between md:justify-end gap-3 md:ml-4 border-t md:border-t-0 border-border pt-2 md:pt-0 mt-1 md:mt-0">
-                                        {/* Labels for mobile context if needed, but icons are self-explanatory */}
-
                                         {/* Size/XP Badge */}
                                         {task.size && (
                                             <span className="flex items-center gap-1 text-xs font-mono text-purple-500 bg-purple-500/10 px-2 py-1 rounded">
@@ -586,172 +544,29 @@ export default function PipelinePage() {
             </div>
 
             {/* Create Task Modal */}
-            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-                <DialogContent className="bg-card border border-border text-foreground shadow-lg max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle className="uppercase tracking-wider font-bold text-foreground flex items-center gap-2">
-                            <Target className="h-5 w-5 text-primary" />
-                            Create New Task
-                        </DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleCreate} className="py-4 space-y-4">
-                        <div>
-                            <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Task Title *</label>
-                            <Input
-                                type="text"
-                                value={newTitle}
-                                onChange={(e) => setNewTitle(e.target.value)}
-                                placeholder="Enter task objective..."
-                                required
-                                className="bg-background border-input text-foreground placeholder:text-muted-foreground"
-                            />
-                        </div>
-                        <div>
-                            <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Description</label>
-                            <textarea
-                                value={newDescription}
-                                onChange={(e) => setNewDescription(e.target.value)}
-                                placeholder="Optional task details..."
-                                rows={2}
-                                className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                            />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Project</label>
-                                <Select value={newProjectId} onValueChange={setNewProjectId}>
-                                    <SelectTrigger className="bg-background border-input text-foreground">
-                                        <SelectValue placeholder="Select project..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="_none">None</SelectItem>
-                                        {projectOptions.map(p => (
-                                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div>
-                                <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Department</label>
-                                <Select value={newDepartmentId} onValueChange={setNewDepartmentId}>
-                                    <SelectTrigger className="bg-background border-input text-foreground">
-                                        <SelectValue placeholder="Select department..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="_none">None</SelectItem>
-                                        {departmentOptions.map(d => (
-                                            <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <div>
-                            <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Quest (Objective)</label>
-                            <Select value={newQuestId} onValueChange={setNewQuestId}>
-                                <SelectTrigger className="bg-background border-input text-foreground">
-                                    <SelectValue placeholder="Select quest..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="_none">No Quest</SelectItem>
-                                    {questOptions.length > 0 ? (
-                                        questOptions.filter(q => q.id).map(quest => (
-                                            <SelectItem key={quest.id} value={quest.id}>
-                                                {quest.name}
-                                            </SelectItem>
-                                        ))
-                                    ) : (
-                                        <SelectItem value="_empty" disabled>No quests available</SelectItem>
-                                    )}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Size (XP)</label>
-                                <Select value={newSizeId} onValueChange={setNewSizeId}>
-                                    <SelectTrigger className="bg-background border-input text-foreground">
-                                        <SelectValue placeholder="Select size..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {sizes.length > 0 ? (
-                                            sizes.filter(s => s.id).map(size => (
-                                                <SelectItem key={size.id} value={size.id}>
-                                                    {size.name} ({size.xp_points} XP)
-                                                </SelectItem>
-                                            ))
-                                        ) : (
-                                            <SelectItem value="_empty" disabled>No sizes configured</SelectItem>
-                                        )}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div>
-                                <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Urgency</label>
-                                <Select value={newUrgencyId} onValueChange={setNewUrgencyId}>
-                                    <SelectTrigger className="bg-background border-input text-foreground">
-                                        <SelectValue placeholder="Select urgency..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {urgencies.length > 0 ? (
-                                            urgencies.filter(u => u.id).map(urgency => (
-                                                <SelectItem key={urgency.id} value={urgency.id}>
-                                                    {urgency.name}
-                                                </SelectItem>
-                                            ))
-                                        ) : (
-                                            <SelectItem value="_empty" disabled>No urgencies configured</SelectItem>
-                                        )}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <div>
-                            <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Assign To</label>
-                            <Select value={newAssignee} onValueChange={setNewAssignee}>
-                                <SelectTrigger className="bg-background border-input text-foreground">
-                                    <SelectValue placeholder="Unassigned" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="_none">Unassigned</SelectItem>
-                                    {crew.length > 0 ? (
-                                        crew.filter(m => m.id).map(member => (
-                                            <SelectItem key={member.id} value={member.id}>
-                                                {member.first_name || member.last_name
-                                                    ? `${member.first_name || ''} ${member.last_name || ''}`.trim()
-                                                    : member.email
-                                                }
-                                            </SelectItem>
-                                        ))
-                                    ) : (
-                                        <SelectItem value="_empty" disabled>No crew available</SelectItem>
-                                    )}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <DialogFooter className="pt-4">
-                            <button
-                                type="button"
-                                onClick={() => setCreateOpen(false)}
-                                className="px-4 py-2 text-sm font-bold uppercase text-muted-foreground hover:text-foreground"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={isCreating || !newTitle}
-                                className="px-4 py-2 bg-primary text-primary-foreground text-sm font-bold uppercase rounded hover:bg-primary/90 disabled:opacity-50"
-                            >
-                                {isCreating ? 'Creating...' : 'Create New Task'}
-                            </button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
+            {teamId && (
+                <CreateTaskDialog
+                    teamId={teamId}
+                    sizes={sizes}
+                    urgencies={urgencies}
+                    statuses={statuses}
+                    projects={projectOptions}
+                    departments={departmentOptions}
+                    clients={clientOptions}
+                    questOptions={questOptions}
+                    crew={crew.map(c => ({ user_id: c.id, ...c }))}
+                    open={createOpen}
+                    onOpenChange={setCreateOpen}
+                    onSuccess={() => {
+                        setSuccess("TASK DEPLOYED: New mission added to Pipeline.")
+                        refreshTasks()
+                    }}
+                />
+            )}
 
             {/* Error Toast */}
             {error && (
-                <div className="fixed bottom-20 right-4 z-50 max-w-sm p-4 bg-destructive text-destructive-foreground text-sm rounded-lg shadow-lg border border-destructive/20">
+                <div className="fixed bottom-20 right-4 z-50 max-w-sm p-4 bg-destructive text-destructive-foreground text-sm rounded-lg shadow-lg border border-destructive/20 animate-in slide-in-from-bottom-5">
                     <div className="flex items-start justify-between gap-2">
                         <div>
                             <p className="uppercase font-bold mb-1">Error</p>
@@ -764,7 +579,7 @@ export default function PipelinePage() {
 
             {/* Success Toast */}
             {success && (
-                <div className="fixed bottom-20 right-4 z-50 max-w-sm p-4 bg-green-500 text-white text-sm rounded-lg shadow-lg border border-green-600/20">
+                <div className="fixed bottom-20 right-4 z-50 max-w-sm p-4 bg-green-500 text-white text-sm rounded-lg shadow-lg border border-green-600/20 animate-in slide-in-from-bottom-5">
                     <div className="flex items-start justify-between gap-2">
                         <div>
                             <p className="uppercase font-bold mb-1">Success</p>

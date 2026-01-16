@@ -11,12 +11,12 @@ interface EditItemDialogProps {
     onOpenChange: (open: boolean) => void
     item: Status | Size | Urgency | null
     type: 'status' | 'size' | 'urgency'
-    onSave: (data: any) => Promise<void>
+    onSave: (data: Partial<Status> | Partial<Size> | Partial<Urgency>) => Promise<void>
 }
 
 export function EditItemDialog({ open, onOpenChange, item, type, onSave }: EditItemDialogProps) {
     const [isLoading, setIsLoading] = useState(false)
-    const [formData, setFormData] = useState<any>({})
+    const [formData, setFormData] = useState<Partial<Status & Size & Urgency>>({})
 
     // Initialize form when dialog opens
     useEffect(() => {
@@ -59,7 +59,7 @@ export function EditItemDialog({ open, onOpenChange, item, type, onSave }: EditI
                             <label className="text-xs uppercase text-foreground/80 font-bold block mb-1">Category</label>
                             <Select
                                 value={formData.category || ''}
-                                onValueChange={(val) => setFormData({ ...formData, category: val })}
+                                onValueChange={(val) => setFormData({ ...formData, category: val as 'backlog' | 'active' | 'done' | 'archived' })}
                             >
                                 <SelectTrigger className="bg-black/40 border-white/20 rounded-none text-white">
                                     <SelectValue />
