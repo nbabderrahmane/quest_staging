@@ -190,7 +190,7 @@ export default function PipelinePage() {
 
             // Fetch crew for assignment
             const crewData = await getCrewForAssignment(cleanTeamId)
-            setCrew(crewData.map(c => ({ ...c, user_id: c.id }))) // Ensure user_id mapping
+            setCrew((crewData || []).map((c: any) => ({ ...c, user_id: c.id })))
 
             setIsLoading(false)
         }
