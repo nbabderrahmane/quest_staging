@@ -67,7 +67,7 @@ export function SidebarContent({ teams, activeTeam, userRole, user, profile, onN
                     <NavItem href="/admin/bosses" icon={<Skull className="h-4 w-4" />} onClick={onNavigate}>Nemesis Registry</NavItem>
                 )}
                 <NavItem href="/admin/crew" icon={<Settings className="h-4 w-4" />} onClick={onNavigate}>Crew Deck</NavItem>
-                <NavItem href="/admin/settings/developer" icon={<Terminal className="h-4 w-4" />} onClick={onNavigate}>Developer API</NavItem>
+                {/* <NavItem href="/admin/settings/developer" icon={<Terminal className="h-4 w-4" />} onClick={onNavigate}>Developer API</NavItem> */}
             </nav>
 
             {/* User Footer */}

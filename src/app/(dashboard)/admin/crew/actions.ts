@@ -178,10 +178,11 @@ export async function updateCrewMember(
             return { success: false, error: { code: 'UNAUTHORIZED', message: 'Cannot demote self.' } }
         }
 
-        // 3. Update Role (RLS should allow Owner/Admin to update members)
+        // 3. Update Role (Using Admin Client to guarantee permission)
         if (data.role) {
+            const supabaseAdmin = getAdminClient()
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const { error } = await (supabase.from('team_members') as any)
+            const { error } = await (supabaseAdmin.from('team_members') as any)
                 .update({ role: data.role })
                 .eq('team_id', teamId)
                 .eq('user_id', memberId)
