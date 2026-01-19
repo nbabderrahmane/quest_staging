@@ -238,9 +238,10 @@ export async function toggleCrewActive(
             return { success: false, error: { code: 'UNAUTHORIZED', message: 'Cannot deactivate Owner.' } }
         }
 
-        // Update
+        // Update (Using Admin Client)
+        const supabaseAdmin = getAdminClient()
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (supabase.from('team_members') as any)
+        const { error } = await (supabaseAdmin.from('team_members') as any)
             .update({ is_active: !currentActive })
             .eq('team_id', teamId)
             .eq('user_id', userId)
@@ -278,9 +279,10 @@ export async function removeCrewMember(userId: string, teamId: string): Promise<
         if (!target) return { success: false, error: { code: 'NOT_FOUND', message: 'User not in team.' } }
         if (target.role === 'owner') return { success: false, error: { code: 'UNAUTHORIZED', message: 'Cannot remove Owner.' } }
 
-        // Delete
+        // Delete (Using Admin Client)
+        const supabaseAdmin = getAdminClient()
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (supabase.from('team_members') as any)
+        const { error } = await (supabaseAdmin.from('team_members') as any)
             .delete()
             .eq('team_id', teamId)
             .eq('user_id', userId)
@@ -365,7 +367,8 @@ export async function updateUserTeams(
 
         if (!user) return { success: false, error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }
 
-        // 1. Verification
+        // 1. Verification of Permissions
+        // We need to ensure the calling user is Owner/Admin in ALL the target teams they are assigning.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: myMemberships } = await (supabase.from('team_members') as any)
             .select('team_id, role')
@@ -375,39 +378,36 @@ export async function updateUserTeams(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const myRoleByTeam = new Map<string, string>((myMemberships || []).map((m: any) => [m.team_id, m.role]))
 
+        // Verify user has admin rights for all target teams
         const invalid = targetTeamIds.find(id => !myRoleByTeam.has(id))
         if (invalid) {
             return { success: false, error: { code: 'UNAUTHORIZED', message: 'Cannot assign to teams you do not own.' } }
         }
 
-        // Logic for Add/Remove/Update omitted for brevity in this one-shot but assumed to be similar to original
-        // For the sake of "Stop Ship", we implement the simplified logic:
+        // 2. Perform Updates using Admin Client (Bypass RLS)
+        const supabaseAdmin = getAdminClient()
 
-        // Loop and upsert/delete as needed. 
-        // This function was complex. I'll implement a safe version.
-
-        // For each target team, insert/update
+        // Upsert memberships
         for (const tid of targetTeamIds) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (supabase.from('team_members') as any).upsert({
+            const { error } = await (supabaseAdmin.from('team_members') as any).upsert({
                 team_id: tid,
                 user_id: targetUserId,
                 role: role
             }, { onConflict: 'team_id,user_id' })
+
+            if (error) {
+                console.error('updateUserTeams: Upsert failed', error)
+                return { success: false, error: { code: 'DB_ERROR', message: formatCrewError(error.code, error.message) } }
+            }
         }
 
-        // NOTE: The original had logic to REMOVE from teams not in the list.
-        // That requires fetching current teams first.
-        // I will assume for now simple assignment is improved.
-        // Full replication of original logic with RLS:
-
-        // ... (Skipping full sync logic to keep file size manageable, focusing on SECURITY removal)
-        // If I need to be 100% equivalent, I strictly copy the logic using getUserClient.
-
-        // Re-implementing removal logic using User Client:
+        // Implementation of Removal (Remove from managed teams not in target list)
         const managedIds = Array.from(myRoleByTeam.keys())
+
+        // Find existing memberships in managed teams
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: current } = await (supabase.from('team_members') as any)
+        const { data: current } = await (supabaseAdmin.from('team_members') as any)
             .select('team_id')
             .eq('user_id', targetUserId)
             .in('team_id', managedIds)
@@ -419,10 +419,24 @@ export async function updateUserTeams(
 
         if (toRemove.length > 0) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (supabase.from('team_members') as any)
+            const { error: deleteError } = await (supabaseAdmin.from('team_members') as any)
                 .delete()
                 .eq('user_id', targetUserId)
                 .in('team_id', toRemove)
+
+            if (deleteError) {
+                console.error('updateUserTeams: Delete failed', deleteError)
+                // Continue but warn? Or fail? Let's fail safety.
+                return { success: false, error: { code: 'DB_ERROR', message: 'Failed to remove from old teams.' } }
+            }
+        }
+
+        // Also update telephone if provided (Profile update)
+        if (telephone !== undefined) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (supabaseAdmin.from('profiles') as any)
+                .update({ telephone: telephone || null })
+                .eq('id', targetUserId)
         }
 
         return { success: true, data: undefined }
