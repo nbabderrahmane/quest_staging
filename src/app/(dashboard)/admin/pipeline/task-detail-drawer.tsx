@@ -236,7 +236,12 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
 
     return (
         <Dialog open={open} onOpenChange={() => onClose()}>
-            <DialogContent className="bg-background border border-border text-foreground shadow-xl max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+            <DialogContent className="
+                bg-background border border-border text-foreground shadow-xl flex flex-col p-0 gap-0 overflow-hidden
+                fixed z-[200]
+                top-0 left-0 translate-x-0 translate-y-0 w-full h-[100dvh] max-w-none rounded-none
+                md:top-[50%] md:left-[50%] md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-4xl md:h-auto md:max-h-[90vh] md:rounded-lg
+            ">
                 <div className="flex flex-col md:flex-row h-full min-h-0 md:min-h-[600px]">
                     {/* Left Column: Brief & Comms (100% Mobile, 60% Desktop) */}
                     {/* On mobile, take 60% height to show comms, let params take 40% */}

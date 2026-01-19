@@ -228,7 +228,12 @@ export async function getLeaderboard(
             )
 
             const doneTasks = userTasks.filter(t => getCategory(t.status) === 'done')
-            const activeTasks = userTasks.filter(t => getCategory(t.status) === 'active')
+            // Active Load = Anything assigned that is NOT done and NOT backlog
+            // (Includes 'active', 'todo', 'in_progress', 'review', etc.)
+            const activeTasks = userTasks.filter(t => {
+                const cat = getCategory(t.status)
+                return cat !== 'done' && cat !== 'backlog'
+            })
 
             const total_xp = doneTasks.reduce((acc, t) => acc + (t.size?.xp_points || 0), 0)
             const current_load = activeTasks.reduce((acc, t) => acc + (t.size?.xp_points || 0), 0)
