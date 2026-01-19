@@ -13,17 +13,41 @@ import {
     QuestIntelligence,
     DepartmentAnalytics
 } from './actions'
-import { Crown, Shield, Star, Users, Target, Activity, AlertTriangle, Briefcase, Zap, RefreshCw, PieChart as PieIcon, Building2 } from 'lucide-react'
+import {
+    Crown, Shield, Star, Users, Target, Activity, AlertTriangle, Briefcase, Zap, RefreshCw, PieChart as PieIcon, Building2,
+    Medal, Hexagon, Component, Terminal, Rocket, Swords, Skull, Ghost, Crosshair
+} from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-
-// Rank Configuration
-const RANKS = [
-    { name: 'Legendary', minXP: 5000, color: 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20', icon: Crown },
-    { name: 'Vanguard', minXP: 2000, color: 'text-purple-500 bg-purple-500/10 border-purple-500/20', icon: Shield },
-    { name: 'Recruit', minXP: 0, color: 'text-muted-foreground bg-muted border-border', icon: Star },
-]
+import { getRankFromXP } from '@/lib/ranks'
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#8dd1e1']
+
+// Icon Mapping
+const getRankIcon = (rankName: string) => {
+    switch (rankName) {
+        case 'Recruit': return Star
+        case 'Private': return Component
+        case 'Corporal': return Hexagon
+        case 'Sergeant': return Shield
+        case 'Lieutenant': return Medal
+        case 'Captain': return Swords
+        case 'Major': return Target
+        case 'Commander': return Crosshair
+        case 'Colonel': return Zap
+        case 'Brigadier': return Activity
+        case 'General': return Rocket
+        case 'Marshal': return Crown
+        case 'Commodore': return Ghost
+        case 'Rear Admiral': return Skull
+        case 'Vice Admiral': return Terminal
+        case 'Admiral': return Users
+        case 'Fleet Admiral': return PieIcon
+        case 'Grand Admiral': return Building2
+        case 'Galactic Warlord': return AlertTriangle
+        case 'Cosmic Deity': return Zap // Re-use zap or something else
+        default: return Star
+    }
+}
 
 export default function AnalyticsPage() {
     const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
@@ -39,6 +63,7 @@ export default function AnalyticsPage() {
     const [availableQuests, setAvailableQuests] = useState<{ id: string, name: string }[]>([])
     const [availableCrew, setAvailableCrew] = useState<{ id: string, name: string }[]>([])
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const router = useRouter()
 
     const loadData = async () => {
@@ -101,11 +126,8 @@ export default function AnalyticsPage() {
 
     useEffect(() => {
         loadData()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filters])
-
-    const getRankConfig = (rankName: string) => {
-        return RANKS.find(r => r.name === rankName) || RANKS[RANKS.length - 1]
-    }
 
     if (isLoading) {
         return <div className="p-8 text-muted-foreground animate-pulse font-mono">Deciphering Analytics...</div>
@@ -308,8 +330,7 @@ export default function AnalyticsPage() {
                             </thead>
                             <tbody className="divide-y divide-border">
                                 {leaderboard.map((entry, index) => {
-                                    const rankConfig = getRankConfig(entry.rank)
-                                    const RankIcon = rankConfig.icon
+                                    const RankIcon = getRankIcon(entry.rank)
                                     // Load Balance Visualization
                                     const loadPercent = Math.min((entry.current_load / 1000) * 100, 100)
 
@@ -333,7 +354,7 @@ export default function AnalyticsPage() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase border ${rankConfig.color}`}>
+                                                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase border ${entry.rankColor}`}>
                                                     <RankIcon className="h-3 w-3" />
                                                     {entry.rank}
                                                 </div>

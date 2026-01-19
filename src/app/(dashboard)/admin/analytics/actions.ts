@@ -43,11 +43,7 @@ export interface QuestIntelligence {
     total_xp: number
 }
 
-function getRank(xp: number): { name: string; color: string } {
-    if (xp >= 5000) return { name: 'Legendary', color: 'text-yellow-500' }
-    if (xp >= 2000) return { name: 'Vanguard', color: 'text-purple-500' }
-    return { name: 'Recruit', color: 'text-gray-500' }
-}
+import { getRankFromXP } from '@/lib/ranks'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getCategory(status: any): string {
@@ -242,7 +238,7 @@ export async function getLeaderboard(
             const emailFallback = profile?.email ? profile.email.split('@')[0] : 'Unknown Operative'
             const firstName = profile?.first_name || emailFallback
 
-            const rankInfo = getRank(total_xp)
+            const rankInfo = getRankFromXP(total_xp)
             const tasks_done = doneTasks.length
             const total_tasks_assigned = userTasks.length
             const completion_rate = total_tasks_assigned > 0
