@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { getClientDashboardData, updateClientPassword, updateProfile } from '../../actions'
-import { Loader2, Plus, LogOut, User, Phone, Lock, Settings, Briefcase } from 'lucide-react'
+import { Loader2, Plus, LogOut, User, Phone, Lock, Settings, Briefcase, Archive } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -233,6 +233,12 @@ export default function PortalDashboard() {
                                     className="h-full flex items-center gap-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-bold uppercase text-[10px] tracking-widest transition-all border border-white/10"
                                 >
                                     <Settings className="h-3.5 w-3.5" /> Profile
+                                </button>
+                                <button
+                                    onClick={() => router.push('/portal/inbox')}
+                                    className="h-full flex items-center gap-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-bold uppercase text-[10px] tracking-widest transition-all border border-white/10"
+                                >
+                                    <Archive className="h-3.5 w-3.5" /> Inbox
                                 </button>
                                 <button
                                     onClick={() => setIsCreateOpen(true)}
