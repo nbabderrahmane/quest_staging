@@ -8,14 +8,16 @@ import {
     getLeaderboard,
     getQuestIntelligence,
     getDepartmentAnalytics,
+    getDeadlineCompliance,
     AnalyticsData,
     LeaderboardEntry,
     QuestIntelligence,
-    DepartmentAnalytics
+    DepartmentAnalytics,
+    DeadlineCompliance
 } from './actions'
 import {
     Crown, Shield, Star, Users, Target, Activity, AlertTriangle, Briefcase, Zap, RefreshCw, PieChart as PieIcon, Building2,
-    Medal, Hexagon, Component, Terminal, Rocket, Swords, Skull, Ghost, Crosshair
+    Medal, Hexagon, Component, Terminal, Rocket, Swords, Skull, Ghost, Crosshair, Clock, Search
 } from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { getRankFromXP } from '@/lib/ranks'
@@ -54,6 +56,7 @@ export default function AnalyticsPage() {
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
     const [questIntel, setQuestIntel] = useState<QuestIntelligence[]>([])
     const [deptAnalytics, setDeptAnalytics] = useState<DepartmentAnalytics[]>([])
+    const [deadlineCompliance, setDeadlineCompliance] = useState<DeadlineCompliance[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [userRole, setUserRole] = useState<string | null>(null)
@@ -95,16 +98,18 @@ export default function AnalyticsPage() {
         setUserRole(role)
 
         // Parallel fetch with filters
-        const [analyticsRes, leaderboardRes, questRes, departmentRes] = await Promise.all([
+        const [analyticsRes, leaderboardRes, questRes, departmentRes, complianceRes] = await Promise.all([
             getGlobalAnalytics(selectedTeamCookie, filters),
             getLeaderboard(selectedTeamCookie, { questId: filters.questId }),
             getQuestIntelligence(selectedTeamCookie, filters),
-            getDepartmentAnalytics(selectedTeamCookie, { questId: filters.questId })
+            getDepartmentAnalytics(selectedTeamCookie, { questId: filters.questId }),
+            getDeadlineCompliance(selectedTeamCookie, { questId: filters.questId })
         ])
 
         if (analyticsRes.success && analyticsRes.data) setAnalytics(analyticsRes.data)
         if (leaderboardRes.success && leaderboardRes.data) setLeaderboard(leaderboardRes.data)
         if (departmentRes.success && departmentRes.data) setDeptAnalytics(departmentRes.data)
+        if (complianceRes.success && complianceRes.data) setDeadlineCompliance(complianceRes.data)
 
         if (questRes.success && questRes.data) {
             setQuestIntel(questRes.data)
@@ -392,7 +397,49 @@ export default function AnalyticsPage() {
                 </div>
             </section>
 
-            {/* Section 4: Quest Intelligence */}
+            {/* Section 4: Protocol Compliance (NEW) */}
+            <section className="space-y-4">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-primary" />
+                    Protocol Compliance
+                </h2>
+                <div className="bg-card p-6 rounded-xl border border-border shadow-sm">
+                    <h3 className="text-xs font-bold uppercase text-muted-foreground tracking-wider mb-6">Deadline Adherence</h3>
+                    <div className="h-72 w-full">
+                        {deadlineCompliance.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={deadlineCompliance}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={70}
+                                        outerRadius={90}
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                    >
+                                        {deadlineCompliance.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '8px', border: '1px solid hsl(var(--border))' }}
+                                        itemStyle={{ fontWeight: 'bold' }}
+                                    />
+                                    <Legend verticalAlign="bottom" height={36} />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-2 border-2 border-dashed border-muted rounded-lg">
+                                <Search className="h-8 w-8 opacity-20" />
+                                <p className="text-xs font-mono uppercase">No deadline data for this filter</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </section>
+
+            {/* Section 5: Quest Intelligence */}
             <section className="space-y-4">
                 <h2 className="text-sm font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
                     <Briefcase className="h-4 w-4 text-primary" />

@@ -12,6 +12,13 @@ export interface AnalyticsData {
     blockedUnits: number
 }
 
+export interface DeadlineCompliance {
+    name: string
+    value: number
+    color: string
+    [key: string]: any
+}
+
 export interface DepartmentAnalytics {
     name: string
     taskCount: number
@@ -152,6 +159,76 @@ export async function getDepartmentAnalytics(
         })).sort((a, b) => b.totalXP - a.totalXP)
 
         return { success: true, data: result }
+    })
+}
+
+export async function getDeadlineCompliance(
+    teamId: string,
+    filters?: { questId?: string | 'all' }
+): Promise<Result<DeadlineCompliance[]>> {
+    return runAction('getDeadlineCompliance', async () => {
+        const ctx = await getRoleContext(teamId)
+        if (!ctx) {
+            return { success: false, error: { code: 'UNAUTHORIZED', message: 'No access to this workspace.' } }
+        }
+
+        const supabase = await getUserClient()
+        noStore()
+
+        let query = (supabase.from('tasks') as any)
+            .select(`
+                id, deadline_at, status:statuses!status_id(category), updated_at
+            `)
+            .eq('team_id', teamId)
+            .not('deadline_at', 'is', null)
+
+        if (filters?.questId && filters.questId !== 'all') {
+            query = query.eq('quest_id', filters.questId)
+        }
+
+        const { data: tasks, error } = await query
+        if (error || !tasks) {
+            return { success: false, error: { code: 'DB_ERROR', message: 'Failed to fetch deadline analytics.', details: error } }
+        }
+
+        const typedTasks = tasks as any[]
+
+        let metCount = 0
+        let missedCount = 0
+        let pendingCount = 0
+        let pendingMissedCount = 0
+
+        typedTasks.forEach(task => {
+            const deadline = new Date(task.deadline_at)
+            const isDone = task.status?.category === 'done'
+            const updateDate = new Date(task.updated_at)
+            const now = new Date()
+
+            if (isDone) {
+                // For 'done' tasks, we compare the final update date with the deadline
+                if (updateDate <= deadline) {
+                    metCount++
+                } else {
+                    missedCount++
+                }
+            } else {
+                // For non-done tasks, we compare current time with the deadline
+                if (now <= deadline) {
+                    pendingCount++
+                } else {
+                    pendingMissedCount++
+                }
+            }
+        })
+
+        const result: DeadlineCompliance[] = [
+            { name: 'Met', value: metCount, color: '#10b981' },
+            { name: 'Missed (History)', value: missedCount, color: '#f59e0b' },
+            { name: 'Overdue', value: pendingMissedCount, color: '#ef4444' },
+            { name: 'On Track', value: pendingCount, color: '#3b82f6' }
+        ]
+
+        return { success: true, data: result.filter(r => r.value > 0) }
     })
 }
 

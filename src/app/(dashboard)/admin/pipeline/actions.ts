@@ -141,6 +141,7 @@ export async function createTask(
         recurrence_rule?: any
         recurrence_next_date?: string
         recurrence_end_date?: string
+        deadline_at?: string | null
     }
 ) {
     return await runAction('createTask', async () => {
@@ -188,6 +189,7 @@ export async function updateTask(
         project_id: string | null
         department_id: string | null
         client_id: string | null
+        deadline_at?: string | null
         needs_info?: boolean
         was_dropped?: boolean
     }>
@@ -229,8 +231,8 @@ export async function updateTask(
 export async function deleteTask(taskId: string, teamId: string) {
     return await runAction('deleteTask', async () => {
         const ctx = await getRoleContext(teamId)
-        if (!ctx || !ctx.isOwner) {
-            return { success: false, error: { code: 'UNAUTHORIZED', message: 'Only the Owner can abandon tasks.' } }
+        if (!ctx || (!ctx.isOwner && !ctx.isAdmin)) {
+            return { success: false, error: { code: 'UNAUTHORIZED', message: 'Only the Owner or Admin can abandon tasks.' } }
         }
 
         const result = await TaskService.delete(teamId, taskId)

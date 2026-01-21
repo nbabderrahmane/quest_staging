@@ -72,6 +72,7 @@ export function CreateTaskDialog({
     const [selectedProjectId, setSelectedProjectId] = useState<string>('_none')
     const [selectedDepartmentId, setSelectedDepartmentId] = useState<string>('_none')
     const [selectedClientId, setSelectedClientId] = useState<string>('_none')
+    const [deadlineAt, setDeadlineAt] = useState<string>('')
 
     // Recurrence State
     const [isRecurring, setIsRecurring] = useState(false)
@@ -100,6 +101,7 @@ export function CreateTaskDialog({
             setRecurrenceDays([])
             setStartDate(new Date().toISOString().split('T')[0])
             setEndDate('')
+            setDeadlineAt('')
             setError(null)
         }
     }, [open, questId])
@@ -153,7 +155,8 @@ export function CreateTaskDialog({
                 is_recurring: isRecurring,
                 recurrence_rule: recurrenceRule,
                 recurrence_next_date: isRecurring ? startDate : undefined,
-                recurrence_end_date: (isRecurring && endDate) ? endDate : undefined
+                recurrence_end_date: (isRecurring && endDate) ? endDate : undefined,
+                deadline_at: deadlineAt || undefined
             })
 
             if (res.success) {
@@ -294,6 +297,19 @@ export function CreateTaskDialog({
                                 ))}
                             </SelectContent>
                         </Select>
+                    </div>
+
+                    <div>
+                        <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Deadline (Optional)</label>
+                        <div className="relative">
+                            <Input
+                                type="date"
+                                value={deadlineAt}
+                                onChange={(e) => setDeadlineAt(e.target.value)}
+                                className="bg-background border-input text-foreground pl-10"
+                            />
+                            <Calendar className="h-4 w-4 absolute left-3 top-3 text-muted-foreground" />
+                        </div>
                     </div>
 
                     {/* Recurrence Section */}

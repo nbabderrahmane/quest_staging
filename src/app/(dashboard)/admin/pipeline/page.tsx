@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useRouter } from 'next/navigation'
 import { Input } from '@/components/ui/input'
-import { Plus, Scroll, User, Zap, Target, Trash2, Search, Filter } from 'lucide-react'
+import { Plus, Scroll, User, Zap, Target, Trash2, Search, Filter, Clock } from 'lucide-react'
 import { getTasks, createTask, getCrewForAssignment, getQuestsForDropdown, deleteTask, getProjectsForDropdown, getDepartmentsForDropdown, getClientsForDropdown } from './actions'
 import { TaskDetailDrawer } from './task-detail-drawer'
 import { CreateTaskDialog } from '@/components/dashboard/create-task-dialog'
@@ -28,6 +28,7 @@ interface Task {
     department?: { id: string; name: string } | null
     client?: { id: string; name: string } | null
     was_dropped?: boolean
+    deadline_at?: string | null
 }
 
 interface CrewMember {
@@ -500,6 +501,15 @@ export default function PipelinePage() {
                                             {task.description && (
                                                 <p className="text-xs text-muted-foreground truncate">{task.description}</p>
                                             )}
+
+                                            {task.deadline_at && (
+                                                <div className="flex items-center gap-1.5 mt-1">
+                                                    <Clock className={`h-3 w-3 ${new Date(task.deadline_at) < new Date() ? 'text-destructive' : 'text-orange-500'}`} />
+                                                    <span className={`text-[10px] font-bold uppercase ${new Date(task.deadline_at) < new Date() ? 'text-destructive' : 'text-orange-500'}`}>
+                                                        Deadline: {new Date(task.deadline_at).toLocaleDateString()}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
@@ -518,8 +528,8 @@ export default function PipelinePage() {
                                             <span className="truncate max-w-[100px] md:max-w-none">{getAssigneeName(task.assignee)}</span>
                                         </div>
 
-                                        {/* Delete (Owner only) */}
-                                        {isOwner && (
+                                        {/* Delete (Owner/Admin only) */}
+                                        {(isOwner || userRole === 'admin') && (
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation()

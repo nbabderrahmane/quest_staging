@@ -73,7 +73,7 @@ export async function getInboxFeed(): Promise<InboxItem[]> {
             })
         }
 
-        // 2. Comments logic (simplified for brevity, assume similar to before)
+        // 2. Comments logic
         const taskIds = tasks?.map((t: any) => t.id) || []
 
         if (taskIds.length > 0) {
@@ -105,6 +105,74 @@ export async function getInboxFeed(): Promise<InboxItem[]> {
                             avatarUrl: comment.author?.avatar_url
                         }
                     })
+                })
+            }
+        }
+
+        // 3. Deadline Alerts (For Analysts & Admins)
+        const { data: membership } = await supabase
+            .from('team_members')
+            .select('role')
+            .eq('user_id', user.id)
+            .limit(1)
+            .maybeSingle()
+
+        const isStaff = membership && ['owner', 'admin', 'manager', 'analyst'].includes((membership as { role: string }).role)
+
+        if (isStaff) {
+            const { data: deadlineTasks } = await supabase
+                .from('tasks')
+                .select(`
+                    id, title, deadline_at, status:statuses!status_id(category)
+                `)
+                .neq('status.category', 'done')
+                .neq('status.category', 'archived')
+                .not('deadline_at', 'is', null)
+
+            if (deadlineTasks) {
+                const now = new Date()
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+                deadlineTasks.forEach((task: any) => {
+                    const deadline = new Date(task.deadline_at)
+                    const deadlineDate = new Date(deadline.getFullYear(), deadline.getMonth(), deadline.getDate())
+
+                    const diffTime = deadlineDate.getTime() - today.getTime()
+                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+
+                    let alertTitle = ''
+                    let alertMsg = ''
+                    let alertLevel: 'info' | 'warning' | 'error' = 'info'
+
+                    if (diffDays === 1) {
+                        alertTitle = 'Deadline J-1'
+                        alertMsg = `Protocol deadline tomorrow for: ${task.title}`
+                        alertLevel = 'warning'
+                    } else if (diffDays === 0) {
+                        alertTitle = 'Deadline JOUR J'
+                        alertMsg = `CRITICAL: Protocol deadline today! Check status for: ${task.title}`
+                        alertLevel = 'error'
+                    } else if (diffDays < 0) {
+                        alertTitle = 'SOUCIS DE DEADLINE (J+)'
+                        alertMsg = `DEVIATION DETECTED: Missed deadline for: ${task.title}`
+                        alertLevel = 'error'
+                    }
+
+                    if (alertTitle) {
+                        feed.push({
+                            id: `deadline-${task.id}-${diffDays}`,
+                            type: 'notification',
+                            title: alertTitle,
+                            message: alertMsg,
+                            date: now.toISOString(),
+                            isRead: false,
+                            resourceId: task.id,
+                            resourceType: 'task',
+                            metadata: {
+                                priority: alertLevel === 'error' ? 'High' : (alertLevel === 'warning' ? 'Medium' : 'Low')
+                            }
+                        })
+                    }
                 })
             }
         }

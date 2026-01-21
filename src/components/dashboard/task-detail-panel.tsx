@@ -36,6 +36,7 @@ interface TaskDetail {
     client_id?: string | null
     needs_info?: boolean
     was_dropped?: boolean
+    deadline_at?: string | null
     team_id: string // Need this for updates
     quest?: { id: string; name: string } | null
     size?: { id: string; name: string; xp_points: number } | null
@@ -200,6 +201,11 @@ export function TaskDetailPanel({ taskId, canEdit, onClose }: TaskDetailPanelPro
                     {task?.quest && (
                         <p className="text-xs font-mono text-blue-600">
                             Objective: {task.quest.name}
+                        </p>
+                    )}
+                    {task?.deadline_at && (
+                        <p className={`text-[10px] font-bold uppercase ${new Date(task.deadline_at) < new Date() ? 'text-destructive' : 'text-orange-500'}`}>
+                            Deadline: {new Date(task.deadline_at).toLocaleDateString()}
                         </p>
                     )}
                 </div>

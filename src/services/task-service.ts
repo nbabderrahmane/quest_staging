@@ -18,6 +18,7 @@ export interface CreateTaskDTO {
     recurrence_rule?: any
     recurrence_next_date?: string | Date
     recurrence_end_date?: string | Date
+    deadline_at?: string | null
 }
 
 export interface UpdateTaskDTO extends Partial<CreateTaskDTO> {
@@ -102,7 +103,8 @@ export class TaskService {
                 is_recurring: data.is_recurring || false,
                 recurrence_rule: data.recurrence_rule || null,
                 recurrence_next_date: data.recurrence_next_date || null,
-                recurrence_end_date: data.recurrence_end_date || null
+                recurrence_end_date: data.recurrence_end_date || null,
+                deadline_at: data.deadline_at || null
             })
             .select() // Return the created object
             .single()

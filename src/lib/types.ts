@@ -90,6 +90,7 @@ export interface Task {
     client_id?: string | null
     assigned_to?: string | null // DB Column
     assignee_id?: string | null // Legacy Type compatibility
+    deadline_at?: string | null // ISO string
     xp_points: number
     created_at: string
     updated_at: string

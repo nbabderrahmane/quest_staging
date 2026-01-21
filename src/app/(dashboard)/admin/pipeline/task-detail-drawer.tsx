@@ -44,6 +44,7 @@ interface TaskDetail {
     client_id?: string | null
     needs_info?: boolean
     was_dropped?: boolean
+    deadline_at?: string | null
     quest?: { id: string; name: string } | null
     size?: { id: string; name: string; xp_points: number } | null
     urgency?: { id: string; name: string; color: string } | null
@@ -571,6 +572,21 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                                         ))}
                                     </SelectContent>
                                 </Select>
+                            </div>
+
+                            {/* Deadline */}
+                            <div className="space-y-2">
+                                <label className="text-xs uppercase font-bold text-muted-foreground">Deadline</label>
+                                <div className="relative">
+                                    <input
+                                        type="date"
+                                        value={task?.deadline_at ? new Date(task.deadline_at).toISOString().split('T')[0] : ''}
+                                        onChange={(e) => handleUpdateParameter('deadline_at', e.target.value)}
+                                        disabled={!canEdit}
+                                        className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 pl-10 h-10"
+                                    />
+                                    <Clock className="h-4 w-4 absolute left-3 top-3 text-muted-foreground" />
+                                </div>
                             </div>
 
                             {/* Operator (Assignee) */}

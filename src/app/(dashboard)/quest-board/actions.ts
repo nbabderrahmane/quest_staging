@@ -139,6 +139,7 @@ export async function createTask(prevState: any, formData: FormData) {
     const sizeId = formData.get('sizeId') as string
     const urgencyId = formData.get('urgencyId') as string
     const statusId = formData.get('statusId') as string
+    const deadlineAt = formData.get('deadlineAt') as string
 
     // Recurrence Fields
     const isRecurring = formData.get('isRecurring') === 'true'
@@ -201,6 +202,7 @@ export async function createTask(prevState: any, formData: FormData) {
         status_id: statusId,
         size_id: sizeId,
         urgency_id: urgencyId,
+        deadline_at: deadlineAt || null,
         xp_points: xpPoints,
         ...recurrenceData
     })
