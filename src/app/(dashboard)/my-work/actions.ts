@@ -7,10 +7,7 @@ import { TaskService } from '@/services/task-service'
 import { Task } from '@/lib/types'
 import { revalidatePath } from 'next/cache'
 
-/**
- * WIP Limit configuration
- */
-export const WIP_LIMIT = 2
+import { WIP_LIMIT } from './constants'
 
 /**
  * Fetches and groups tasks for the My Work page.

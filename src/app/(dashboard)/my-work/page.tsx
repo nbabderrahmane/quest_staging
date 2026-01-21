@@ -1,7 +1,8 @@
 'use server'
 
 import { getActiveTeamId } from '@/lib/role-service'
-import { getMyWorkTasks, WIP_LIMIT } from './actions'
+import { getMyWorkTasks } from './actions'
+import { WIP_LIMIT } from './constants'
 import { MyWorkClient } from './my-work-client'
 
 export default async function MyWorkPage() {
