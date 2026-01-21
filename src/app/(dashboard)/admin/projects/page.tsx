@@ -1,6 +1,7 @@
 'use server'
 
 import { getProjects, createProject, deleteProject } from './actions'
+import { getCrewForAssignment } from '../pipeline/actions'
 import { getUserTeams } from '@/app/teams/actions'
 import { getRoleContext } from '@/lib/role-service'
 import { cookies } from 'next/headers'
@@ -17,9 +18,10 @@ export default async function ProjectsPage() {
         ? selectedTeamId
         : teams[0].id
 
-    const [projects, roleCtx] = await Promise.all([
+    const [projects, roleCtx, crew] = await Promise.all([
         getProjects(teamId),
-        getRoleContext(teamId)
+        getRoleContext(teamId),
+        getCrewForAssignment(teamId)
     ])
 
     const canManage = roleCtx ? ['owner', 'admin', 'manager'].includes(roleCtx.role || '') : false
@@ -29,6 +31,7 @@ export default async function ProjectsPage() {
             projects={projects}
             teamId={teamId}
             canManage={canManage}
+            crew={crew}
         />
     )
 }

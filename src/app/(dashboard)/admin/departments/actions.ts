@@ -124,3 +124,26 @@ export async function updateTaskStatus(teamId: string, taskId: string, statusId:
     if (error) throw error
     revalidatePath('/admin/departments/[id]', 'page')
 }
+
+// Update default analyst mapping
+export async function updateDepartmentAnalyst(teamId: string, departmentId: string, analystId: string | null) {
+    const ctx = await getRoleContext(teamId)
+    // Manager+ only
+    if (!ctx || !['owner', 'admin', 'manager'].includes(ctx.role || '')) {
+        return { success: false, error: 'SECURITY BREACH: Only commanders can set auto-assignment.' }
+    }
+
+    const supabase = await createClient()
+    const { error } = await supabase
+        .from('departments')
+        .update({ default_analyst_id: analystId })
+        .eq('id', departmentId)
+        .eq('team_id', teamId)
+
+    if (error) {
+        return { success: false, error: error.message }
+    }
+
+    revalidatePath('/admin/departments')
+    return { success: true }
+}

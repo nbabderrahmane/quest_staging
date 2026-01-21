@@ -34,6 +34,26 @@ export interface Client {
     phone?: string | null
     company_name?: string | null
     logo_url?: string | null
+    default_analyst_id?: string | null
+    created_at: string
+}
+
+export interface Project {
+    id: string
+    team_id: string
+    name: string
+    description?: string | null
+    color?: string
+    default_analyst_id?: string | null
+    created_at: string
+}
+
+export interface Department {
+    id: string
+    team_id: string
+    name: string
+    icon?: string
+    default_analyst_id?: string | null
     created_at: string
 }
 
@@ -100,8 +120,8 @@ export interface Task {
     size?: Size
     urgency?: Urgency
     client?: Client
-    project?: { id: string; name: string }
-    department?: { id: string; name: string }
+    project?: Project
+    department?: Department
     // Eisenhower Overlay
     importance_score?: number
     urgency_score?: number

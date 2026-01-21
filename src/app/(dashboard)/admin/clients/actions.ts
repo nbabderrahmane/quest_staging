@@ -97,3 +97,38 @@ export async function resetClientPassword(userIdOrEmail: string, newPassword: st
         return { success: false, error: error.message }
     }
 }
+
+// Update default analyst mapping
+export async function updateClientAnalyst(teamId: string, clientId: string, analystId: string | null) {
+    const supabase = await createClient()
+
+    try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) throw new Error('Unauthorized')
+
+        // Verify Team Membership & Role
+        const { data: membership } = await supabase
+            .from('team_members')
+            .select('role')
+            .eq('team_id', teamId)
+            .eq('user_id', user.id)
+            .single()
+
+        if (!membership || !['owner', 'admin', 'manager'].includes(membership.role)) {
+            throw new Error('Insufficient permissions')
+        }
+
+        const { error } = await supabase
+            .from('clients')
+            .update({ default_analyst_id: analystId })
+            .eq('id', clientId)
+            .eq('team_id', teamId)
+
+        if (error) throw error
+
+        revalidatePath('/admin/clients')
+        return { success: true }
+    } catch (error: any) {
+        return { success: false, error: error.message }
+    }
+}

@@ -71,7 +71,45 @@ export class TaskService {
             }
         }
 
-        // 2. Get Quest Name (if applicable)
+        // 2. Auto-assignment Logic
+        let finalAssigneeId = data.assigned_to || null
+
+        if (!finalAssigneeId) {
+            // Check Project Mapping
+            if (data.project_id) {
+                const { data: project } = await (supabase.from('projects') as any)
+                    .select('default_analyst_id')
+                    .eq('id', data.project_id)
+                    .single()
+                if (project?.default_analyst_id) {
+                    finalAssigneeId = project.default_analyst_id
+                }
+            }
+
+            // Check Client Mapping
+            if (!finalAssigneeId && data.client_id) {
+                const { data: client } = await (supabase.from('clients') as any)
+                    .select('default_analyst_id')
+                    .eq('id', data.client_id)
+                    .single()
+                if (client?.default_analyst_id) {
+                    finalAssigneeId = client.default_analyst_id
+                }
+            }
+
+            // Check Department Mapping
+            if (!finalAssigneeId && data.department_id) {
+                const { data: dept } = await (supabase.from('departments') as any)
+                    .select('default_analyst_id')
+                    .eq('id', data.department_id)
+                    .single()
+                if (dept?.default_analyst_id) {
+                    finalAssigneeId = dept.default_analyst_id
+                }
+            }
+        }
+
+        // 3. Get Quest Name (if applicable)
         let questName: string | null = null
         if (data.quest_id) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -96,7 +134,7 @@ export class TaskService {
                 status_id: backlogStatus.id,
                 size_id: data.size_id || null,
                 urgency_id: data.urgency_id || null,
-                assigned_to: data.assigned_to || null,
+                assigned_to: finalAssigneeId,
                 project_id: data.project_id || null,
                 department_id: data.department_id || null,
                 client_id: data.client_id || null,

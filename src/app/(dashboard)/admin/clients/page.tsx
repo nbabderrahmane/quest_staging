@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/client'
 import { Briefcase, Plus, Search, Loader2, Building, Trash2 } from 'lucide-react'
 import { Client } from '@/lib/types'
 import { useRouter } from 'next/navigation'
+import { User } from 'lucide-react'
+import { updateClientAnalyst } from './actions'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import {
     AlertDialog,
@@ -21,6 +23,7 @@ import { Input } from '@/components/ui/input'
 export default function AdminClientsPage() {
     const [clients, setClients] = useState<Client[]>([])
     const [isLoading, setIsLoading] = useState(true)
+    const [crew, setCrew] = useState<any[]>([])
     const [searchQuery, setSearchQuery] = useState('')
     const [isCreateOpen, setIsCreateOpen] = useState(false)
     const [newClientName, setNewClientName] = useState('') // Company Name
@@ -82,6 +85,25 @@ export default function AdminClientsPage() {
 
             if (error) throw error
             setClients(data || [])
+
+            // Fetch Crew for auto-assignment
+            const { data: crewData } = await supabase
+                .from('team_members')
+                .select(`
+                    user_id,
+                    role,
+                    profiles:profiles!user_id(id, first_name, last_name, email)
+                `)
+                .eq('team_id', activeTeamId)
+                .in('role', ['admin', 'manager', 'analyst'])
+
+            const flattenedCrew = (crewData || []).map((m: any) => ({
+                id: m.user_id,
+                first_name: m.profiles?.first_name,
+                last_name: m.profiles?.last_name,
+                email: m.profiles?.email
+            }))
+            setCrew(flattenedCrew)
         } catch (error: any) {
             console.error('Failed to load clients:', error)
             setError('Failed to load clients')
@@ -173,6 +195,22 @@ export default function AdminClientsPage() {
             setTimeout(() => setError(null), 4000)
         }
         setDeleteClientId(null)
+    }
+
+    async function handleAnalystChange(clientId: string, analystId: string | null) {
+        if (!teamId) return
+        const client = clients.find(c => c.id === clientId)
+        if (client?.default_analyst_id === (analystId || null)) return
+
+        const result = await updateClientAnalyst(teamId, clientId, analystId)
+        if (result.success) {
+            setClients(clients.map(c => c.id === clientId ? { ...c, default_analyst_id: analystId } : c))
+            setSuccess('Auto-assignment updated')
+            setTimeout(() => setSuccess(null), 3000)
+        } else {
+            setError(result.error || 'Failed to update auto-assignment')
+            setTimeout(() => setError(null), 4000)
+        }
     }
 
     const filteredClients = clients.filter(c =>
@@ -362,12 +400,21 @@ export default function AdminClientsPage() {
                                                 ? `${client.first_name || ''} ${client.last_name || ''}`.trim()
                                                 : client.name}
                                         </h3>
-                                        {client.company_name && (client.first_name || client.last_name) && (
-                                            <p className="text-sm text-muted-foreground font-bold flex items-center gap-1">
-                                                <Building className="h-3 w-3" />
-                                                {client.company_name}
-                                            </p>
-                                        )}
+                                        <div className="flex items-center gap-1.5 mt-0.5">
+                                            <User className="h-3 w-3 text-muted-foreground" />
+                                            <select
+                                                value={client.default_analyst_id || ''}
+                                                onChange={(e) => handleAnalystChange(client.id, e.target.value || null)}
+                                                className="text-[10px] bg-transparent border-none p-0 h-auto focus:ring-0 text-muted-foreground font-mono cursor-pointer hover:text-primary transition-colors relative z-20"
+                                            >
+                                                <option value="">No Auto-Assign</option>
+                                                {crew.map(member => (
+                                                    <option key={member.id} value={member.id}>
+                                                        {member.first_name ? `${member.first_name} ${member.last_name || ''}` : member.email}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
 

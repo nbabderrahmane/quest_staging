@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Building2, Plus, Trash2 } from 'lucide-react'
-import { createDepartment, deleteDepartment } from './actions'
+import { Building2, Plus, Trash2, User } from 'lucide-react'
+import { createDepartment, deleteDepartment, updateDepartmentAnalyst } from './actions'
 
 import {
     AlertDialog,
@@ -16,7 +16,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 
-export default function DepartmentsClient({ departments, teamId, canManage }: { departments: any[], teamId: string, canManage: boolean }) {
+export default function DepartmentsClient({ departments, teamId, canManage, crew }: { departments: any[], teamId: string, canManage: boolean, crew: any[] }) {
     const [isCreating, setIsCreating] = useState(false)
     const [newName, setNewName] = useState('')
     const [error, setError] = useState<string | null>(null)
@@ -42,6 +42,17 @@ export default function DepartmentsClient({ departments, teamId, canManage }: { 
             alert(result.error)
         }
         setDeleteId(null)
+    }
+
+    const handleAnalystChange = async (deptId: string, analystId: string | null) => {
+        // Find if changed
+        const dept = departments.find(d => d.id === deptId)
+        if (dept?.default_analyst_id === (analystId || null)) return
+
+        const result = await updateDepartmentAnalyst(teamId, deptId, analystId)
+        if (!result.success) {
+            alert(result.error)
+        }
     }
 
     return (
@@ -107,7 +118,29 @@ export default function DepartmentsClient({ departments, teamId, canManage }: { 
                             </div>
                             <div className="pointer-events-auto">
                                 <h3 className="font-bold text-foreground">{dept.name}</h3>
-                                <p className="text-xs text-muted-foreground font-mono">ID: {dept.id.slice(0, 8)}</p>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                    <User className="h-3 w-3 text-muted-foreground" />
+                                    {canManage ? (
+                                        <select
+                                            value={dept.default_analyst_id || ''}
+                                            onChange={(e) => handleAnalystChange(dept.id, e.target.value || null)}
+                                            className="text-[10px] bg-transparent border-none p-0 h-auto focus:ring-0 text-muted-foreground font-mono cursor-pointer hover:text-primary transition-colors"
+                                        >
+                                            <option value="">No Auto-Assign</option>
+                                            {crew.map(member => (
+                                                <option key={member.id} value={member.id}>
+                                                    {member.first_name ? `${member.first_name} ${member.last_name || ''}` : member.email}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <span className="text-[10px] text-muted-foreground font-mono">
+                                            {dept.default_analyst_id ?
+                                                (crew.find(c => c.id === dept.default_analyst_id)?.first_name || 'Assigned') :
+                                                'Unassigned'}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         </div>
                         {canManage && (

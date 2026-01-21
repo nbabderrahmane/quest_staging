@@ -1,6 +1,7 @@
 'use server'
 
 import { getDepartments, createDepartment, deleteDepartment } from './actions'
+import { getCrewForAssignment } from '../pipeline/actions'
 import { getUserTeams } from '@/app/teams/actions'
 import { getRoleContext } from '@/lib/role-service'
 import { cookies } from 'next/headers'
@@ -17,9 +18,10 @@ export default async function DepartmentsPage() {
         ? selectedTeamId
         : teams[0].id
 
-    const [departments, roleCtx] = await Promise.all([
+    const [departments, roleCtx, crew] = await Promise.all([
         getDepartments(teamId),
-        getRoleContext(teamId)
+        getRoleContext(teamId),
+        getCrewForAssignment(teamId)
     ])
 
     const canManage = roleCtx ? ['owner', 'admin', 'manager'].includes(roleCtx.role || '') : false
@@ -29,6 +31,7 @@ export default async function DepartmentsPage() {
             departments={departments}
             teamId={teamId}
             canManage={canManage}
+            crew={crew}
         />
     )
 }

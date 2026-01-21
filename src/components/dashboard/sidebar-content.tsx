@@ -5,7 +5,7 @@ import TeamSwitcher from './team-switcher'
 import { BrandSettings } from '@/components/dashboard/brand-settings'
 import { UserNav } from './user-nav'
 import { NavItem } from '@/components/ui/nav-item'
-import { LayoutDashboard, ScrollText, BarChart3, Settings, Flag, List, Briefcase, Building2, Skull, Terminal, Archive, Target } from 'lucide-react'
+import { LayoutDashboard, ScrollText, BarChart3, Settings, Flag, List, Briefcase, Building2, Skull, Terminal, Archive, Target, CalendarCheck } from 'lucide-react'
 import { Team } from '@/lib/types'
 
 interface SidebarContentProps {
@@ -51,6 +51,7 @@ export function SidebarContent({ teams, activeTeam, userRole, user, profile, onN
                 <NavItem href="/quest-board" icon={<LayoutDashboard className="h-4 w-4" />} onClick={onNavigate}>Quest Board</NavItem>
                 <NavItem href="/admin/quests" icon={<Flag className="h-4 w-4" />} onClick={onNavigate}>Quest Factory</NavItem>
                 <NavItem href="/admin/pipeline" icon={<List className="h-4 w-4" />} onClick={onNavigate}>Mission Pipeline</NavItem>
+                <NavItem href="/admin/quest-prep" icon={<CalendarCheck className="h-4 w-4" />} onClick={onNavigate}>Quest Prep</NavItem>
                 <NavItem href="/admin/analytics" icon={<BarChart3 className="h-4 w-4" />} onClick={onNavigate}>Analytics</NavItem>
                 <NavItem href="/admin/reporting" icon={<ScrollText className="h-4 w-4" />} onClick={onNavigate}>Reporting</NavItem>
                 <NavItem href="/admin/projects" icon={<Briefcase className="h-4 w-4" />} onClick={onNavigate}>Projects</NavItem>
