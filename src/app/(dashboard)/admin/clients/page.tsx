@@ -396,7 +396,7 @@ export default function AdminClientsPage() {
                                         <Trash2 className="h-4 w-4" />
                                     </button>
                                 </div>
-                                <div className="flex items-center gap-3 mb-4 pointer-events-none">
+                                <div className="flex items-center gap-3 mb-4 relative z-10">
                                     <div className="p-3 bg-primary/10 rounded-full text-primary">
                                         <Briefcase className="h-6 w-6" />
                                     </div>
@@ -406,12 +406,16 @@ export default function AdminClientsPage() {
                                                 ? `${client.first_name || ''} ${client.last_name || ''}`.trim()
                                                 : client.name}
                                         </h3>
-                                        <div className="flex items-center gap-1.5 mt-0.5">
+                                        <div className="flex items-center gap-1.5 mt-0.5" onClick={(e) => e.stopPropagation()}>
                                             <User className="h-3 w-3 text-muted-foreground" />
                                             <select
                                                 value={client.default_analyst_id || ''}
-                                                onChange={(e) => handleAnalystChange(client.id, e.target.value || null)}
-                                                className="text-[10px] bg-transparent border-none p-0 h-auto focus:ring-0 text-muted-foreground font-mono cursor-pointer hover:text-primary transition-colors relative z-20"
+                                                onChange={(e) => {
+                                                    e.stopPropagation()
+                                                    handleAnalystChange(client.id, e.target.value || null)
+                                                }}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="text-[10px] bg-transparent border-none p-0 h-auto focus:ring-0 text-muted-foreground font-mono cursor-pointer hover:text-primary transition-colors relative z-30"
                                             >
                                                 <option value="">No Auto-Assign</option>
                                                 {crew.map(member => (
