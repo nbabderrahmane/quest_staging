@@ -243,6 +243,19 @@ export function CreateTaskDialog({
                     </div>
 
                     <div>
+                        <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Client</label>
+                        <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+                            <SelectTrigger className="bg-background border-input text-foreground">
+                                <SelectValue placeholder="Select client..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="_none">None</SelectItem>
+                                {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div>
                         <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Quest (Objective)</label>
                         <Select value={selectedQuestId} onValueChange={setSelectedQuestId}>
                             <SelectTrigger className="bg-background border-input text-foreground">

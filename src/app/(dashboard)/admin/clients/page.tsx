@@ -87,22 +87,28 @@ export default function AdminClientsPage() {
             setClients(data || [])
 
             // Fetch Crew for auto-assignment
-            const { data: crewData } = await supabase
+            const { data: crewData, error: crewError } = await supabase
                 .from('team_members')
                 .select(`
                     user_id,
                     role,
-                    profiles:profiles!user_id(id, first_name, last_name, email)
+                    profiles!user_id(id, first_name, last_name, email)
                 `)
                 .eq('team_id', activeTeamId)
                 .in('role', ['admin', 'manager', 'analyst'])
 
+            if (crewError) {
+                console.error('Failed to load crew:', crewError)
+            }
+
             const flattenedCrew = (crewData || []).map((m: any) => ({
                 id: m.user_id,
-                first_name: m.profiles?.first_name,
-                last_name: m.profiles?.last_name,
-                email: m.profiles?.email
-            }))
+                first_name: m.profiles?.first_name || null,
+                last_name: m.profiles?.last_name || null,
+                email: m.profiles?.email || null
+            })).filter(c => c.email) // Filter out invalid entries
+
+            console.log('Loaded crew for clients:', flattenedCrew)
             setCrew(flattenedCrew)
         } catch (error: any) {
             console.error('Failed to load clients:', error)
