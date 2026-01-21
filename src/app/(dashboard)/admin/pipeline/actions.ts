@@ -6,9 +6,11 @@ import { getRoleContext } from '@/lib/role-service'
 import { getUserClient, getAdminClient } from '@/lib/supabase/factory'
 import { Database } from '@/lib/database.types'
 import { TaskService } from '@/services/task-service'
+import { EisenhowerService } from '@/services/eisenhower-service'
+import { Task } from '@/lib/types'
 
 // Get all tasks for the pipeline (no category filtering)
-export async function getTasks(teamId: string, filters?: { statusCategory?: string; questId?: string; search?: string; clientId?: string }) {
+export async function getTasks(teamId: string, filters?: { statusCategory?: string; questId?: string; search?: string; clientId?: string; quadrant?: string }) {
     const supabase = await getUserClient()
 
     noStore()
@@ -41,9 +43,16 @@ export async function getTasks(teamId: string, filters?: { statusCategory?: stri
         return { error: `[${error.code}] ${error.message} ` }
     }
 
+    const enriched = EisenhowerService.enrichTasks(data as unknown as Task[])
+
+    let finalData = enriched
+    if (filters?.quadrant) {
+        finalData = finalData.filter(t => t.quadrant === filters.quadrant)
+    }
+
     // Safe log: only count
-    console.log(`DEBUG: getTasks returned ${data ? data.length : 0} rows`)
-    return data || []
+    console.log(`DEBUG: getTasks returned ${finalData.length} rows`)
+    return finalData
 }
 
 // Get projects for dropdown

@@ -88,6 +88,7 @@ export interface Task {
     size_id: string
     urgency_id: string
     client_id?: string | null
+    needs_info?: boolean
     assigned_to?: string | null // DB Column
     assignee_id?: string | null // Legacy Type compatibility
     deadline_at?: string | null // ISO string
@@ -99,4 +100,11 @@ export interface Task {
     size?: Size
     urgency?: Urgency
     client?: Client
+    project?: { id: string; name: string }
+    department?: { id: string; name: string }
+    // Eisenhower Overlay
+    importance_score?: number
+    urgency_score?: number
+    quadrant?: 'Q1' | 'Q2' | 'Q3' | 'Q4'
+    priority_score?: number
 }

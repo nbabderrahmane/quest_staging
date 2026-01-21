@@ -15,7 +15,7 @@ import { Size, Urgency, Status } from '@/lib/types'
 interface Task {
     id: string
     title: string
-    description: string | null
+    description?: string | null
     created_at: string
     needs_info?: boolean
     assigned_to?: string | null
@@ -29,6 +29,10 @@ interface Task {
     client?: { id: string; name: string } | null
     was_dropped?: boolean
     deadline_at?: string | null
+    importance_score?: number
+    urgency_score?: number
+    quadrant?: 'Q1' | 'Q2' | 'Q3' | 'Q4'
+    priority_score?: number
 }
 
 interface CrewMember {
@@ -104,7 +108,8 @@ export default function PipelinePage() {
     const [projectFilter, setProjectFilter] = useState<string>('')
     const [departmentFilter, setDepartmentFilter] = useState<string>('')
     const [clientFilter, setClientFilter] = useState<string>('')
-    const [quickFilter, setQuickFilter] = useState<'all' | 'mine' | 'unclaimed' | 'needs_info'>('all')
+    const [quickFilter, setQuickFilter] = useState<'all' | 'mine' | 'unclaimed' | 'needs_info' | 'triage'>('all')
+    const [quadrantFilter, setQuadrantFilter] = useState<string>('')
 
     const canManage = ['owner', 'admin', 'manager'].includes(userRole)
     const canCreate = ['owner', 'admin', 'manager', 'analyst'].includes(userRole)
@@ -196,12 +201,16 @@ export default function PipelinePage() {
 
     const refreshTasks = async () => {
         if (!teamId) return
-        const taskData = await getTasks(teamId)
+        const taskData = await getTasks(teamId, { quadrant: quadrantFilter })
         if (!('error' in taskData)) {
             setTasks(taskData)
         }
         router.refresh()
     }
+
+    useEffect(() => {
+        refreshTasks()
+    }, [quadrantFilter])
 
     useEffect(() => {
         if (error) {
@@ -258,6 +267,13 @@ export default function PipelinePage() {
         }
         if (quickFilter === 'needs_info' && !task.needs_info) {
             return false
+        }
+        if (quickFilter === 'triage') {
+            const isTriage = task.status?.category === 'backlog' && (
+                !task.assigned_to ||
+                (task.urgency_score || 0) >= 70
+            )
+            if (!isTriage) return false
         }
         // Search filter
         if (searchQuery && !task.title.toLowerCase().includes(searchQuery.toLowerCase())) {
@@ -352,6 +368,12 @@ export default function PipelinePage() {
                 >
                     ⚠️ Needs Info
                 </button>
+                <button
+                    onClick={() => setQuickFilter('triage')}
+                    className={`px-3 py-1.5 text-xs font-bold uppercase rounded transition-colors ${quickFilter === 'triage' ? 'bg-emerald-600 text-white' : 'bg-card border border-border text-muted-foreground hover:bg-muted'}`}
+                >
+                    ⚓ Triage
+                </button>
             </div>
 
             {/* Filter Bar */}
@@ -378,6 +400,20 @@ export default function PipelinePage() {
                         <option value="active">Active</option>
                         <option value="done">Done</option>
                         <option value="archived">Archived</option>
+                    </select>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Target className="h-4 w-4 text-muted-foreground" />
+                    <select
+                        value={quadrantFilter}
+                        onChange={(e) => setQuadrantFilter(e.target.value)}
+                        className="px-3 py-2 bg-background border border-border rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
+                    >
+                        <option value="">All Quadrants</option>
+                        <option value="Q1">Q1: DO NOW</option>
+                        <option value="Q2">Q2: SCHEDULE</option>
+                        <option value="Q3">Q3: DELEGATE</option>
+                        <option value="Q4">Q4: LATER</option>
                     </select>
                 </div>
                 <div>
@@ -455,11 +491,22 @@ export default function PipelinePage() {
                                 >
                                     <div className="flex items-start md:items-center gap-3 md:gap-4 flex-1 min-w-0">
                                         {/* Status Badge */}
-                                        {task.status && (
-                                            <span className={`shrink-0 text-[10px] font-bold uppercase px-2 py-1 rounded border ${STATUS_CATEGORY_COLORS[task.status.category] || 'bg-muted text-muted-foreground border-border'}`}>
-                                                {task.status.name}
-                                            </span>
-                                        )}
+                                        <div className="flex flex-col gap-1 items-center">
+                                            {task.status && (
+                                                <span className={`shrink-0 text-[10px] font-bold uppercase px-2 py-1 rounded border min-w-[70px] text-center ${STATUS_CATEGORY_COLORS[task.status.category] || 'bg-muted text-muted-foreground border-border'}`}>
+                                                    {task.status.name}
+                                                </span>
+                                            )}
+                                            {task.quadrant && (
+                                                <span className={`text-[9px] font-black tracking-widest uppercase px-1.5 py-0.5 rounded border min-w-[70px] text-center ${task.quadrant === 'Q1' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+                                                    task.quadrant === 'Q2' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
+                                                        task.quadrant === 'Q3' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
+                                                            'bg-slate-500/10 text-slate-500 border-slate-500/20'
+                                                    }`}>
+                                                    {task.quadrant}
+                                                </span>
+                                            )}
+                                        </div>
 
                                         <div className="flex-1 min-w-0 space-y-1">
                                             <div className="flex flex-wrap items-center gap-2">
