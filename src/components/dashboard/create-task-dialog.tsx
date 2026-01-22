@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch"
 import { Size, Urgency, Status } from "@/lib/types"
 import { createTask } from "@/app/(dashboard)/admin/pipeline/actions"
 import { useState, useEffect } from "react"
-import { Plus, Calendar, Repeat, Target, Loader2 } from "lucide-react"
+import { Plus, Calendar, Repeat, Target, Loader2, Settings } from "lucide-react"
 
 interface Option {
     id: string
@@ -183,264 +183,280 @@ export function CreateTaskDialog({
                     </button>
                 )}
             </DialogTrigger>
-            <DialogContent className="bg-card border border-border text-foreground shadow-lg max-w-lg max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle className="uppercase tracking-wider font-bold text-foreground flex items-center gap-2">
+            <DialogContent className="bg-card border border-border text-foreground shadow-lg max-w-lg h-[100dvh] md:h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+                <DialogHeader className="px-6 py-4 border-b border-border flex-shrink-0">
+                    <DialogTitle className="uppercase tracking-wider font-bold text-foreground flex items-center gap-2 text-left">
                         <Target className="h-5 w-5 text-primary" />
                         Create New Task
                     </DialogTitle>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="py-4 space-y-4">
-                    <div>
-                        <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Task Title *</label>
-                        <Input
-                            autoFocus
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            placeholder="Enter task objective..."
-                            required
-                            className="bg-background border-input text-foreground"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Description</label>
-                        <textarea
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Optional task details..."
-                            rows={2}
-                            className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Project</label>
-                            <Select value={selectedProjectId} onValueChange={(val) => { console.log('Project selected:', val); setSelectedProjectId(val) }}>
-                                <SelectTrigger className="bg-background border-input text-foreground">
-                                    <SelectValue placeholder="Select project..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="_none">None</SelectItem>
-                                    {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div>
-                            <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Department</label>
-                            <Select value={selectedDepartmentId} onValueChange={setSelectedDepartmentId}>
-                                <SelectTrigger className="bg-background border-input text-foreground">
-                                    <SelectValue placeholder="Select department..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="_none">None</SelectItem>
-                                    {departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Client</label>
-                        <Select value={selectedClientId} onValueChange={setSelectedClientId}>
-                            <SelectTrigger className="bg-background border-input text-foreground">
-                                <SelectValue placeholder="Select client..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="_none">None</SelectItem>
-                                {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div>
-                        <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Quest (Objective)</label>
-                        <Select value={selectedQuestId} onValueChange={setSelectedQuestId}>
-                            <SelectTrigger className="bg-background border-input text-foreground">
-                                <SelectValue placeholder="Select quest..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="_none">No Quest</SelectItem>
-                                {questOptions.map(q => <SelectItem key={q.id} value={q.id}>{q.name}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Size (XP)</label>
-                            <Select value={selectedSizeId} onValueChange={setSelectedSizeId}>
-                                <SelectTrigger className="bg-background border-input text-foreground">
-                                    <SelectValue placeholder="Select size..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {sizes.map(s => <SelectItem key={s.id} value={s.id}>{s.name} ({s.xp_points || 0} XP)</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div>
-                            <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Urgency</label>
-                            <Select value={selectedUrgencyId} onValueChange={setSelectedUrgencyId}>
-                                <SelectTrigger className="bg-background border-input text-foreground">
-                                    <SelectValue placeholder="Select urgency..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {urgencies.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Assign To</label>
-                        <Select value={selectedAssignee} onValueChange={setSelectedAssignee}>
-                            <SelectTrigger className="bg-background border-input text-foreground">
-                                <SelectValue placeholder="Unassigned" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="_none">Unassigned</SelectItem>
-                                {crew.map(member => (
-                                    <SelectItem key={member.user_id} value={member.user_id}>
-                                        {member.first_name || member.last_name
-                                            ? `${member.first_name || ''} ${member.last_name || ''}`.trim()
-                                            : member.email || 'Unknown'}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div>
-                        <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Deadline (Optional)</label>
-                        <div className="relative">
-                            <Input
-                                type="date"
-                                value={deadlineAt}
-                                onChange={(e) => setDeadlineAt(e.target.value)}
-                                className="bg-background border-input text-foreground pl-10"
-                            />
-                            <Calendar className="h-4 w-4 absolute left-3 top-3 text-muted-foreground" />
-                        </div>
-                    </div>
-
-                    {/* Recurrence Section */}
-                    <div className="border border-border p-3 bg-muted/10 rounded space-y-3">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <Repeat className="h-4 w-4 text-primary" />
-                                <span className="text-xs font-bold uppercase tracking-wider text-foreground">Recurrence</span>
+                <div className="flex-1 overflow-hidden flex flex-col md:flex-row bg-muted/5">
+                    {/* Left Column: Core Objective (60%) */}
+                    <div className="w-full md:w-[60%] h-[60%] md:h-full flex flex-col border-b md:border-b-0 md:border-r border-border bg-background overflow-y-auto">
+                        <div className="p-6 space-y-6">
+                            <div>
+                                <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Task Title *</label>
+                                <Input
+                                    autoFocus
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                    placeholder="Enter task objective..."
+                                    required
+                                    className="bg-background border-input text-foreground h-11 text-base font-bold"
+                                />
                             </div>
-                            <Switch
-                                checked={isRecurring}
-                                onCheckedChange={setIsRecurring}
-                            />
-                        </div>
 
-                        {isRecurring && (
-                            <div className="space-y-3 pt-2 animate-in fade-in slide-in-from-top-2">
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="text-[10px] uppercase text-muted-foreground mb-1 block font-bold">Frequency</label>
-                                        <Select value={frequency} onValueChange={setFrequency}>
-                                            <SelectTrigger className="h-8 text-xs bg-background"><SelectValue /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="daily">Daily</SelectItem>
-                                                <SelectItem value="weekly">Weekly</SelectItem>
-                                                <SelectItem value="monthly">Monthly</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                            <div>
+                                <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Brief / Description</label>
+                                <textarea
+                                    value={description}
+                                    onChange={(e) => setDescription(e.target.value)}
+                                    placeholder="Provide detailed mission briefing..."
+                                    rows={10}
+                                    className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary min-h-[250px] resize-none"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right Column: Mission Parameters (40%) */}
+                    <div className="w-full md:w-[40%] h-[40%] md:h-full flex flex-col bg-muted/10 overflow-y-auto">
+                        <div className="p-6 space-y-5">
+                            <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+                                <Settings className="h-4 w-4 text-muted-foreground" />
+                                <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Mission Parameters</h3>
+                            </div>
+
+                            {/* Project & Department */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs uppercase text-muted-foreground font-bold">Project</label>
+                                    <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+                                        <SelectTrigger className="bg-background border-input h-9 text-xs">
+                                            <SelectValue placeholder="Select..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="_none">None</SelectItem>
+                                            {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs uppercase text-muted-foreground font-bold">Dept.</label>
+                                    <Select value={selectedDepartmentId} onValueChange={setSelectedDepartmentId}>
+                                        <SelectTrigger className="bg-background border-input h-9 text-xs">
+                                            <SelectValue placeholder="Select..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="_none">None</SelectItem>
+                                            {departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-xs uppercase text-muted-foreground font-bold">Client</label>
+                                <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+                                    <SelectTrigger className="bg-background border-input h-9 text-xs">
+                                        <SelectValue placeholder="Select client..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="_none">None</SelectItem>
+                                        {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-xs uppercase text-muted-foreground font-bold">Objective (Quest)</label>
+                                <Select value={selectedQuestId} onValueChange={setSelectedQuestId}>
+                                    <SelectTrigger className="bg-background border-input h-9 text-xs">
+                                        <SelectValue placeholder="Select quest..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="_none">No Quest</SelectItem>
+                                        {questOptions.map(q => <SelectItem key={q.id} value={q.id}>{q.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs uppercase text-muted-foreground font-bold">Size (XP)</label>
+                                    <Select value={selectedSizeId} onValueChange={setSelectedSizeId}>
+                                        <SelectTrigger className="bg-background border-input h-9 text-xs">
+                                            <SelectValue placeholder="XP..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {sizes.map(s => <SelectItem key={s.id} value={s.id}>{s.name} ({s.xp_points || 0} XP)</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs uppercase text-muted-foreground font-bold">Urgency</label>
+                                    <Select value={selectedUrgencyId} onValueChange={setSelectedUrgencyId}>
+                                        <SelectTrigger className="bg-background border-input h-9 text-xs">
+                                            <SelectValue placeholder="Level..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {urgencies.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-xs uppercase text-muted-foreground font-bold">Assign Operator</label>
+                                <Select value={selectedAssignee} onValueChange={setSelectedAssignee}>
+                                    <SelectTrigger className="bg-background border-input h-9 text-xs">
+                                        <SelectValue placeholder="Unassigned" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="_none">Unassigned</SelectItem>
+                                        {crew.map(member => (
+                                            <SelectItem key={member.user_id} value={member.user_id}>
+                                                {member.first_name || member.last_name
+                                                    ? `${member.first_name || ''} ${member.last_name || ''}`.trim()
+                                                    : member.email || 'Unknown'}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-xs uppercase text-muted-foreground font-bold">Deadline (Optional)</label>
+                                <div className="relative">
+                                    <Input
+                                        type="date"
+                                        value={deadlineAt}
+                                        onChange={(e) => setDeadlineAt(e.target.value)}
+                                        className="bg-background border-input text-xs pl-8 h-9"
+                                    />
+                                    <Calendar className="h-3.5 w-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
+                                </div>
+                            </div>
+
+                            {/* Recurrence Section */}
+                            <div className="border border-border p-3 bg-muted/20 rounded-lg space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Repeat className="h-3.5 w-3.5 text-primary" />
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-foreground">Recurrence</span>
                                     </div>
-                                    <div>
-                                        <label className="text-[10px] uppercase text-muted-foreground mb-1 block font-bold">Interval (Every X)</label>
-                                        <Input
-                                            type="number"
-                                            min="1"
-                                            value={recurrenceInterval}
-                                            onChange={e => setRecurrenceInterval(e.target.value)}
-                                            className="h-8 text-xs bg-background"
-                                        />
-                                    </div>
+                                    <Switch
+                                        checked={isRecurring}
+                                        onCheckedChange={setIsRecurring}
+                                    />
                                 </div>
 
-                                {frequency === 'weekly' && (
-                                    <div>
-                                        <label className="text-[10px] uppercase text-muted-foreground mb-1 block font-bold">On Days</label>
-                                        <div className="flex flex-wrap gap-2">
-                                            {daysOfWeek.map(day => (
-                                                <div
-                                                    key={day.id}
-                                                    onClick={() => handleDayToggle(day.id)}
-                                                    className={`
-                                                        w-8 h-8 flex items-center justify-center border text-xs font-bold cursor-pointer transition-colors rounded
-                                                        ${recurrenceDays.includes(day.id)
-                                                            ? 'bg-primary text-primary-foreground border-primary'
-                                                            : 'bg-background text-muted-foreground border-border hover:bg-muted'}
-                                                    `}
-                                                >
-                                                    {day.label}
+                                {isRecurring && (
+                                    <div className="space-y-3 pt-2 animate-in fade-in slide-in-from-top-2">
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="text-[10px] uppercase text-muted-foreground mb-1 block font-bold">Freq.</label>
+                                                <Select value={frequency} onValueChange={setFrequency}>
+                                                    <SelectTrigger className="h-8 text-[10px] bg-background"><SelectValue /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="daily">Daily</SelectItem>
+                                                        <SelectItem value="weekly">Weekly</SelectItem>
+                                                        <SelectItem value="monthly">Monthly</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] uppercase text-muted-foreground mb-1 block font-bold">Interval</label>
+                                                <Input
+                                                    type="number"
+                                                    min="1"
+                                                    value={recurrenceInterval}
+                                                    onChange={e => setRecurrenceInterval(e.target.value)}
+                                                    className="h-8 text-[10px] bg-background"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {frequency === 'weekly' && (
+                                            <div>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {daysOfWeek.map(day => (
+                                                        <div
+                                                            key={day.id}
+                                                            onClick={() => handleDayToggle(day.id)}
+                                                            className={`
+                                                                w-6 h-6 flex items-center justify-center border text-[9px] font-bold cursor-pointer transition-colors rounded
+                                                                ${recurrenceDays.includes(day.id)
+                                                                    ? 'bg-primary text-primary-foreground border-primary'
+                                                                    : 'bg-background text-muted-foreground border-border hover:bg-muted'}
+                                                            `}
+                                                        >
+                                                            {day.label[0]}
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                            ))}
+                                            </div>
+                                        )}
+
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="text-[10px] uppercase text-muted-foreground mb-1 block font-bold">Start</label>
+                                                <div className="relative">
+                                                    <Input
+                                                        type="date"
+                                                        value={startDate}
+                                                        onChange={(e) => setStartDate(e.target.value)}
+                                                        className="h-8 text-[10px] bg-background pl-7"
+                                                        required={isRecurring}
+                                                    />
+                                                    <Calendar className="h-3 w-3 absolute left-2 top-2.5 text-muted-foreground" />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] uppercase text-muted-foreground mb-1 block font-bold">End</label>
+                                                <div className="relative">
+                                                    <Input
+                                                        type="date"
+                                                        value={endDate}
+                                                        onChange={(e) => setEndDate(e.target.value)}
+                                                        className="h-8 text-[10px] bg-background pl-7"
+                                                    />
+                                                    <Calendar className="h-3 w-3 absolute left-2 top-2.5 text-muted-foreground" />
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
-
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="text-[10px] uppercase text-muted-foreground mb-1 block font-bold">Start Date</label>
-                                        <div className="relative">
-                                            <Input
-                                                type="date"
-                                                value={startDate}
-                                                onChange={(e) => setStartDate(e.target.value)}
-                                                className="h-8 text-xs bg-background pl-8"
-                                                required={isRecurring}
-                                            />
-                                            <Calendar className="h-3 w-3 absolute left-2 top-2.5 text-muted-foreground" />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] uppercase text-muted-foreground mb-1 block font-bold">End Date (Opt)</label>
-                                        <div className="relative">
-                                            <Input
-                                                type="date"
-                                                value={endDate}
-                                                onChange={(e) => setEndDate(e.target.value)}
-                                                className="h-8 text-xs bg-background pl-8"
-                                            />
-                                            <Calendar className="h-3 w-3 absolute left-2 top-2.5 text-muted-foreground" />
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
-                        )}
-                    </div>
 
-                    {error && (
-                        <div className="p-3 bg-destuctive/10 text-destructive text-sm rounded border border-destructive/20">
-                            {error}
+                            {error && (
+                                <div className="p-3 bg-destructive/10 text-destructive text-[10px] font-bold rounded border border-destructive/20 uppercase tracking-tighter">
+                                    {error}
+                                </div>
+                            )}
                         </div>
-                    )}
+                    </div>
+                </div>
 
-                    <DialogFooter className="pt-2">
-                        <button
-                            type="button"
-                            onClick={() => setOpen(false)}
-                            className="px-4 py-2 text-sm font-bold uppercase text-muted-foreground hover:text-foreground"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="px-4 py-2 bg-primary text-primary-foreground text-sm font-bold uppercase rounded hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
-                        >
-                            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                            {isRecurring ? 'Initialize Protocol' : 'Create Task'}
-                        </button>
-                    </DialogFooter>
-                </form>
+                <DialogFooter className="px-6 py-4 border-t border-border bg-muted/20 flex-shrink-0">
+                    <button
+                        type="button"
+                        onClick={() => setOpen(false)}
+                        className="px-4 py-2 text-sm font-bold uppercase text-muted-foreground hover:text-foreground"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        form="create-task-form"
+                        type="submit"
+                        disabled={loading}
+                        className="px-4 py-2 bg-primary text-primary-foreground text-sm font-bold uppercase rounded hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
+                    >
+                        {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                        {isRecurring ? 'Initialize Protocol' : 'Create Task'}
+                    </button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     )

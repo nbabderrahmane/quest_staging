@@ -9,10 +9,11 @@ interface NavItemProps {
     href: string
     children: React.ReactNode
     icon?: React.ReactNode
+    badge?: number // Unread count
     onClick?: () => void
 }
 
-export function NavItem({ href, children, icon, onClick }: NavItemProps) {
+export function NavItem({ href, children, icon, badge, onClick }: NavItemProps) {
     const pathname = usePathname()
     // Exact match for root, or starts with for nested
     const isActive = href === '/'

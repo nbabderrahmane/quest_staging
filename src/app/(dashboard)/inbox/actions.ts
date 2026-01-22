@@ -25,6 +25,29 @@ export interface InboxItem {
     }
 }
 
+// Get unread notification count for badge
+export async function getUnreadCount(teamId: string): Promise<number> {
+    const supabase = await getUserClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return 0
+
+    try {
+        // Count unread items from inbox_read_status
+        const { count } = await supabase
+            .from('inbox_read_status')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .eq('team_id', teamId)
+            .eq('is_read', false)
+
+        return count || 0
+    } catch (error) {
+        console.error('Failed to get unread count:', error)
+        return 0
+    }
+}
+
 export async function getInboxFeed(): Promise<InboxItem[]> {
     const supabase = await getUserClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -82,7 +105,7 @@ export async function getInboxFeed(): Promise<InboxItem[]> {
                 .select(`
                     id, content, created_at, task_id,
                     author:profiles!author_id(first_name, last_name, avatar_url),
-                    task:tasks!task_id(title)
+                    task:tasks!task_id(title, assigned_to)
                 `)
                 .in('task_id', taskIds)
                 .neq('author_id', user.id)
@@ -91,10 +114,16 @@ export async function getInboxFeed(): Promise<InboxItem[]> {
 
             if (comments) {
                 comments.forEach((comment: any) => {
+                    // Only show if user is mentioned (@username) or is the assignee
+                    const isMentioned = comment.content?.includes(`@${user.email?.split('@')[0]}`)
+                    const isAssignee = comment.task?.assigned_to === user.id
+
+                    if (!isMentioned && !isAssignee) return
+
                     feed.push({
                         id: `comment-${comment.id}`,
-                        type: 'comment',
-                        title: `New intel on: ${comment.task?.title}`,
+                        type: isMentioned ? 'mention' : 'comment',
+                        title: isMentioned ? `You were mentioned in: ${comment.task?.title}` : `New intel on: ${comment.task?.title}`,
                         message: comment.content,
                         date: comment.created_at,
                         isRead: false,

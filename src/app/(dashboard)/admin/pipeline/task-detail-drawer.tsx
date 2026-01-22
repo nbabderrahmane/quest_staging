@@ -241,33 +241,32 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                 bg-background border border-border text-foreground shadow-xl flex flex-col p-0 gap-0 overflow-hidden
                 fixed z-[200]
                 top-0 left-0 translate-x-0 translate-y-0 w-full h-[100dvh] max-w-none rounded-none
-                md:top-[50%] md:left-[50%] md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-4xl md:h-auto md:max-h-[90vh] md:rounded-lg
+                md:top-[50%] md:left-[50%] md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-4xl md:h-[90vh] md:rounded-lg
             ">
-                <div className="flex flex-col md:flex-row h-full min-h-0 md:min-h-[600px]">
-                    {/* Left Column: Brief & Comms (100% Mobile, 60% Desktop) */}
-                    {/* On mobile, take 60% height to show comms, let params take 40% */}
-                    <div className="w-full md:w-[60%] h-[60%] md:h-full flex flex-col border-b md:border-b-0 md:border-r border-border order-2 md:order-1">
-                        {/* Header */}
-                        <div className="px-6 py-6 border-b border-border bg-muted/20 flex-shrink-0">
-                            <div className="flex justify-between items-start">
-                                <div className="space-y-1">
-                                    <DialogTitle className="text-xl font-black text-foreground pr-2 uppercase tracking-tighter">
-                                        {task?.title || 'Loading...'}
-                                    </DialogTitle>
-                                    {task?.was_dropped && (
-                                        <span className="inline-block px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold uppercase rounded border border-red-200">
-                                            Mission Aborted
-                                        </span>
-                                    )}
-                                    {task?.quest && (
-                                        <p className="text-xs font-mono text-blue-600">
-                                            Objective: {task.quest.name}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
+                {/* Header - Fixed at top */}
+                <div className="px-6 py-6 border-b border-border bg-background flex-shrink-0">
+                    <div className="flex justify-between items-start">
+                        <div className="space-y-1">
+                            <DialogTitle className="text-xl font-black text-foreground pr-2 uppercase tracking-tighter">
+                                {task?.title || 'Loading...'}
+                            </DialogTitle>
+                            {task?.was_dropped && (
+                                <span className="inline-block px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold uppercase rounded border border-red-200">
+                                    Mission Aborted
+                                </span>
+                            )}
+                            {task?.quest && (
+                                <p className="text-xs font-mono text-blue-600">
+                                    Objective: {task.quest.name}
+                                </p>
+                            )}
                         </div>
+                    </div>
+                </div>
 
+                <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden">
+                    {/* Left Column: Brief & Comms (100% Mobile, 60% Desktop) */}
+                    <div className="w-full md:w-[60%] h-[60%] md:h-full flex flex-col border-b md:border-b-0 md:border-r border-border order-2 md:order-1 overflow-hidden">
                         {isLoading ? (
                             <div className="p-8 text-center text-muted-foreground animate-pulse">Loading task details...</div>
                         ) : error ? (
@@ -277,72 +276,59 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                                 <p className="text-sm mt-1">{error}</p>
                             </div>
                         ) : (
-                            <>
-                                {/* Description Section */}
-                                <div className="px-6 py-4 border-b border-border bg-background flex-shrink-0 hidden md:block">
-                                    {/* Hide description on mobile to save space? Or keep it? */}
-                                    {/* Let's keep it but maybe compact */}
+                            <div className="flex flex-col h-full overflow-hidden">
+                                {/* Description Section - Self-contained scroll if too long */}
+                                <div className="px-6 py-4 border-b border-border bg-background flex-shrink-0">
                                     <div className="flex items-center gap-2 mb-3">
                                         <FileText className="h-4 w-4 text-muted-foreground" />
                                         <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">Brief</h3>
                                     </div>
-                                    {isEditingDesc && canEdit ? (
-                                        <div className="space-y-2">
-                                            <textarea
-                                                value={description}
-                                                onChange={(e) => setDescription(e.target.value)}
-                                                rows={4}
-                                                className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                                                placeholder="Add mission briefing..."
-                                                autoFocus
-                                            />
-                                            <div className="flex gap-2 justify-end">
-                                                <button
-                                                    onClick={() => { setIsEditingDesc(false); setDescription(task?.description || '') }}
-                                                    className="px-3 py-1.5 text-xs font-bold uppercase text-muted-foreground hover:text-foreground"
-                                                >
-                                                    Cancel
-                                                </button>
-                                                <button
-                                                    onClick={handleSaveDescription}
-                                                    disabled={isSavingDesc}
-                                                    className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold uppercase rounded hover:bg-blue-700 disabled:opacity-50"
-                                                >
-                                                    {isSavingDesc ? 'Saving...' : 'Save'}
-                                                </button>
+                                    <div className="max-h-[25vh] md:max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                        {isEditingDesc && canEdit ? (
+                                            <div className="space-y-2">
+                                                <textarea
+                                                    value={description}
+                                                    onChange={(e) => setDescription(e.target.value)}
+                                                    rows={4}
+                                                    className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                                    placeholder="Add mission briefing..."
+                                                    autoFocus
+                                                />
+                                                <div className="flex gap-2 justify-end">
+                                                    <button
+                                                        onClick={() => { setIsEditingDesc(false); setDescription(task?.description || '') }}
+                                                        className="px-3 py-1.5 text-xs font-bold uppercase text-muted-foreground hover:text-foreground"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        onClick={handleSaveDescription}
+                                                        disabled={isSavingDesc}
+                                                        className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold uppercase rounded hover:bg-blue-700 disabled:opacity-50"
+                                                    >
+                                                        {isSavingDesc ? 'Saving...' : 'Save'}
+                                                    </button>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ) : (
-                                        <div
-                                            onClick={() => canEdit && setIsEditingDesc(true)}
-                                            className={`min-h-[60px] p-3 bg-muted/30 border border-border rounded-md text-sm text-foreground whitespace-pre-wrap ${canEdit ? 'cursor-pointer hover:bg-muted/50' : ''}`}
-                                        >
-                                            {task?.description ? (
-                                                linkify(task.description)
-                                            ) : (
-                                                <span className="text-muted-foreground italic">
-                                                    {canEdit ? 'Click to add mission briefing...' : 'No briefing provided.'}
-                                                </span>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Mobile Only: Brief Toggle or just reduced header? */}
-                                {/* For simplicity, just rendering it same as desktop for now, relying on scrolling */}
-                                <div className="px-6 py-4 border-b border-border bg-background flex-shrink-0 md:hidden">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <FileText className="h-4 w-4 text-muted-foreground" />
-                                        <span className="text-xs font-bold uppercase text-foreground">Brief</span>
+                                        ) : (
+                                            <div
+                                                onClick={() => canEdit && setIsEditingDesc(true)}
+                                                className={`min-h-[40px] p-3 bg-muted/30 border border-border rounded-md text-sm text-foreground whitespace-pre-wrap ${canEdit ? 'cursor-pointer hover:bg-muted/50' : ''}`}
+                                            >
+                                                {task?.description ? (
+                                                    linkify(task.description)
+                                                ) : (
+                                                    <span className="text-muted-foreground italic">
+                                                        {canEdit ? 'Click to add mission briefing...' : 'No briefing provided.'}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
-                                    <p className="text-xs text-muted-foreground line-clamp-3" onClick={() => canEdit && setIsEditingDesc(true)}>
-                                        {task?.description || 'No briefing.'}
-                                    </p>
                                 </div>
 
-
-                                {/* Comms Feed Section */}
-                                <div className="flex-1 flex flex-col min-h-0">
+                                {/* Comms Feed Section - Takes remaining space and scrolls */}
+                                <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
                                     <div className="px-4 md:px-6 py-2 md:py-3 border-b border-border bg-muted/30 flex-shrink-0">
                                         <div className="flex items-center gap-2">
                                             <MessageSquare className="h-4 w-4 text-muted-foreground" />
@@ -389,7 +375,7 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                                         <div ref={commentsEndRef} />
                                     </div>
 
-                                    {/* Comment Input */}
+                                    {/* Comment Input - Fixed at bottom of this column */}
                                     <div className="px-4 md:px-6 py-3 md:py-4 border-t border-border bg-muted/30 flex-shrink-0">
                                         <div className="flex gap-2">
                                             <textarea
@@ -410,22 +396,11 @@ export function TaskDetailDrawer({ taskId, teamId, open, onClose, canEdit, quest
                                         </div>
                                     </div>
                                 </div>
-                            </>
+                            </div>
                         )}
                     </div>
 
                     {/* Right Column: Mission Parameters (100% Mobile, 40% Desktop) */}
-                    {/* On Desktop: 40% width. On Mobile: height 40%, order-1 (so it's on top? Or bottom?) */}
-                    {/* Actually, user might want to see parameters first? No, Title is in Left col header. */}
-                    {/* Let's put Parameters at TOP on mobile (under standard header if possible, but standard header is inside Left Col). */}
-                    {/* Current Structure: Columns wrap everything including headers. */}
-                    {/* If we want Title to be always top, we might need to restructure. */}
-                    {/* For now, just stacking: Brief/Comms (Bottom 60%) and Params (Top 40%)? */}
-                    {/* Or Params (Bottom 40%)? Usually you check params then chat. */}
-                    {/* Let's try Params TOP (order-1) so you see status/assignee, then scroll down to Comms. */}
-                    {/* BUT Header with Title is in Left Column... this is awkward. */}
-                    {/* Let's keep Left (Order-2) and Right (Order-1)? No, Title is in Left. */}
-                    {/* Compromise: Left Col (Title + Comms) is Order-1 (Top). Right Col (Params) is Order-2 (Bottom). */}
                     <div className="w-full md:w-[40%] h-[40%] md:h-full bg-muted/10 flex flex-col overflow-y-auto border-t md:border-t-0 order-1 md:order-2">
                         {/* Mobile Handle / Indicator? */}
                         <div className="md:hidden flex justify-center py-2 border-b border-slate-100 bg-white">
