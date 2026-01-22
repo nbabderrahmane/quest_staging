@@ -4,6 +4,7 @@ import { ReactNode } from 'react'
 import { cookies } from 'next/headers'
 
 import { getUserTeams } from '@/app/teams/actions'
+import { getUnreadCount } from '@/app/(dashboard)/inbox/actions'
 import { CockpitInitializer } from '@/components/dashboard/cockpit-initializer'
 import { DashboardShell } from './dashboard-shell'
 
@@ -30,6 +31,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         // Sentinel Check: Is this team initialized?
         let isInitialized = false
         let userRole = 'member'
+        let unreadCount = 0
 
         if (activeTeam) {
             // Check usage of 'statuses' table as a proxy for initialization
@@ -53,6 +55,9 @@ export default async function DashboardLayout({ children }: { children: ReactNod
             if (memberData) {
                 userRole = memberData.role
             }
+
+            // Fetch unread notifications
+            unreadCount = await getUnreadCount(activeTeam.id)
         }
 
         // Fetch User Profile for Phone
@@ -79,6 +84,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
                 userRole={userRole}
                 user={{ email: user.email }}
                 profile={profile}
+                unreadInboxCount={unreadCount}
             >
                 {children}
             </DashboardShell>

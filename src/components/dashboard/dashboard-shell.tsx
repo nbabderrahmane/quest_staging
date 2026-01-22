@@ -15,13 +15,14 @@ interface DashboardShellProps {
     userRole: string
     user: { email?: string }
     profile: { phone?: string | null } | null
+    unreadInboxCount?: number
 }
 
-export function DashboardShell({ children, teams, activeTeam, userRole, user, profile }: DashboardShellProps) {
+export function DashboardShell({ children, teams, activeTeam, userRole, user, profile, unreadInboxCount = 0 }: DashboardShellProps) {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
     const [isHeroBarVisible, setIsHeroBarVisible] = useState(true)
 
-    const sidebarProps = { teams, activeTeam, userRole, user, profile }
+    const sidebarProps = { teams, activeTeam, userRole, user, profile, unreadInboxCount }
 
     return (
         <div className="flex h-screen bg-background text-foreground overflow-hidden">

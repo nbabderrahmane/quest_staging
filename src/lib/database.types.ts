@@ -210,6 +210,52 @@ export type Database = {
                 }
                 Relationships: []
             }
+            inbox_read_status: {
+                Row: {
+                    id: string
+                    team_id: string
+                    user_id: string
+                    resource_type: 'task' | 'ticket'
+                    resource_id: string
+                    last_read_at: string | null
+                    is_read: boolean | null
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    team_id: string
+                    user_id: string
+                    resource_type: 'task' | 'ticket'
+                    resource_id: string
+                    last_read_at?: string | null
+                    is_read?: boolean | null
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    team_id?: string
+                    user_id?: string
+                    resource_type?: 'task' | 'ticket'
+                    resource_id?: string
+                    last_read_at?: string | null
+                    is_read?: boolean | null
+                    created_at?: string
+                }
+                Relationships: [
+                    {
+                        foreignKeyName: "inbox_read_status_team_id_fkey"
+                        columns: ["team_id"]
+                        referencedRelation: "teams"
+                        referencedColumns: ["id"]
+                    },
+                    {
+                        foreignKeyName: "inbox_read_status_user_id_fkey"
+                        columns: ["user_id"]
+                        referencedRelation: "users"
+                        referencedColumns: ["id"]
+                    }
+                ]
+            }
             api_keys: {
                 Row: {
                     id: string

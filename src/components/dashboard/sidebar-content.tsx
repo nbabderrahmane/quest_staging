@@ -15,9 +15,10 @@ interface SidebarContentProps {
     user: { email?: string }
     profile: { phone?: string | null } | null
     onNavigate?: () => void
+    unreadInboxCount?: number
 }
 
-export function SidebarContent({ teams, activeTeam, userRole, user, profile, onNavigate }: SidebarContentProps) {
+export function SidebarContent({ teams, activeTeam, userRole, user, profile, onNavigate, unreadInboxCount }: SidebarContentProps) {
     return (
         <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
             {/* Brand Area */}
@@ -46,7 +47,7 @@ export function SidebarContent({ teams, activeTeam, userRole, user, profile, onN
                 <div className="px-4 pb-2">
                     <p className="text-[10px] uppercase tracking-[0.2em] text-sidebar-foreground/40 font-bold">Command</p>
                 </div>
-                <NavItem href="/inbox" icon={<Archive className="h-4 w-4" />} onClick={onNavigate}>Inbox</NavItem>
+                <NavItem href="/inbox" icon={<Archive className="h-4 w-4" />} badge={unreadInboxCount} onClick={onNavigate}>Inbox</NavItem>
                 <NavItem href="/my-work" icon={<Target className="h-4 w-4" />} onClick={onNavigate}>My Work</NavItem>
                 <NavItem href="/quest-board" icon={<LayoutDashboard className="h-4 w-4" />} onClick={onNavigate}>Quest Board</NavItem>
                 <NavItem href="/admin/quests" icon={<Flag className="h-4 w-4" />} onClick={onNavigate}>Quest Factory</NavItem>

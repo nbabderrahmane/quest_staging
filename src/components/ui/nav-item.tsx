@@ -37,7 +37,16 @@ export function NavItem({ href, children, icon, badge, onClick }: NavItemProps) 
                     : "text-muted-foreground hover:bg-muted/10 hover:text-foreground"
             )}>
                 {icon}
-                {children}
+                {/* Content */}
+                <span className="flex-1 truncate">{children}</span>
+
+                {/* Badge */}
+                {badge !== undefined && badge > 0 && (
+                    <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-primary text-[10px] font-bold text-primary-foreground leading-none">
+                        {badge > 99 ? '99+' : badge}
+                    </span>
+                )}
+
                 {/* Micro-interaction hover highlight */}
                 <div className="absolute inset-y-0 right-1 w-0 bg-primary/20 transition-all group-hover:w-1 group-active:w-2 rounded-r-none" />
             </div>
