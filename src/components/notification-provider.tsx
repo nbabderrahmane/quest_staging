@@ -42,8 +42,20 @@ export function NotificationProvider({ children, userId }: { children: React.Rea
                     filter: `user_id=eq.${userId}`
                 },
                 (payload) => {
-                    console.log('[NotificationProvider] Postgres change:', payload)
-                    // Refresh count on any relevant change
+                    console.log('[NotificationProvider] Postgres change (notifications):', payload)
+                    fetchCount()
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'inbox_read_status',
+                    filter: `user_id=eq.${userId}`
+                },
+                (payload) => {
+                    console.log('[NotificationProvider] Postgres change (inbox_read_status):', payload)
                     fetchCount()
                 }
             )
