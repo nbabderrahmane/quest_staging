@@ -14,13 +14,24 @@ export const NotificationService = {
     // Client-side fetch
     async getUnreadCountClient() {
         const supabase = createClient()
-        const { count, error } = await supabase
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return 0
+
+        // 1. Notifications from physical table
+        const { count: notifCount } = await supabase
             .from('notifications')
             .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
             .eq('is_read', false)
 
-        if (error) console.error('Error fetching notification count:', error)
-        return count || 0
+        // 2. Notifications from virtual inbox_read_status
+        const { count: inboxCount } = await supabase
+            .from('inbox_read_status')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .eq('is_read', false)
+
+        return (notifCount || 0) + (inboxCount || 0)
     },
 
     async getNotifications(limit = 10) {

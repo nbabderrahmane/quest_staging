@@ -55,9 +55,8 @@ export function SidebarContent({ teams, activeTeam, userRole, user, profile, onN
 
             {/* Navigation */}
             <nav className="flex-1 py-6 space-y-4 overflow-y-auto">
-                <NavGroup title="My Space" icon={<Target className="h-4 w-4" />} badge={unreadInboxCount ? unreadInboxCount + unreadNotifCount : unreadNotifCount}>
-                    <NavItem href="/inbox" icon={<Archive className="h-4 w-4" />} badge={unreadInboxCount} onClick={onNavigate}>Inbox</NavItem>
-                    <NavItem href="/portal/notifications" icon={<Bell className="h-4 w-4" />} badge={unreadNotifCount} onClick={onNavigate}>Notifications</NavItem>
+                <NavGroup title="My Space" icon={<Target className="h-4 w-4" />} badge={unreadNotifCount}>
+                    <NavItem href="/inbox" icon={<Archive className="h-4 w-4" />} badge={unreadNotifCount} onClick={onNavigate}>Inbox</NavItem>
                     <NavItem href="/my-work" icon={<Target className="h-4 w-4" />} onClick={onNavigate}>My Work</NavItem>
                 </NavGroup>
 

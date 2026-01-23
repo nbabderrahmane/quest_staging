@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getInboxFeed, InboxItem, markItemAsRead } from './actions'
-import { Archive, Bell, MessageSquare, Briefcase, RefreshCw, ChevronRight } from 'lucide-react'
+import { getInboxFeed, InboxItem, markItemAsRead, markItemAsUnread } from './actions'
+import { Archive, Bell, MessageSquare, Briefcase, RefreshCw, ChevronRight, Circle, CheckCircle2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { TaskDetailPanel } from '@/components/dashboard/task-detail-panel'
+import { useNotifications } from '@/components/notification-provider'
 
 export default function InboxPage() {
     const [feed, setFeed] = useState<InboxItem[]>([])
@@ -12,6 +13,7 @@ export default function InboxPage() {
     const [isRefreshing, setIsRefreshing] = useState(false)
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
     const [selectedResource, setSelectedResource] = useState<{ id: string, type: 'task' | 'ticket' } | null>(null)
+    const { refreshCount } = useNotifications()
 
     const router = useRouter()
 
@@ -39,21 +41,38 @@ export default function InboxPage() {
         setTimeout(() => setIsRefreshing(false), 500)
     }
 
+    const handleToggleRead = async (e: React.MouseEvent, item: InboxItem) => {
+        e.stopPropagation()
+        const newReadStatus = !item.isRead
+
+        // Optimistic update
+        setFeed(prev => prev.map(i => i.id === item.id ? { ...i, isRead: newReadStatus } : i))
+
+        try {
+            if (newReadStatus) {
+                await markItemAsRead(item.resourceId, item.resourceType)
+            } else {
+                await markItemAsUnread(item.resourceId, item.resourceType)
+            }
+            refreshCount()
+            router.refresh() // Update global badges
+        } catch (error) {
+            console.error('Failed to toggle read status', error)
+            // Revert on error
+            setFeed(prev => prev.map(i => i.id === item.id ? { ...i, isRead: !newReadStatus } : i))
+        }
+    }
+
     const handleSelect = async (item: InboxItem) => {
         setSelectedItemId(item.id)
         setSelectedResource({ id: item.resourceId, type: item.resourceType })
 
-        // Optimistic update
+        // Auto mark as read on select if not already
         if (!item.isRead) {
             setFeed(prev => prev.map(i => i.id === item.id ? { ...i, isRead: true } : i))
-
-            // Server action (fire and forget)
-            markItemAsRead(item.resourceId, item.resourceType).then(res => {
-                if (!res.success) {
-                    // Revert if failed? usually not worth the UX flicker for read status
-                    console.error('Failed to mark read', res.error)
-                }
-            })
+            await markItemAsRead(item.resourceId, item.resourceType)
+            refreshCount()
+            router.refresh()
         }
     }
 
@@ -105,12 +124,24 @@ export default function InboxPage() {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex justify-between items-start mb-0.5">
-                                            <h3 className={`text-sm ${!item.isRead ? 'font-black' : 'font-medium'} truncate pr-2 ${selectedItemId === item.id ? 'text-primary' : 'text-foreground'}`}>
-                                                {item.title}
-                                            </h3>
-                                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono whitespace-nowrap opacity-70">
-                                                {new Date(item.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                            </span>
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                {!item.isRead && <div className="w-2 h-2 rounded-full bg-primary shrink-0" />}
+                                                <h3 className={`text-sm ${!item.isRead ? 'font-black' : 'font-medium'} truncate pr-2 ${selectedItemId === item.id ? 'text-primary' : 'text-foreground'}`}>
+                                                    {item.title}
+                                                </h3>
+                                            </div>
+                                            <div className="flex flex-col items-end gap-1 shrink-0">
+                                                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono whitespace-nowrap opacity-70">
+                                                    {new Date(item.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                </span>
+                                                <button
+                                                    onClick={(e) => handleToggleRead(e, item)}
+                                                    className={`p-1 rounded hover:bg-muted transition-colors ${item.isRead ? 'text-muted-foreground' : 'text-primary'}`}
+                                                    title={item.isRead ? "Mark as unread" : "Mark as read"}
+                                                >
+                                                    {item.isRead ? <Circle className="h-3 w-3" /> : <CheckCircle2 className="h-3 w-3" />}
+                                                </button>
+                                            </div>
                                         </div>
                                         <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed opacity-90">
                                             {item.message}
