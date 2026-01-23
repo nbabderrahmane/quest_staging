@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 // The client you created from the Server-Side Auth instructions
 import { createClient } from '@/lib/supabase/server'
+import { PLGService } from '@/lib/plg-service'
 
 export async function GET(request: Request) {
     const { searchParams, origin } = new URL(request.url)
@@ -12,6 +13,16 @@ export async function GET(request: Request) {
         const supabase = await createClient()
         const { error } = await supabase.auth.exchangeCodeForSession(code)
         if (!error) {
+            // PLG Auto-Join Logic (Non-blocking)
+            try {
+                const { data: { user } } = await supabase.auth.getUser()
+                if (user && user.email) {
+                    await PLGService.handleAutoJoin(user.id, user.email)
+                }
+            } catch (err) {
+                console.error('[Auth Callback] PLG Auto-Join failed', err)
+            }
+
             const forwardedHost = request.headers.get('x-forwarded-host') // original origin before load balancer
             const isLocalEnv = process.env.NODE_ENV === 'development'
             if (isLocalEnv) {

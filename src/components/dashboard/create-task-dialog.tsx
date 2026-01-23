@@ -1,6 +1,6 @@
 'use client'
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
@@ -219,9 +219,16 @@ export function CreateTaskDialog({
                         <Target className="h-5 w-5 text-primary" />
                         Create New Task
                     </DialogTitle>
+                    <DialogDescription className="sr-only">
+                        Create a new task to track progress in the quest board.
+                    </DialogDescription>
                 </DialogHeader>
 
-                <div className="flex-1 overflow-hidden flex flex-col md:flex-row bg-muted/5">
+                <form
+                    id="create-task-form"
+                    onSubmit={handleSubmit}
+                    className="flex-1 overflow-hidden flex flex-col md:flex-row bg-muted/5"
+                >
                     {/* Left Column: Core Objective (60%) */}
                     <div className="w-full md:w-[60%] h-[60%] md:h-full flex flex-col border-b md:border-b-0 md:border-r border-border bg-background overflow-y-auto">
                         <div className="p-6 space-y-6">
@@ -469,7 +476,7 @@ export function CreateTaskDialog({
                             )}
                         </div>
                     </div>
-                </div>
+                </form>
 
                 <DialogFooter className="px-6 py-4 border-t border-border bg-muted/20 flex-shrink-0">
                     <button

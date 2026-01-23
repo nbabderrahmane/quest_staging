@@ -56,7 +56,7 @@ export class TaskService {
             .select('id')
             .eq('team_id', teamId)
             .eq('category', 'backlog')
-            .order('created_at', { ascending: true })
+            .order('sort_order', { ascending: true })
             .limit(1)
             .single()
 

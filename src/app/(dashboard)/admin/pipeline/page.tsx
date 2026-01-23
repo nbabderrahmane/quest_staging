@@ -185,9 +185,9 @@ export default function PipelinePage() {
             // Fetch statuses
             const { data: statusData } = await supabase
                 .from('statuses')
-                .select('id, name, category, rank, team_id, sort_order, is_active')
+                .select('id, name, category, team_id, sort_order, is_active')
                 .eq('team_id', cleanTeamId)
-                .order('rank', { ascending: true })
+                .order('sort_order', { ascending: true })
             if (statusData) setStatuses(statusData as unknown as Status[])
 
             // Fetch crew for assignment
