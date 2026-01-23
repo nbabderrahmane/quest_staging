@@ -1,6 +1,4 @@
 import { createClient } from '@/lib/supabase/client'
-import { createClient as createServerClient } from '@/lib/supabase/server'
-
 export interface Notification {
     id: string
     title: string
@@ -22,17 +20,6 @@ export const NotificationService = {
             .eq('is_read', false)
 
         if (error) console.error('Error fetching notification count:', error)
-        return count || 0
-    },
-
-    // Server-side fetch (for initial render)
-    async getUnreadCountServer() {
-        const supabase = await createServerClient()
-        const { count, error } = await supabase
-            .from('notifications')
-            .select('*', { count: 'exact', head: true })
-            .eq('is_read', false)
-
         return count || 0
     },
 
