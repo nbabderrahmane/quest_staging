@@ -541,3 +541,17 @@ export async function markNotificationRead(id: string) {
 
     revalidatePath('/portal/notifications')
 }
+
+export async function markAllNotificationsAsRead() {
+    const supabase = await getUserClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('notifications') as any)
+        .update({ is_read: true })
+        .eq('user_id', user.id)
+        .eq('is_read', false)
+
+    revalidatePath('/portal/notifications')
+}

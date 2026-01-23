@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Bell } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Notification, NotificationService } from '@/services/notification-service'
+import { useNotifications } from '@/components/notification-provider'
 import {
     Popover,
     PopoverContent,
@@ -15,49 +16,15 @@ import { useRouter } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
 
 export function NotificationBell({ userId }: { userId: string }) {
-    const [count, setCount] = useState(0)
+    const { unreadCount: count, refreshCount: fetchCount } = useNotifications()
     const [isOpen, setIsOpen] = useState(false)
     const [notifications, setNotifications] = useState<Notification[]>([])
     const router = useRouter()
-
-    const fetchCount = async () => {
-        const c = await NotificationService.getUnreadCountClient()
-        setCount(c || 0)
-    }
 
     const fetchNotifications = async () => {
         const data = await NotificationService.getNotifications(20)
         setNotifications(data)
     }
-
-    // Initial Fetch
-    useEffect(() => {
-        fetchCount()
-
-        // Subscription
-        const supabase = createClient()
-        const channel = supabase
-            .channel('notification-bell')
-            .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'notifications',
-                    filter: `user_id=eq.${userId}`
-                },
-                (payload) => {
-                    console.log('New Notification received!', payload)
-                    setCount((prev) => prev + 1)
-                    // Optionally toast here
-                }
-            )
-            .subscribe()
-
-        return () => {
-            supabase.removeChannel(channel)
-        }
-    }, [userId])
 
     // Load data when opening
     useEffect(() => {
@@ -68,7 +35,7 @@ export function NotificationBell({ userId }: { userId: string }) {
 
     const handleMarkRead = async (id: string, resourceId: string) => {
         await NotificationService.markAsRead(id)
-        setCount(prev => Math.max(0, prev - 1))
+        await fetchCount() // Ensure global count is updated
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n))
         setIsOpen(false)
         router.refresh()
@@ -79,7 +46,7 @@ export function NotificationBell({ userId }: { userId: string }) {
 
     const handleMarkAllRead = async () => {
         await NotificationService.markAllAsRead()
-        setCount(0)
+        await fetchCount()
         setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
         router.refresh()
     }

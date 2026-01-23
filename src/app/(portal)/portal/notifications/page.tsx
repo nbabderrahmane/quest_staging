@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getNotifications, markNotificationRead } from '../../actions'
+import { getNotifications, markNotificationRead, markAllNotificationsAsRead } from '../../actions'
+import { useNotifications } from '@/components/notification-provider'
 import { Loader2, Bell, Check, ArrowLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
@@ -16,8 +17,10 @@ interface Notification {
 }
 
 export default function NotificationsPage() {
+    const { refreshCount } = useNotifications()
     const [notifications, setNotifications] = useState<Notification[]>([])
     const [loading, setLoading] = useState(true)
+    const [markingAll, setMarkingAll] = useState(false)
     const router = useRouter()
 
     useEffect(() => {
@@ -38,6 +41,15 @@ export default function NotificationsPage() {
         // Optimistic update
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n))
         await markNotificationRead(id)
+        refreshCount()
+    }
+
+    async function handleMarkAllAsRead() {
+        setMarkingAll(true)
+        setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
+        await markAllNotificationsAsRead()
+        refreshCount()
+        setMarkingAll(false)
     }
 
     if (loading) return <div className="h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
@@ -51,6 +63,15 @@ export default function NotificationsPage() {
 
                 <div className="flex items-center justify-between">
                     <h1 className="text-2xl font-black tracking-tight uppercase">Notifications</h1>
+                    {notifications.some(n => !n.is_read) && (
+                        <button
+                            onClick={handleMarkAllAsRead}
+                            disabled={markingAll}
+                            className="text-[10px] font-bold uppercase text-primary hover:underline disabled:opacity-50"
+                        >
+                            {markingAll ? 'Processing...' : 'Mark all as read'}
+                        </button>
+                    )}
                 </div>
 
                 <div className="space-y-4">

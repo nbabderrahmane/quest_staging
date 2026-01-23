@@ -10,9 +10,10 @@ interface NavGroupProps {
     title: string
     icon?: React.ReactNode
     children: React.ReactNode
+    badge?: number
 }
 
-export function NavGroup({ title, icon, children }: NavGroupProps) {
+export function NavGroup({ title, icon, children, badge }: NavGroupProps) {
     const pathname = usePathname()
 
     // Check if any child NavItem is active to auto-expand
@@ -56,12 +57,21 @@ export function NavGroup({ title, icon, children }: NavGroupProps) {
                     {icon}
                     <span>{title}</span>
                 </div>
-                <motion.div
-                    animate={{ rotate: isOpen ? 0 : -90 }}
-                    transition={{ duration: 0.2 }}
-                >
-                    <ChevronDown className="h-3 w-3" />
-                </motion.div>
+                <div className="flex items-center gap-2">
+                    <motion.div
+                        animate={{ rotate: isOpen ? 0 : -90 }}
+                        transition={{ duration: 0.2 }}
+                        className="flex items-center"
+                    >
+                        <ChevronDown className="h-3 w-3" />
+                    </motion.div>
+
+                    {badge !== undefined && badge > 0 && (
+                        <span className="flex items-center justify-center min-w-[18px] h-4 px-1 rounded-full bg-primary/20 text-[9px] font-bold text-primary leading-none border border-primary/30">
+                            {badge > 99 ? '99+' : badge}
+                        </span>
+                    )}
+                </div>
             </button>
 
             <AnimatePresence initial={false}>

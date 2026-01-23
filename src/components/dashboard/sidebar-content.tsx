@@ -7,8 +7,9 @@ import { UserNav } from './user-nav'
 import { SubTeamSwitcher } from './sub-team-switcher'
 import { NavItem } from '@/components/ui/nav-item'
 import { NavGroup } from '@/components/ui/nav-group'
-import { LayoutDashboard, ScrollText, BarChart3, Settings, Flag, List, Briefcase, Building2, Skull, Terminal, Archive, Target, CalendarCheck, Users } from 'lucide-react'
+import { LayoutDashboard, ScrollText, BarChart3, Settings, Flag, List, Briefcase, Building2, Skull, Terminal, Archive, Target, CalendarCheck, Users, Bell } from 'lucide-react'
 import { Team } from '@/lib/types'
+import { useNotifications } from '@/components/notification-provider'
 
 interface SidebarContentProps {
     teams: Team[]
@@ -22,6 +23,8 @@ interface SidebarContentProps {
 }
 
 export function SidebarContent({ teams, activeTeam, userRole, user, profile, onNavigate, unreadInboxCount, currentSubTeamId }: SidebarContentProps) {
+    const { unreadCount: unreadNotifCount } = useNotifications()
+
     return (
         <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
             {/* Brand Area */}
@@ -52,8 +55,9 @@ export function SidebarContent({ teams, activeTeam, userRole, user, profile, onN
 
             {/* Navigation */}
             <nav className="flex-1 py-6 space-y-4 overflow-y-auto">
-                <NavGroup title="My Space" icon={<Target className="h-4 w-4" />}>
+                <NavGroup title="My Space" icon={<Target className="h-4 w-4" />} badge={unreadInboxCount ? unreadInboxCount + unreadNotifCount : unreadNotifCount}>
                     <NavItem href="/inbox" icon={<Archive className="h-4 w-4" />} badge={unreadInboxCount} onClick={onNavigate}>Inbox</NavItem>
+                    <NavItem href="/portal/notifications" icon={<Bell className="h-4 w-4" />} badge={unreadNotifCount} onClick={onNavigate}>Notifications</NavItem>
                     <NavItem href="/my-work" icon={<Target className="h-4 w-4" />} onClick={onNavigate}>My Work</NavItem>
                 </NavGroup>
 
