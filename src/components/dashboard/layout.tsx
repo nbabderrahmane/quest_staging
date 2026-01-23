@@ -82,7 +82,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
                 teams={teams}
                 activeTeam={activeTeam}
                 userRole={userRole}
-                user={{ email: user.email }}
+                user={{ id: user.id, email: user.email }}
                 profile={profile}
                 unreadInboxCount={unreadCount}
             >

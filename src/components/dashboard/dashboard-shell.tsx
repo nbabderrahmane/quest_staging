@@ -5,6 +5,7 @@ import { SidebarContent } from './sidebar-content'
 import { MobileNav } from './mobile-nav'
 import { QuestBossBar } from '@/components/dashboard/quest-boss-bar'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { NotificationBell } from './notification-bell'
 import { Team } from '@/lib/types'
 import { PanelLeftClose, PanelLeft, EyeOff, LayoutTemplate } from 'lucide-react'
 
@@ -13,7 +14,7 @@ interface DashboardShellProps {
     teams: Team[]
     activeTeam: Team | undefined
     userRole: string
-    user: { email?: string }
+    user: { id: string; email?: string }
     profile: { phone?: string | null } | null
     unreadInboxCount?: number
 }
@@ -68,8 +69,9 @@ export function DashboardShell({ children, teams, activeTeam, userRole, user, pr
                     )}
                 </div>
 
-                {/* Theme Toggle (Floating Top Right) */}
-                <div className="absolute top-4 right-4 z-[70] hidden md:block">
+                {/* Theme Toggle & Notifications (Floating Top Right) */}
+                <div className="absolute top-4 right-4 z-[70] hidden md:flex items-center gap-2">
+                    <NotificationBell userId={user.id} />
                     <ThemeToggle />
                 </div>
 
