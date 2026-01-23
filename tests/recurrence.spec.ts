@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3000';
 
 test.describe('Ship Quest - Recurrence Feature', () => {
 
-    const TEST_EMAIL = 'johndoe@doe.com';
-    const USER_PASSWORD = '159263';
+    const TEST_EMAIL = process.env.TEST_USER_EMAIL || '';
+    const USER_PASSWORD = process.env.TEST_USER_PASSWORD || '';
 
     test.beforeEach(async ({ page }) => {
         // Login

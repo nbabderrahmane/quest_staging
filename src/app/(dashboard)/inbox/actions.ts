@@ -48,13 +48,48 @@ export async function getUnreadCount(teamId: string): Promise<number> {
     }
 }
 
+// Helper to get read status for a batch of items
+async function getReadStatusMap(userId: string, teamId: string, resourceIds: string[]) {
+    const supabase = await getUserClient()
+    const { data } = await supabase
+        .from('inbox_read_status')
+        .select('resource_id, last_read_at, is_read')
+        .eq('user_id', userId)
+        .eq('team_id', teamId)
+        .in('resource_id', resourceIds)
+
+    const map = new Map<string, { last_read_at: string, is_read: boolean }>()
+    if (data) {
+        data.forEach((item: any) => {
+            map.set(item.resource_id, {
+                last_read_at: item.last_read_at,
+                is_read: item.is_read
+            })
+        })
+    }
+    return map
+}
+
 export async function getInboxFeed(): Promise<InboxItem[]> {
     const supabase = await getUserClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) return []
 
+    // Get user's active team membership to scope items
+    const { data: membershipData } = await supabase
+        .from('team_members')
+        .select('team_id, role')
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle()
+
+    const membership = membershipData as { team_id: string; role: string } | null
+
+    if (!membership) return []
+
     const feed: InboxItem[] = []
+    const resourceIdsToFetch = new Set<string>()
 
     try {
         // 1. Fetch Assignments (Active Tasks assigned to user)
@@ -72,15 +107,56 @@ export async function getInboxFeed(): Promise<InboxItem[]> {
             .limit(20)
 
         if (tasks) {
+            tasks.forEach((task: any) => resourceIdsToFetch.add(task.id))
+        }
+
+        // 2. Comments logic
+        // We'll fetch comments and then add their task IDs to resourceIdsToFetch ONLY for determining read status of the task if we wanted, 
+        // but actually comments have their own "read" concept usually linked to the TASK or the COMMENT itself.
+        // For simplicity: The "resource" is the TASK. Reading a task reads its comments. 
+        // OR each comment is a line item.
+        // In the feed, a comment is a line item `comment-{id}`.
+        // It's resourceType is 'task' and resourceId is `task_id`.
+        // So checking read status of `task_id` tells us if we've seen this task recently.
+        // BUT `last_read_at` on task_id needs to be greater than comment `created_at`.
+
+        const taskIds = tasks?.map((t: any) => t.id) || []
+        let comments: any[] = []
+
+        if (taskIds.length > 0) {
+            const { data: fetchedComments } = await supabase
+                .from('task_comments')
+                .select(`
+                    id, content, created_at, task_id,
+                    author:profiles!author_id(first_name, last_name, avatar_url),
+                    task:tasks!task_id(title, assigned_to)
+                `)
+                .in('task_id', taskIds)
+                .neq('author_id', user.id)
+                .order('created_at', { ascending: false })
+                .limit(20)
+
+            comments = fetchedComments || []
+            comments.forEach((c: any) => resourceIdsToFetch.add(c.task_id))
+        }
+
+        // Fetch Read Status Map
+        const readStatusMap = await getReadStatusMap(user.id, membership.team_id, Array.from(resourceIdsToFetch))
+
+        // Process Tasks
+        if (tasks) {
             tasks.forEach((task: any) => {
-                const isNew = new Date(task.created_at).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000
+                const readStatus = readStatusMap.get(task.id)
+                // Unread if: No read record OR last_read_at < updated_at
+                const isUnread = !readStatus || (new Date(readStatus.last_read_at).getTime() < new Date(task.updated_at).getTime())
+
                 feed.push({
                     id: `task-${task.id}`,
                     type: 'assignment',
                     title: task.title,
-                    message: isNew ? 'You were assigned to this mission.' : 'Mission updated.',
+                    message: 'Mission Status Update',
                     date: task.updated_at,
-                    isRead: !isNew,
+                    isRead: !isUnread,
                     resourceId: task.id,
                     resourceType: 'task',
                     actor: {
@@ -96,57 +172,37 @@ export async function getInboxFeed(): Promise<InboxItem[]> {
             })
         }
 
-        // 2. Comments logic
-        const taskIds = tasks?.map((t: any) => t.id) || []
+        // Process Comments
+        if (comments) {
+            comments.forEach((comment: any) => {
+                const isMentioned = comment.content?.includes(`@${user.email?.split('@')[0]}`)
+                const isAssignee = comment.task?.assigned_to === user.id
 
-        if (taskIds.length > 0) {
-            const { data: comments } = await supabase
-                .from('task_comments')
-                .select(`
-                    id, content, created_at, task_id,
-                    author:profiles!author_id(first_name, last_name, avatar_url),
-                    task:tasks!task_id(title, assigned_to)
-                `)
-                .in('task_id', taskIds)
-                .neq('author_id', user.id)
-                .order('created_at', { ascending: false })
-                .limit(20)
+                if (!isMentioned && !isAssignee) return
 
-            if (comments) {
-                comments.forEach((comment: any) => {
-                    // Only show if user is mentioned (@username) or is the assignee
-                    const isMentioned = comment.content?.includes(`@${user.email?.split('@')[0]}`)
-                    const isAssignee = comment.task?.assigned_to === user.id
+                const readStatus = readStatusMap.get(comment.task_id)
+                // Unread if: No read record OR last_read_at < comment.created_at
+                const isUnread = !readStatus || (new Date(readStatus.last_read_at).getTime() < new Date(comment.created_at).getTime())
 
-                    if (!isMentioned && !isAssignee) return
-
-                    feed.push({
-                        id: `comment-${comment.id}`,
-                        type: isMentioned ? 'mention' : 'comment',
-                        title: isMentioned ? `You were mentioned in: ${comment.task?.title}` : `New intel on: ${comment.task?.title}`,
-                        message: comment.content,
-                        date: comment.created_at,
-                        isRead: false,
-                        resourceId: comment.task_id,
-                        resourceType: 'task',
-                        actor: {
-                            name: `${comment.author?.first_name || ''} ${comment.author?.last_name || ''}`.trim() || 'Unknown Agent',
-                            avatarUrl: comment.author?.avatar_url
-                        }
-                    })
+                feed.push({
+                    id: `comment-${comment.id}`,
+                    type: isMentioned ? 'mention' : 'comment',
+                    title: isMentioned ? `You were mentioned in: ${comment.task?.title}` : `New intel on: ${comment.task?.title}`,
+                    message: comment.content,
+                    date: comment.created_at,
+                    isRead: !isUnread,
+                    resourceId: comment.task_id,
+                    resourceType: 'task',
+                    actor: {
+                        name: `${comment.author?.first_name || ''} ${comment.author?.last_name || ''}`.trim() || 'Unknown Agent',
+                        avatarUrl: comment.author?.avatar_url
+                    }
                 })
-            }
+            })
         }
 
         // 3. Deadline Alerts (For Analysts & Admins)
-        const { data: membership } = await supabase
-            .from('team_members')
-            .select('role')
-            .eq('user_id', user.id)
-            .limit(1)
-            .maybeSingle()
-
-        const isStaff = membership && ['owner', 'admin', 'manager', 'analyst'].includes((membership as { role: string }).role)
+        const isStaff = membership && ['owner', 'admin', 'manager', 'analyst'].includes(membership.role)
 
         if (isStaff) {
             const { data: deadlineTasks } = await supabase
@@ -157,6 +213,7 @@ export async function getInboxFeed(): Promise<InboxItem[]> {
                 .neq('status.category', 'done')
                 .neq('status.category', 'archived')
                 .not('deadline_at', 'is', null)
+                .limit(50)
 
             if (deadlineTasks) {
                 const now = new Date()
@@ -188,6 +245,8 @@ export async function getInboxFeed(): Promise<InboxItem[]> {
                     }
 
                     if (alertTitle) {
+                        // TODO: Implement dismissed alerts logic if needed. 
+                        // For now alerts are always shown if condition is met.
                         feed.push({
                             id: `deadline-${task.id}-${diffDays}`,
                             type: 'notification',
@@ -210,6 +269,45 @@ export async function getInboxFeed(): Promise<InboxItem[]> {
     }
 
     return feed.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+}
+
+export async function markItemAsRead(resourceId: string, resourceType: 'task' | 'ticket') {
+    const supabase = await getUserClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, error: 'Unauthorized' }
+
+    // Get team_id
+    const { data: membershipData } = await supabase
+        .from('team_members')
+        .select('team_id')
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle()
+
+    const membership = membershipData as { team_id: string } | null
+
+    if (!membership) return { success: false, error: 'No team found' }
+
+    try {
+        const { error } = await supabase
+            .from('inbox_read_status')
+            .upsert({
+                user_id: user.id,
+                team_id: membership.team_id,
+                resource_id: resourceId,
+                resource_type: resourceType,
+                last_read_at: new Date().toISOString(),
+                is_read: true
+            } as any, {
+                onConflict: 'user_id, resource_id'
+            })
+
+        if (error) throw error
+        return { success: true }
+    } catch (error: any) {
+        console.error('Error marking as read:', error)
+        return { success: false, error: error.message }
+    }
 }
 
 // New Helper for Split View

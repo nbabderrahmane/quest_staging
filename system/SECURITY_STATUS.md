@@ -1,10 +1,35 @@
 # SECURITY_STATUS.md
-> Last updated: 2026-01-14
+> Last updated: 2026-01-22
 
 ## Overview
 This document tracks the security hardening status of Ship Quest's server-side code.
 
 **Hard Rule**: No user-triggered code path may use `SUPABASE_SERVICE_ROLE_KEY`.
+
+---
+
+## Phase 1 Audit Results (2026-01-22)
+
+### 1. Test Credential Hygiene ✅ RESOLVED
+
+| Issue | Status |
+|-------|--------|
+| Hardcoded credentials in `tests/regression.spec.ts` | ✅ Moved to env vars |
+| Hardcoded credentials in `tests/recurrence.spec.ts` | ✅ Moved to env vars |
+| Missing `.env.example` | ✅ Created |
+
+**Pattern Used**: `process.env.TEST_USER_EMAIL || ''`
+
+### 2. SERVICE_ROLE Usage Audit ✅ CONFIRMED SAFE
+
+| File | Context | Risk Level |
+|------|---------|------------|
+| `lib/supabase/admin.ts` | Factory function | ✅ Safe (not user-triggered) |
+| `lib/supabase/factory.ts` | Factory function | ✅ Safe (not user-triggered) |
+| `lib/auth/api-key.ts` | API authentication | ✅ Safe (API-only, not user UI) |
+| `admin/clients/actions.ts:resetClientPassword` | Admin password reset | ⚠️ Acceptable (requires owner/admin role check) |
+
+**Conclusion**: SERVICE_ROLE usage is confined to infrastructure code and protected admin actions.
 
 ---
 
@@ -70,7 +95,8 @@ This document tracks the security hardening status of Ship Quest's server-side c
 
 | Risk | Severity | Mitigation |
 | :--- | :--- | :--- |
-| Service Role in user actions | **CRITICAL** | Phase 1: Replace with getUserClient() |
+| ~~Service Role in user actions~~ | ~~CRITICAL~~ | ✅ Phase 1: Audited and confirmed safe |
+| ~~Hardcoded test credentials~~ | ~~HIGH~~ | ✅ Phase 1: Moved to env vars |
 | No runAction wrapper | HIGH | Phase 2: Migrate all mutations |
 | Unverified RLS policies | MEDIUM | Phase 3: Audit Supabase policies |
 | No requestId middleware | LOW | Phase 4: Add correlation ID |

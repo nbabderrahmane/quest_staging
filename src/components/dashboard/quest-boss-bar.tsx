@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getActiveQuestProgress } from '@/app/(dashboard)/admin/quests/actions'
 import { Target, Trophy, Flame } from 'lucide-react'
+import { logger } from '@/lib/logger'
 
 export function QuestBossBar({ teamId }: { teamId: string }) {
     const [progress, setProgress] = useState<{ name: string, totalXP: number, currentXP: number, percentage: number } | null>(null)
@@ -12,19 +13,19 @@ export function QuestBossBar({ teamId }: { teamId: string }) {
 
     useEffect(() => {
         async function load() {
-            console.log('🔥 BossBar: Fetching progress for team', teamId)
+            logger.info('BossBar: Fetching progress', { teamId })
             try {
                 const result = await getActiveQuestProgress(teamId)
                 if (result.success) {
                     if (result.data) {
-                        console.log('🔥 BossBar: Data received', result.data)
+                        logger.info('BossBar: Data received', { teamId, quest: result.data.name })
                         setProgress(result.data)
                     }
                 } else {
-                    console.log('🔥 BossBar: No data returned or error', result.error)
+                    logger.warn('BossBar: No data returned', { teamId, error: result.error })
                 }
             } catch (err) {
-                console.error('🔥 BossBar: Fetch error', err)
+                logger.error('BossBar: Fetch error', { teamId, error: err })
             } finally {
                 setLoading(false)
             }
@@ -43,7 +44,7 @@ export function QuestBossBar({ teamId }: { teamId: string }) {
                     filter: `team_id=eq.${teamId}`
                 },
                 () => {
-                    console.log('🔥 BossBar: Task update detected, refreshing...')
+                    logger.info('BossBar: Task update detected, refreshing', { teamId })
                     load()
                 }
             )
@@ -51,7 +52,7 @@ export function QuestBossBar({ teamId }: { teamId: string }) {
 
         // 20s Polling fallback (Requested by User)
         const interval = setInterval(() => {
-            console.log('🔥 BossBar: 20s interval refresh')
+            logger.debug('BossBar: 20s interval refresh', { teamId })
             load()
         }, 20000)
 

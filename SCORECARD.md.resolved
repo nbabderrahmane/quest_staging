@@ -1,0 +1,40 @@
+# SCORECARD.md
+> Production Readiness Scorecard
+
+| Dimension | Score | Cap Applied | Rationale |
+|-----------|-------|-------------|-----------|
+| **A) Build & Type Safety** | 1/10 | N/A | Build fails. TypeScript error blocks deployment. |
+| **B) Security Posture** | 5/10 | Capped at 6 (unverified RLS) | SERVICE_ROLE contained, but RLS unverified. |
+| **C) Test Coverage** | 3/10 | N/A | Only E2E tests, no unit tests, hardcoded creds. |
+| **D) Error Handling** | 4/10 | N/A | Try/catch present, but console.log pollution. |
+| **E) Documentation** | 7/10 | N/A | Good docs exist, slightly stale. |
+| **F) CI/CD** | 4/10 | Capped at 4 (no rollback) | Single workflow, no staging, no rollback. |
+| **G) Observability** | 1/10 | N/A | No structured logging, no APM, no health check. |
+| **H) Performance** | N/A | Cannot Score | No evidence to evaluate. |
+| **I) Dead Code** | 5/10 | N/A | Some unused imports and commented code. |
+| **J) Supply Chain** | 7/10 | N/A | Lockfile present, deps current. |
+| **K) Ops Readiness** | 2/10 | Capped at 4 (no rollback) | No rollback, no migration strategy. |
+
+---
+
+## Aggregate Score
+
+| Category | Weight | Score | Weighted |
+|----------|--------|-------|----------|
+| Must-Have (A,B,C,F,K) | 60% | 3.0 avg | 1.8 |
+| Should-Have (D,E,I,J) | 30% | 5.75 avg | 1.7 |
+| Nice-to-Have (G,H) | 10% | 1.0 avg | 0.1 |
+
+**TOTAL: 3.6 / 10**
+
+---
+
+## Score Thresholds
+
+| Verdict | Score Range |
+|---------|-------------|
+| 🟢 SHIP | ≥ 7.0 |
+| 🟡 SHIP WITH CONDITIONS | 5.0 - 6.9 |
+| 🔴 NO-SHIP | < 5.0 |
+
+**Current Status: 🔴 NO-SHIP (3.6)**

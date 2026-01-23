@@ -10,22 +10,8 @@ import { getTasks, updateTaskStatus } from './actions'
 import { TaskDetailDrawer } from '@/app/(dashboard)/admin/pipeline/task-detail-drawer'
 import { BossDisplay } from '@/components/quest-board/boss-display'
 import { CreateTaskDialog } from '@/components/dashboard/create-task-dialog'
-import { Quest, Status, Size, Urgency } from '@/lib/types'
-
-interface Task {
-    id: string
-    title: string
-    description?: string | null
-    status_id: string
-    size_id?: string | null
-    urgency_id?: string | null
-    quest_id?: string | null
-    assigned_to?: string | null
-    status?: Status | null
-    size?: Size | null
-    urgency?: Urgency | null
-    quest?: { id: string; name: string } | null
-}
+import { CalendarView } from '@/components/dashboard/calendar-view'
+import { Quest, Status, Size, Urgency, Task } from '@/lib/types'
 
 interface Boss {
     id: string
@@ -88,6 +74,7 @@ export function QuestBoardClient({
 }: QuestBoardClientProps) {
     const router = useRouter()
     const [tasks, setTasks] = useState<Task[]>([])
+    const [view, setView] = useState<'kanban' | 'calendar'>('kanban')
 
     const [selectedQuestId, setSelectedQuestId] = useState<string>(() => {
         const activeQuest = quests.find(q => q.is_active)
@@ -242,6 +229,22 @@ export function QuestBoardClient({
             {/* Control Bar */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-4">
                 <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6 w-full md:w-auto">
+                    {/* View Toggle */}
+                    <div className="flex bg-muted p-1 rounded-lg">
+                        <button
+                            onClick={() => setView('kanban')}
+                            className={`px-3 py-1.5 text-xs font-bold uppercase rounded-md transition-all ${view === 'kanban' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                        >
+                            Kanban
+                        </button>
+                        <button
+                            onClick={() => setView('calendar')}
+                            className={`px-3 py-1.5 text-xs font-bold uppercase rounded-md transition-all ${view === 'calendar' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                        >
+                            Calendar
+                        </button>
+                    </div>
+
                     {/* Boss Visualization */}
                     <div className="hidden md:block">
                         <BossDisplay
@@ -351,97 +354,112 @@ export function QuestBoardClient({
                 </div>
             )}
 
-            {/* Kanban Board */}
-            {selectedQuestId && !isLoading && (
-                <div className="flex gap-4 overflow-x-auto pb-4">
-                    {statuses.map(status => (
-                        <div
-                            key={status.id}
-                            onDrop={(e) => handleDrop(e, status.id)}
-                            onDragOver={handleDragOver}
-                            className={`flex-shrink-0 w-80 ${STATUS_BG[status.name] || 'bg-muted/10'} border border-border rounded-lg`}
-                        >
-                            {/* Column Header */}
-                            <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <Layers className="h-4 w-4 text-muted-foreground" />
-                                    <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                                        {status.name}
-                                    </h3>
-                                    {status.category === 'backlog' && (
-                                        <button
-                                            onClick={() => setIsCreateModalOpen(true)}
-                                            className="p-1 hover:bg-muted rounded text-primary transition-colors"
-                                            title="Quick Decree"
-                                        >
-                                            <Plus className="h-3.5 w-3.5" />
-                                        </button>
-                                    )}
-                                </div>
-                                <span className="text-xs font-mono text-muted-foreground">
-                                    {tasksByStatus[status.id]?.length || 0}
-                                </span>
-                            </div>
-
-                            {/* Tasks */}
-                            <div className="p-3 space-y-3 min-h-[200px] max-h-[500px] overflow-y-auto">
-                                {tasksByStatus[status.id]?.length === 0 ? (
-                                    <p className="text-slate-400 text-xs text-center py-8">No tasks</p>
-                                ) : (
-                                    tasksByStatus[status.id]?.map(task => (
-                                        <div
-                                            key={task.id}
-                                            draggable
-                                            onDragStart={(e) => handleDragStart(e, task.id)}
-                                            onClick={() => handleTaskClick(task.id)}
-                                            className="bg-card border border-border rounded-lg p-3 cursor-pointer active:cursor-grabbing shadow-sm hover:shadow hover:border-primary/50 transition-all"
-                                        >
-                                            <p className="font-semibold text-foreground text-sm">{task.title}</p>
-
-                                            <div className="flex items-center gap-2 mt-2 flex-wrap">
-                                                {/* Urgency */}
-                                                {task.urgency && (
-                                                    <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded border ${URGENCY_COLORS[task.urgency.name] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>
-                                                        {task.urgency.name}
-                                                    </span>
-                                                )}
-
-                                                {/* Size */}
-                                                {task.size && (
-                                                    <span className="flex items-center gap-0.5 text-[10px] font-mono text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">
-                                                        <Zap className="h-2.5 w-2.5" />
-                                                        {task.size.xp_points || 0}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        </div>
-                    ))}
+            {/* Content View */}
+            {view === 'calendar' ? (
+                <div className="h-full overflow-hidden animate-in fade-in duration-300">
+                    <CalendarView
+                        tasks={filteredTasks}
+                        type="quest"
+                        questStartDate={currentQuest?.start_date || undefined}
+                        questEndDate={currentQuest?.end_date || undefined}
+                        onTaskClick={handleTaskClick}
+                    />
                 </div>
-            )}
+            ) : (
+                <>
+                    {/* Kanban Board */}
+                    {selectedQuestId && !isLoading && (
+                        <div className="flex gap-4 overflow-x-auto pb-4">
+                            {statuses.map(status => (
+                                <div
+                                    key={status.id}
+                                    onDrop={(e) => handleDrop(e, status.id)}
+                                    onDragOver={handleDragOver}
+                                    className={`flex-shrink-0 w-80 ${STATUS_BG[status.name] || 'bg-muted/10'} border border-border rounded-lg`}
+                                >
+                                    {/* Column Header */}
+                                    <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Layers className="h-4 w-4 text-muted-foreground" />
+                                            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                                                {status.name}
+                                            </h3>
+                                            {status.category === 'backlog' && (
+                                                <button
+                                                    onClick={() => setIsCreateModalOpen(true)}
+                                                    className="p-1 hover:bg-muted rounded text-primary transition-colors"
+                                                    title="Quick Decree"
+                                                >
+                                                    <Plus className="h-3.5 w-3.5" />
+                                                </button>
+                                            )}
+                                        </div>
+                                        <span className="text-xs font-mono text-muted-foreground">
+                                            {tasksByStatus[status.id]?.length || 0}
+                                        </span>
+                                    </div>
 
-            {/* Create Task Dialog (Standardized) */}
-            <CreateTaskDialog
-                questId={selectedQuestId}
-                teamId={teamId}
-                sizes={sizes}
-                urgencies={urgencies}
-                statuses={statuses}
-                projects={projects}
-                departments={departments}
-                clients={clients}
-                questOptions={quests.map(q => ({ id: q.id, name: q.name }))}
-                crew={crew.map(c => ({ user_id: c.id, ...c }))}
-                open={isCreateModalOpen}
-                onOpenChange={setIsCreateModalOpen}
-                onSuccess={() => {
-                    refreshTasks()
-                    setIsCreateModalOpen(false)
-                }}
-            />
+                                    {/* Tasks */}
+                                    <div className="p-3 space-y-3 min-h-[200px] max-h-[500px] overflow-y-auto">
+                                        {tasksByStatus[status.id]?.length === 0 ? (
+                                            <p className="text-slate-400 text-xs text-center py-8">No tasks</p>
+                                        ) : (
+                                            tasksByStatus[status.id]?.map(task => (
+                                                <div
+                                                    key={task.id}
+                                                    draggable
+                                                    onDragStart={(e) => handleDragStart(e, task.id)}
+                                                    onClick={() => handleTaskClick(task.id)}
+                                                    className="bg-card border border-border rounded-lg p-3 cursor-pointer active:cursor-grabbing shadow-sm hover:shadow hover:border-primary/50 transition-all"
+                                                >
+                                                    <p className="font-semibold text-foreground text-sm">{task.title}</p>
+
+                                                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                                        {/* Urgency */}
+                                                        {task.urgency && (
+                                                            <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded border ${URGENCY_COLORS[task.urgency.name] || 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+                                                                {task.urgency.name}
+                                                            </span>
+                                                        )}
+
+                                                        {/* Size */}
+                                                        {task.size && (
+                                                            <span className="flex items-center gap-0.5 text-[10px] font-mono text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">
+                                                                <Zap className="h-2.5 w-2.5" />
+                                                                {task.size.xp_points || 0}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Create Task Dialog (Standardized) */}
+                    <CreateTaskDialog
+                        questId={selectedQuestId}
+                        teamId={teamId}
+                        sizes={sizes}
+                        urgencies={urgencies}
+                        statuses={statuses}
+                        projects={projects}
+                        departments={departments}
+                        clients={clients}
+                        questOptions={quests.map(q => ({ id: q.id, name: q.name }))}
+                        crew={crew.map(c => ({ user_id: c.id, ...c }))}
+                        open={isCreateModalOpen}
+                        onOpenChange={setIsCreateModalOpen}
+                        onSuccess={() => {
+                            refreshTasks()
+                            setIsCreateModalOpen(false)
+                        }}
+                    />
+                </>
+            )}
 
             {/* Task Detail Drawer */}
             <TaskDetailDrawer

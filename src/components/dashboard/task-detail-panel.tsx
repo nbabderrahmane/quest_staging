@@ -132,16 +132,15 @@ export function TaskDetailPanel({ taskId, canEdit, onClose }: TaskDetailPanelPro
                 // Dynamic import to avoid circular dependency issues? No, server actions are fine.
                 // I will assume `getInboxTaskDetails` exists in `@/app/(dashboard)/inbox/actions`
                 const { getInboxTaskDetails } = await import('@/app/(dashboard)/inbox/actions')
-                // @ts-ignore
                 const result = await getInboxTaskDetails(taskId)
 
-                if (!result) {
+                if (!result || !result.task) {
                     setError('Task not found.')
                     setTask(null)
                 } else {
                     const taskData = result.task as unknown as TaskDetail
                     setTask(taskData)
-                    setComments(result.comments as unknown as Comment[])
+                    setComments((result.comments || []) as unknown as Comment[])
                     setDescription(taskData.description || '')
                 }
             } catch (e: any) {
@@ -168,12 +167,13 @@ export function TaskDetailPanel({ taskId, canEdit, onClose }: TaskDetailPanelPro
             setNewComment('')
             // Refresh
             const { getInboxTaskDetails } = await import('@/app/(dashboard)/inbox/actions')
-            // @ts-ignore
             const updated = await getInboxTaskDetails(taskId)
-            if (updated) setComments(updated.comments as unknown as Comment[])
+            if (updated && updated.comments) {
+                setComments(updated.comments as unknown as Comment[])
+            }
         } else {
-            // @ts-ignore
-            alert(result.error?.message || 'Failed')
+            const err = result.error as any
+            alert(err?.message || 'Failed')
         }
     }
 

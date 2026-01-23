@@ -58,3 +58,17 @@ The MCP (Model Context Protocol) server was removed for rebuild. When reimplemen
 - Will use SSE transport for server-to-client communication
 - Bearer token authentication
 - Proxy to `/api/v1` endpoints
+
+---
+
+## Operational Health & Safety
+
+### System Health Monitoring
+- **Endpoint**: `/api/health`
+- **Function**: Performs active checks on database connectivity and latency.
+- **Usage**: Used by Vercel/external monitors to detect degraded performance or service outages.
+
+### Error Handling & Reliability
+- **Global Error Boundary**: Implemented in `@/components/error-boundary.tsx`.
+- **Function**: Wraps key UI sections to prevent full-page crashes. Logs caught errors and displays a user-friendly recovery UI.
+- **Server Actions**: All actions use a consistent `Result<T>` pattern for structured error reporting.

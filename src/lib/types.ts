@@ -36,6 +36,7 @@ export interface Client {
     logo_url?: string | null
     default_analyst_id?: string | null
     created_at: string
+    departments?: Department[]
 }
 
 export interface Project {
@@ -122,6 +123,7 @@ export interface Task {
     client?: Client
     project?: Project
     department?: Department
+    quest?: { id: string; name: string }
     // Eisenhower Overlay
     importance_score?: number
     urgency_score?: number

@@ -1,0 +1,102 @@
+# WORKFLOW_COVERAGE_MAP.md
+> System Workflows → Code Paths → Test Coverage
+
+---
+
+## Core Workflows
+
+### 1. Staff Authentication
+| Attribute | Value |
+|-----------|-------|
+| **Entry UI** | `/login` |
+| **Actions** | [src/app/login/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/login/actions.ts) → `signInWithEmail`, `signOut` |
+| **Tables** | `profiles`, `team_members`, `teams` |
+| **RLS** | `profiles` select, `team_members` select |
+| **E2E Test** | ✅ `regression.spec.ts:27-37` |
+| **Confidence** | HIGH |
+
+### 2. Quest Board (Task Kanban)
+| Attribute | Value |
+|-----------|-------|
+| **Entry UI** | `/quest-board` |
+| **Actions** | [src/app/(dashboard)/quest-board/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/quest-board/actions.ts) → [getTasks](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/quest-board/actions.ts#96-133), [updateTaskStatus](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/quest-board/actions.ts#216-227) |
+| **Tables** | `tasks`, `quests`, `statuses`, `sizes`, `urgencies` |
+| **RLS** | `tasks` CRUD via `team_members` join |
+| **E2E Test** | ✅ `regression.spec.ts:39-52` |
+| **Confidence** | HIGH |
+
+### 3. Task Lifecycle (Create/Update/Abandon)
+| Attribute | Value |
+|-----------|-------|
+| **Entry UI** | `/admin/pipeline` |
+| **Actions** | [src/app/(dashboard)/admin/pipeline/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/admin/pipeline/actions.ts) |
+| **Tables** | `tasks`, `task_comments` |
+| **RLS** | `tasks` INSERT/UPDATE via team check |
+| **E2E Test** | ✅ `regression.spec.ts:69-125` (partially commented) |
+| **Confidence** | MEDIUM (test has TODO comments) |
+
+### 4. Client Portal Ticket Submission
+| Attribute | Value |
+|-----------|-------|
+| **Entry UI** | `/portal/dashboard` |
+| **Actions** | [src/app/(portal)/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28portal%29/actions.ts) → `submitTicket`, `submitComment` |
+| **Tables** | `tasks`, `task_comments`, `client_members`, [clients](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/admin/clients) |
+| **RLS** | [36_client_portal_schema.sql](file:///Users/abderrahmanenaciribennani/dev/ship-quest/system/36_client_portal_schema.sql) policies |
+| **E2E Test** | ❌ MISSING |
+| **Confidence** | MEDIUM (code exists, untested) |
+
+### 5. Inbox / Notifications
+| Attribute | Value |
+|-----------|-------|
+| **Entry UI** | [/inbox](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/inbox) |
+| **Actions** | [src/app/(dashboard)/inbox/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/inbox/actions.ts) → [getInboxFeed](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/inbox/actions.ts#73-273), [markItemAsRead](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/inbox/actions.ts#274-312) |
+| **Tables** | [inbox](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/inbox), `inbox_read_status` |
+| **RLS** | [21_inbox_schema.sql](file:///Users/abderrahmanenaciribennani/dev/ship-quest/system/21_inbox_schema.sql), [106_inbox_read_status.sql](file:///Users/abderrahmanenaciribennani/dev/ship-quest/system/106_inbox_read_status.sql) |
+| **E2E Test** | ❌ MISSING |
+| **Confidence** | HIGH (recently implemented) |
+
+### 6. API Key Authentication (External API)
+| Attribute | Value |
+|-----------|-------|
+| **Entry UI** | `/api/v1/tasks` |
+| **Actions** | [src/lib/auth/api-key.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/lib/auth/api-key.ts) → `validateApiKey` |
+| **Tables** | `api_keys` (via admin client) |
+| **RLS** | Bypassed (uses SERVICE_ROLE) |
+| **E2E Test** | ❌ MISSING |
+| **Confidence** | HIGH (documented in ARCHITECTURE.md) |
+
+### 7. Client Department Assignment (NEW/INCOMPLETE)
+| Attribute | Value |
+|-----------|-------|
+| **Entry UI** | [/admin/clients](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/admin/clients) (Create Dialog) |
+| **Actions** | [src/app/(dashboard)/admin/clients/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/admin/clients/actions.ts) → [createClient](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/admin/clients/actions.ts#101-159) (BROKEN) |
+| **Tables** | [clients](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/admin/clients), `client_departments` |
+| **RLS** | [38_client_departments.sql](file:///Users/abderrahmanenaciribennani/dev/ship-quest/system/38_client_departments.sql) |
+| **E2E Test** | ❌ MISSING |
+| **Confidence** | LOW (build fails due to name collision) |
+
+---
+
+## Server Actions Inventory
+
+| File | Exported Functions | Auth Gate |
+|------|-------------------|-----------|
+| [login/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/login/actions.ts) | signInWithEmail, signOut | None (public) |
+| [teams/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/teams/actions.ts) | createTeam, getTeams | User session |
+| [quest-board/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/quest-board/actions.ts) | getTasks, updateTaskStatus | Team membership |
+| [my-work/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/my-work/actions.ts) | getMyTasks | User session |
+| [inbox/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/inbox/actions.ts) | getInboxFeed, markItemAsRead | User session |
+| [admin/pipeline/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/admin/pipeline/actions.ts) | createTask, updateTask, getComments, postComment | Team membership + role |
+| [admin/analytics/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/admin/analytics/actions.ts) | getAnalyticsData | Team membership |
+| [admin/reporting/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/admin/reporting/actions.ts) | getReportData | Team membership |
+| [admin/quests/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/admin/quests/actions.ts) | createQuest, updateQuest | Team membership + role |
+| [admin/clients/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/admin/clients/actions.ts) | inviteClientUser, resetClientPassword, createClient, updateClientAnalyst | Team membership + role |
+| [admin/crew/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/admin/crew/actions.ts) | inviteTeamMember, updateCrewMember | Owner/Admin role |
+| [admin/projects/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/admin/projects/actions.ts) | createProject, updateProject | Team membership |
+| [admin/departments/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/admin/departments/actions.ts) | createDepartment, updateDepartment | Team membership |
+| [admin/bosses/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/admin/bosses/actions.ts) | getBosses, createBoss | Owner/Admin role |
+| [admin/quest-prep/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/admin/quest-prep/actions.ts) | prepareQuest | Team membership |
+| [(portal)/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/quest-board/quest-board-client.tsx#16-24) | submitTicket, submitComment, updateTicketStatus | Client membership |
+| [portal/inbox/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28portal%29/portal/inbox/actions.ts) | getPortalInbox | Client membership |
+| [user-actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/user-actions.ts) | updateProfile, updatePhone | User session |
+| [app/admin/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/admin/actions.ts) | getAdminStats | Owner/Admin role |

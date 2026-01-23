@@ -6,8 +6,8 @@ import { Briefcase, Plus, Search, Loader2, Building, Trash2 } from 'lucide-react
 import { Client } from '@/lib/types'
 import { useRouter } from 'next/navigation'
 import { User } from 'lucide-react'
-import { updateClientAnalyst } from './actions'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { ClientDialog } from '@/components/admin/clients/client-dialog'
+import { Department } from '@/lib/types'
 import {
     AlertDialog,
     AlertDialogAction,
@@ -23,7 +23,7 @@ import { Input } from '@/components/ui/input'
 export default function AdminClientsPage() {
     const [clients, setClients] = useState<Client[]>([])
     const [isLoading, setIsLoading] = useState(true)
-    const [crew, setCrew] = useState<any[]>([])
+    const [departments, setDepartments] = useState<Department[]>([])
     const [searchQuery, setSearchQuery] = useState('')
     const [isCreateOpen, setIsCreateOpen] = useState(false)
     const [newClientName, setNewClientName] = useState('') // Company Name
@@ -86,96 +86,23 @@ export default function AdminClientsPage() {
             if (error) throw error
             setClients(data || [])
 
-            // Fetch Crew for auto-assignment
-            const { data: crewData, error: crewError } = await supabase
-                .from('team_members')
-                .select(`
-                    user_id,
-                    role,
-                    profiles!user_id(id, first_name, last_name, email)
-                `)
+            setClients(data || [])
+
+            // Fetch Departments
+            const { data: deptData, error: deptError } = await supabase
+                .from('departments')
+                .select('*')
                 .eq('team_id', activeTeamId)
-                .in('role', ['admin', 'manager', 'analyst'])
+                .order('name')
 
-            if (crewError) {
-                console.error('Failed to load crew:', crewError)
-            }
+            if (deptError) console.error('Failed to load departments', deptError)
+            setDepartments(deptData || [])
 
-            const flattenedCrew = (crewData || []).map((m: any) => ({
-                id: m.user_id,
-                first_name: m.profiles?.first_name || null,
-                last_name: m.profiles?.last_name || null,
-                email: m.profiles?.email || null
-            })).filter(c => c.email) // Filter out invalid entries
-
-            console.log('Loaded crew for clients:', flattenedCrew)
-            setCrew(flattenedCrew)
         } catch (error: any) {
             console.error('Failed to load clients:', error)
             setError('Failed to load clients')
         } finally {
             setIsLoading(false)
-        }
-    }
-
-    async function handleCreateClient(e: React.FormEvent) {
-        e.preventDefault()
-        if (!teamId) return
-        // Validation: Must have either Company OR (First + Last)
-        const hasName = newFirstName.trim() && newLastName.trim()
-        const hasCompany = newClientName.trim()
-
-        if (!hasName && !hasCompany) {
-            setError('Please provide either a Contact Name or Company Name')
-            return
-        }
-
-        setIsSubmitting(true)
-        try {
-            const supabase = createClient()
-
-            // Logic: Display Name = First Last (if exists) else Company
-            // Company Name = Company input
-            let displayName = newClientName.trim()
-            if (hasName) {
-                displayName = `${newFirstName.trim()} ${newLastName.trim()}`
-                if (hasCompany) {
-                    displayName += ` (${newClientName.trim()})`
-                }
-            }
-
-            const { data, error } = await supabase
-                .from('clients')
-                .insert({
-                    team_id: teamId,
-                    name: displayName,
-                    company_name: newClientName.trim() || null,
-                    first_name: newFirstName.trim() || null,
-                    last_name: newLastName.trim() || null,
-                    email: newEmail.trim() || null,
-                    phone: newPhone.trim() || null
-                })
-                .select()
-                .single()
-
-            if (error) throw error
-
-            setClients([...clients, data])
-            setNewClientName('')
-            setNewFirstName('')
-            setNewLastName('')
-            setNewEmail('')
-            setNewPhone('')
-            setIsCreateOpen(false)
-            setSuccess('Client created successfully')
-            router.refresh()
-            setTimeout(() => setSuccess(null), 3000)
-        } catch (error: any) {
-            console.error('Failed to create client:', error)
-            setError(error.message || 'Failed to create client')
-            setTimeout(() => setError(null), 4000)
-        } finally {
-            setIsSubmitting(false)
         }
     }
 
@@ -203,21 +130,7 @@ export default function AdminClientsPage() {
         setDeleteClientId(null)
     }
 
-    async function handleAnalystChange(clientId: string, analystId: string | null) {
-        if (!teamId) return
-        const client = clients.find(c => c.id === clientId)
-        if (client?.default_analyst_id === (analystId || null)) return
 
-        const result = await updateClientAnalyst(teamId, clientId, analystId)
-        if (result.success) {
-            setClients(clients.map(c => c.id === clientId ? { ...c, default_analyst_id: analystId } : c))
-            setSuccess('Auto-assignment updated')
-            setTimeout(() => setSuccess(null), 3000)
-        } else {
-            setError(result.error || 'Failed to update auto-assignment')
-            setTimeout(() => setError(null), 4000)
-        }
-    }
 
     const filteredClients = clients.filter(c =>
         c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -239,97 +152,17 @@ export default function AdminClientsPage() {
                     Add New Client
                 </button>
 
-                <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                    <DialogContent className="bg-card border border-border sm:max-w-[500px]">
-                        <DialogHeader>
-                            <DialogTitle className="text-foreground">Add New Client</DialogTitle>
-                        </DialogHeader>
-                        <form onSubmit={handleCreateClient} className="grid gap-4 py-4">
-                            <div className="grid gap-2">
-                                <label htmlFor="company" className="text-sm font-medium text-foreground">
-                                    Company Name
-                                </label>
-                                <Input
-                                    id="company"
-                                    value={newClientName}
-                                    onChange={(e) => setNewClientName(e.target.value)}
-                                    placeholder="Acme Corp (Optional)"
-                                    className="bg-background border-input text-foreground"
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="grid gap-2">
-                                    <label htmlFor="firstName" className="text-sm font-medium text-foreground">
-                                        First Name *
-                                    </label>
-                                    <Input
-                                        id="firstName"
-                                        value={newFirstName}
-                                        onChange={(e) => setNewFirstName(e.target.value)}
-                                        placeholder="John"
-                                        required
-                                        className="bg-background border-input text-foreground"
-                                    />
-                                </div>
-                                <div className="grid gap-2">
-                                    <label htmlFor="lastName" className="text-sm font-medium text-foreground">
-                                        Last Name *
-                                    </label>
-                                    <Input
-                                        id="lastName"
-                                        value={newLastName}
-                                        onChange={(e) => setNewLastName(e.target.value)}
-                                        placeholder="Doe"
-                                        required
-                                        className="bg-background border-input text-foreground"
-                                    />
-                                </div>
-                            </div>
-                            <div className="grid gap-2">
-                                <label htmlFor="email" className="text-sm font-medium text-foreground">
-                                    Email Address
-                                </label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    value={newEmail}
-                                    onChange={(e) => setNewEmail(e.target.value)}
-                                    placeholder="john@acme.com"
-                                    className="bg-background border-input text-foreground"
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <label htmlFor="phone" className="text-sm font-medium text-foreground">
-                                    Phone Number
-                                </label>
-                                <Input
-                                    id="phone"
-                                    type="tel"
-                                    value={newPhone}
-                                    onChange={(e) => setNewPhone(e.target.value)}
-                                    placeholder="+1 (555) 000-0000"
-                                    className="bg-background border-input text-foreground"
-                                />
-                            </div>
-                            <DialogFooter>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsCreateOpen(false)}
-                                    className="px-4 py-2 text-sm font-bold uppercase text-muted-foreground hover:text-foreground"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={!teamId || isSubmitting}
-                                    className="px-4 py-2 bg-primary text-primary-foreground text-sm font-bold uppercase rounded hover:bg-primary/90 disabled:opacity-50"
-                                >
-                                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Create Client'}
-                                </button>
-                            </DialogFooter>
-                        </form>
-                    </DialogContent>
-                </Dialog>
+                <ClientDialog
+                    open={isCreateOpen}
+                    onOpenChange={setIsCreateOpen}
+                    teamId={teamId || ''}
+                    departmentOptions={departments}
+                    onSuccess={() => {
+                        setSuccess('Client created successfully')
+                        loadData() // Reload to get new client
+                        setTimeout(() => setSuccess(null), 3000)
+                    }}
+                />
             </div>
 
             {/* Filters */}
@@ -384,7 +217,7 @@ export default function AdminClientsPage() {
                                     aria-label={`View details for ${client.name}`}
                                 />
                                 <div className="flex flex-row items-center justify-between pb-2 space-y-0 mb-4 z-10 relative pointer-events-none">
-                                    <div className="flex-1"></div> {/* Spacer to push delete button right if needed, or just let absolute positioning handle it. Actually the original had flex row justify-between. */}
+                                    <div className="flex-1"></div>
                                     <button
                                         className="p-2 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded ml-auto pointer-events-auto relative z-20 cursor-pointer"
                                         onClick={(e) => {
@@ -406,25 +239,6 @@ export default function AdminClientsPage() {
                                                 ? `${client.first_name || ''} ${client.last_name || ''}`.trim()
                                                 : client.name}
                                         </h3>
-                                        <div className="flex items-center gap-1.5 mt-0.5" onClick={(e) => e.stopPropagation()}>
-                                            <User className="h-3 w-3 text-muted-foreground" />
-                                            <select
-                                                value={client.default_analyst_id || ''}
-                                                onChange={(e) => {
-                                                    e.stopPropagation()
-                                                    handleAnalystChange(client.id, e.target.value || null)
-                                                }}
-                                                onClick={(e) => e.stopPropagation()}
-                                                className="text-[10px] bg-transparent border-none p-0 h-auto focus:ring-0 text-muted-foreground font-mono cursor-pointer hover:text-primary transition-colors relative z-30"
-                                            >
-                                                <option value="">No Auto-Assign</option>
-                                                {crew.map(member => (
-                                                    <option key={member.id} value={member.id}>
-                                                        {member.first_name ? `${member.first_name} ${member.last_name || ''}` : member.email}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
                                     </div>
                                 </div>
 

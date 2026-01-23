@@ -8,6 +8,7 @@ import { Size, Urgency, Status } from "@/lib/types"
 import { createTask } from "@/app/(dashboard)/admin/pipeline/actions"
 import { useState, useEffect } from "react"
 import { Plus, Calendar, Repeat, Target, Loader2, Settings } from "lucide-react"
+import { getClientDepartments } from '@/app/(dashboard)/admin/clients/actions'
 
 interface Option {
     id: string
@@ -81,6 +82,35 @@ export function CreateTaskDialog({
     const [recurrenceDays, setRecurrenceDays] = useState<string[]>([])
     const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0])
     const [endDate, setEndDate] = useState('')
+
+    // Client-Department Filter State
+    const [filteredDeptIds, setFilteredDeptIds] = useState<string[] | null>(null)
+    const [isFetchingDepts, setIsFetchingDepts] = useState(false)
+
+    // Effect: Fetch allowed departments when client changes
+    useEffect(() => {
+        async function fetchClientDepts() {
+            if (selectedClientId && selectedClientId !== '_none') {
+                setIsFetchingDepts(true)
+                try {
+                    const ids = await getClientDepartments(selectedClientId)
+                    setFilteredDeptIds(ids)
+
+                    // If current selection is invalid for this client, reset it
+                    if (selectedDepartmentId !== '_none' && !ids.includes(selectedDepartmentId)) {
+                        setSelectedDepartmentId('_none')
+                    }
+                } catch (err) {
+                    console.error('Failed to fetch client departments', err)
+                } finally {
+                    setIsFetchingDepts(false)
+                }
+            } else {
+                setFilteredDeptIds(null) // Show all
+            }
+        }
+        fetchClientDepts()
+    }, [selectedClientId])
 
     // Reset when opening
     useEffect(() => {
@@ -250,7 +280,9 @@ export function CreateTaskDialog({
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="_none">None</SelectItem>
-                                            {departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                                            {departments
+                                                .filter(d => filteredDeptIds === null || filteredDeptIds.includes(d.id))
+                                                .map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                 </div>

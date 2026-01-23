@@ -1,12 +1,12 @@
 import { test, expect } from '@playwright/test';
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3000';
 
 test.describe('Ship Quest Legacy - Regression Suite', () => {
 
-    // Use provided Manager credentials
-    const TEST_EMAIL = 'johndoe@doe.com';
-    const USER_PASSWORD = '159263';
+    // Read credentials from environment variables (see .env.example)
+    const TEST_EMAIL = process.env.TEST_USER_EMAIL || '';
+    const USER_PASSWORD = process.env.TEST_USER_PASSWORD || '';
 
     test.beforeEach(async ({ page }) => {
         // Login before each test
@@ -88,40 +88,33 @@ test.describe('Ship Quest Legacy - Regression Suite', () => {
         await expect(page.getByText(taskTitle)).toBeVisible();
 
         // 3. Open Detail & Abandon
-        // 3. Open Detail & Abandon (TODO: Fix flaky dialog interaction in test env)
-        /*
-        await page.getByText(taskTitle).click();
+        await page.getByText(taskTitle).first().click();
 
-        // Wait for drawer content (e.g. "Mission Parameters")
-        await expect(page.getByText('Mission Parameters')).toBeVisible();
+        // Wait for drawer content (e.g. "Mission Parameters" or "Mission Control")
+        await expect(page.getByText(/Mission Parameters|Mission Control/i)).toBeVisible();
 
         // Setup Dialog Handler for Confirm
         page.once('dialog', async (d) => {
-            console.log(`Dialog message: ${d.message()}`);
             if (d.type() === 'confirm') {
                 await d.accept();
-            } else if (d.type() === 'alert') {
-                console.log(`Unexpected Alert: ${d.message()}`);
-                await d.dismiss();
             } else {
-                await d.accept();
+                await d.dismiss();
             }
         });
 
-        // Click Abandon Mission
-        const abandonBtn = page.getByRole('button', { name: 'Abort Mission' });
-        // Scroll to it if needed? It's usually visible in the drawer
-        // await abandonBtn.scrollIntoViewIfNeeded(); // Optional, Playwright usually auto-scrolls
-        await abandonBtn.click();
+        // Click Abort Mission
+        const abortBtn = page.getByRole('button', { name: /Abort Mission/i });
+        await abortBtn.click();
 
         // 4. Verify Task is Dropped (marked as Aborted)
-        // The UI shows "Mission Aborted" badge
-        await expect(page.getByText(/Mission Aborted/i)).toBeVisible();
-        */
+        // The UI should show "Mission Aborted" badge or similar
+        await expect(page.getByText(/Mission Aborted|Dropped/i)).toBeVisible({ timeout: 10000 });
 
-        // Close drawer to check list if needed, or just verify status update
-
-        // Close drawer to check list if needed, or just verify status update
+        // Close drawer if it's still open
+        const closeBtn = page.locator('button[aria-label="Close"], button:has-text("Close")').first();
+        if (await closeBtn.isVisible()) {
+            await closeBtn.click();
+        }
     });
 
     // 5. Admin Modules (Crew & Quests)

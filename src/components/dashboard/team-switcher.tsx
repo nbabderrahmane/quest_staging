@@ -2,7 +2,7 @@
 
 import { Team } from '@/lib/types'
 import { createTeam } from '@/app/teams/actions'
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { PlusCircle, ChevronsUpDown, Check } from 'lucide-react'
 
 // Helper to get cookie value on client
@@ -34,17 +34,19 @@ export default function TeamSwitcher({ teams = [], userRole = 'member' }: { team
     useEffect(() => {
         const cookieValue = getTeamFromCookie()
         if (cookieValue && teams.some(t => t.id === cookieValue)) {
-            setSelectedTeamId(cookieValue)
+            if (selectedTeamId !== cookieValue) {
+                setSelectedTeamId(cookieValue)
+            }
         } else if (teams.length > 0) {
             // Ensure cookie is set to the default if missing
             const firstTeamId = teams[0].id
             setTeamCookie(firstTeamId)
-            // No need to set state if it's already the default, but let's be safe if logic changes
-            if (teams.some(t => t.id === firstTeamId) && selectedTeamId !== firstTeamId) {
+
+            if (selectedTeamId !== firstTeamId) {
                 setSelectedTeamId(firstTeamId)
             }
         }
-    }, [teams])
+    }, [teams, selectedTeamId])
 
     const handleSelectTeam = (teamId: string) => {
         setSelectedTeamId(teamId)

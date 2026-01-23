@@ -10,8 +10,8 @@ import { getTasks, createTask } from '@/app/(dashboard)/admin/pipeline/actions'
 import { TaskDetailDrawer } from '@/app/(dashboard)/admin/pipeline/task-detail-drawer'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { inviteClientUser, getClientInvitations, deleteClientInvitation, resetClientPassword } from '@/app/(dashboard)/admin/clients/actions'
-import { Check, Copy, Link, UserPlus, X, Lock, AlertCircle, Edit2 } from 'lucide-react'
+import { inviteClientUser, getClientInvitations, deleteClientInvitation, resetClientPassword, updateClientDepartments, getClientDepartments } from '@/app/(dashboard)/admin/clients/actions'
+import { Check, Copy, Link, UserPlus, X, Lock, AlertCircle, Edit2, Tag } from 'lucide-react'
 
 // Reuse interfaces from Pipeline
 interface CrewMember {
@@ -52,6 +52,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false)
     const [isCreatingTask, setIsCreatingTask] = useState(false)
     const [newTaskTitle, setNewTaskTitle] = useState('')
+    const [selectedDeptId, setSelectedDeptId] = useState<string>('_none')
 
     // Invite User State
     const [isInviteOpen, setIsInviteOpen] = useState(false)
@@ -76,6 +77,10 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     const [projects, setProjects] = useState<{ id: string; name: string }[]>([])
     const [departments, setDepartments] = useState<{ id: string; name: string }[]>([])
 
+    // Client Departments State
+    const [clientDeptIds, setClientDeptIds] = useState<string[]>([])
+    const [isSavingDepts, setIsSavingDepts] = useState(false)
+
     // Invitation related states
     const [members, setMembers] = useState<any[]>([])
     const [copied, setCopied] = useState(false)
@@ -92,17 +97,15 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) return
 
-            // Get Team ID
+            // Get Team ID (Initial guess from session)
             const selectedTeamCookie = document.cookie.split('; ').find(row => row.startsWith('selected_team='))?.split('=')[1]?.trim()
             const { data: memberships } = await supabase.from('team_members').select('team_id').eq('user_id', user.id)
-            let activeTeamId = selectedTeamCookie
-            if (!activeTeamId || !memberships?.find(m => m.team_id === activeTeamId)) {
-                activeTeamId = memberships?.[0]?.team_id
+            let sessionTeamId = selectedTeamCookie
+            if (!sessionTeamId || !memberships?.find(m => m.team_id === sessionTeamId)) {
+                sessionTeamId = memberships?.[0]?.team_id
             }
-            if (!activeTeamId) return
-            setTeamId(activeTeamId)
 
-            // Get Client
+            // 1. Get Client First to establish Truth Context
             const { data: clientData, error: clientError } = await supabase
                 .from('clients')
                 .select('*')
@@ -120,8 +123,14 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                 phone: clientData.phone || ''
             })
 
-            // Get Tasks
-            const tasksData = await getTasks(activeTeamId!, { clientId })
+            // Use Client's Team ID if available, otherwise fallback to session
+            const effectiveTeamId = clientData.team_id || sessionTeamId
+            if (!effectiveTeamId) return // Should not happen if client exists
+            setTeamId(effectiveTeamId)
+
+            // 2. Get Tasks using effective ID
+            // Note: getTasks might check permissions internally, so we hope the user has access to this team
+            const tasksData = await getTasks(effectiveTeamId, { clientId })
             if (tasksData && 'error' in tasksData) {
                 console.error('Task fetch error:', tasksData.error)
                 setError(`Tasks: ${tasksData.error}`)
@@ -129,16 +138,15 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                 setTasks(tasksData)
             }
 
-            // Get Meta Data for Drawer interactability
-            // Parallel fetch for speed
+            // 3. Get Meta Data for Drawer interactability using Effective Team ID
             const [crewRes, sizesRes, urgenciesRes, statusesRes, questsRes, projectsRes, departmentsRes] = await Promise.all([
-                supabase.from('team_members').select('user_id, role').eq('team_id', activeTeamId),
-                supabase.from('sizes').select('id, name, xp_points').eq('team_id', activeTeamId).eq('is_active', true),
-                supabase.from('urgencies').select('id, name, color').eq('team_id', activeTeamId).eq('is_active', true),
-                supabase.from('statuses').select('*').eq('team_id', activeTeamId).eq('is_active', true).order('sort_order'),
-                supabase.from('quests').select('id, name').eq('team_id', activeTeamId).eq('is_active', true).order('created_at', { ascending: false }),
-                supabase.from('projects').select('id, name').eq('team_id', activeTeamId).eq('is_active', true).order('name'),
-                supabase.from('departments').select('id, name').eq('team_id', activeTeamId).eq('is_active', true).order('name')
+                supabase.from('team_members').select('user_id, role').eq('team_id', effectiveTeamId),
+                supabase.from('sizes').select('id, name, xp_points').eq('team_id', effectiveTeamId).eq('is_active', true),
+                supabase.from('urgencies').select('id, name, color').eq('team_id', effectiveTeamId).eq('is_active', true),
+                supabase.from('statuses').select('*').eq('team_id', effectiveTeamId).eq('is_active', true).order('sort_order'),
+                supabase.from('quests').select('id, name').eq('team_id', effectiveTeamId).eq('is_active', true).order('created_at', { ascending: false }),
+                supabase.from('projects').select('id, name').eq('team_id', effectiveTeamId).eq('is_active', true).order('name'),
+                supabase.from('departments').select('id, name').eq('team_id', effectiveTeamId).order('name')
             ])
 
             if (statusesRes.data) setStatuses(statusesRes.data)
@@ -172,10 +180,31 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                 setMembers(memberData || [])
             }
 
+            // Fetch Client Departments
+            const deptIds = await getClientDepartments(clientId)
+            setClientDeptIds(deptIds)
+
         } catch (err) {
             console.error('Failed to load data:', err)
         } finally {
             setIsLoading(false)
+        }
+    }
+
+    async function handleUpdateDepartments(newDeptIds: string[]) {
+        setIsSavingDepts(true)
+        try {
+            const res = await updateClientDepartments(clientId, newDeptIds)
+            if (res.success) {
+                setClientDeptIds(newDeptIds)
+            } else {
+                alert(res.error)
+            }
+        } catch (err) {
+            console.error(err)
+            alert('Failed to update departments')
+        } finally {
+            setIsSavingDepts(false)
         }
     }
 
@@ -227,9 +256,11 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             const res = await createTask(teamId, {
                 title: newTaskTitle,
                 client_id: clientId,
+                department_id: selectedDeptId !== '_none' ? selectedDeptId : undefined
             })
             if (res.success) {
                 setNewTaskTitle('')
+                setSelectedDeptId('_none')
                 setIsCreateTaskOpen(false)
                 loadData() // Refresh tasks
             } else {
@@ -300,6 +331,32 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                             </div>
                         </div>
 
+                        {/* Departments Section within Edit */}
+                        <div className="mt-4 pt-4 border-t border-border">
+                            <h3 className="text-xs uppercase font-black text-foreground mb-4 bg-primary/5 px-2 py-1 rounded inline-block">Departments</h3>
+                            <div className="flex flex-wrap gap-2">
+                                {departments.map(dept => (
+                                    <button
+                                        key={dept.id}
+                                        onClick={() => {
+                                            const newIds = clientDeptIds.includes(dept.id)
+                                                ? clientDeptIds.filter(id => id !== dept.id)
+                                                : [...clientDeptIds, dept.id]
+                                            handleUpdateDepartments(newIds)
+                                        }}
+                                        disabled={isSavingDepts}
+                                        className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${clientDeptIds.includes(dept.id)
+                                            ? 'bg-primary/20 text-primary border-primary'
+                                            : 'bg-muted/50 text-muted-foreground border-border hover:border-primary/50'
+                                            } ${isSavingDepts ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    >
+                                        {dept.name}
+                                    </button>
+                                ))}
+                            </div>
+                            {departments.length === 0 && <p className="text-[10px] text-muted-foreground italic">No departments configured for this team.</p>}
+                        </div>
+
                         {/* Security Section within Edit */}
                         <div className="mt-4 pt-4 border-t border-border">
                             <h3 className="text-xs uppercase font-black text-foreground mb-4 bg-primary/5 px-2 py-1 rounded inline-block">Security & Access</h3>
@@ -347,6 +404,16 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                                         {client.company_name}
                                     </span>
                                 )}
+                                {clientDeptIds.length > 0 && clientDeptIds.map(id => {
+                                    const dept = departments.find(d => d.id === id)
+                                    if (!dept) return null
+                                    return (
+                                        <span key={id} className="flex items-center gap-1.5 px-3 py-1 bg-blue-500/10 text-blue-600 rounded-full border border-blue-500/20">
+                                            <Tag className="h-3 w-3" />
+                                            {dept.name}
+                                        </span>
+                                    )
+                                })}
                                 {client.email && (
                                     <a href={`mailto:${client.email}`} className="flex items-center gap-1.5 px-3 py-1 bg-muted/50 rounded-full border border-border hover:bg-muted hover:text-foreground transition-colors">
                                         <Mail className="h-3 w-3" />
@@ -509,6 +576,27 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                     <DialogHeader><DialogTitle>Create Ticket for {client.name}</DialogTitle></DialogHeader>
                     <form onSubmit={handleCreateTask} className="space-y-4 pt-4">
                         <Input placeholder="Ticket Title..." value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} required />
+
+                        {/* Department Selection */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs uppercase text-muted-foreground font-bold">Department</label>
+                            <Select value={selectedDeptId} onValueChange={setSelectedDeptId}>
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select Department..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="_none">None</SelectItem>
+                                    {departments
+                                        .filter(d => clientDeptIds.includes(d.id))
+                                        .map(d => (
+                                            <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                                        ))
+                                    }
+                                </SelectContent>
+                            </Select>
+                            {clientDeptIds.length === 0 && <p className="text-[10px] text-destructive italic">This client has no assigned departments.</p>}
+                        </div>
+
                         <DialogFooter>
                             <button type="submit" disabled={isCreatingTask} className="px-4 py-2 bg-primary text-primary-foreground rounded font-bold uppercase text-sm">
                                 {isCreatingTask ? 'Creating...' : 'Create Ticket'}

@@ -140,7 +140,7 @@ export async function getClientDashboardData(): Promise<Result<any>> {
         const { data: { user } } = await supabase.auth.getUser()
 
         if (!user) {
-            return { success: true, data: { clients: [], tasks: [], teams: [], statuses: [], profile: null, shouldChangePassword: false, isStaff: false } }
+            return { success: true, data: { clients: [], tasks: [], teams: [], statuses: [], departments: [], clientDeptMap: [], profile: null, shouldChangePassword: false, isStaff: false } }
         }
 
         // Check Staff via RLS (reading own team_members)
@@ -189,7 +189,11 @@ export async function getClientDashboardData(): Promise<Result<any>> {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (supabase.from('tasks') as any).select('*, status:statuses!status_id(id, name, category, color), urgency:urgencies!urgency_id(name, color)').in('client_id', clientIds).order('created_at', { ascending: false }),
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (supabase.from('statuses') as any).select('*').in('team_id', uniqueTeamIds).eq('is_active', true).order('sort_order', { ascending: true })
+            (supabase.from('statuses') as any).select('*').in('team_id', uniqueTeamIds).eq('is_active', true).order('sort_order', { ascending: true }),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (supabase.from('departments') as any).select('id, name, team_id').in('team_id', uniqueTeamIds).order('name'),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (supabase.from('client_departments') as any).select('client_id, department_id').in('client_id', clientIds)
         ])
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -207,6 +211,8 @@ export async function getClientDashboardData(): Promise<Result<any>> {
                 tasks: tasksRes.data || [],
                 teams: teams,
                 statuses: statusesRes.data || [],
+                departments: tasksRes[2]?.data || [],
+                clientDeptMap: tasksRes[3]?.data || [],
                 profile,
                 shouldChangePassword: user.user_metadata?.must_change_password || false,
                 isStaff
@@ -317,7 +323,7 @@ export async function approveTicket(taskId: string): Promise<Result<void>> {
         if (error) return { success: false, error: { code: 'DB_ERROR', message: `Update failed: ${error.message}` } }
 
         // 4. Audit Comment
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -366,7 +372,7 @@ export async function requestChanges(taskId: string, comment: string): Promise<R
             .eq('category', 'active')
             .order('sort_order', { ascending: true })
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         let targetStatusId = items?.[0]?.id
 
         if (!targetStatusId) {
@@ -402,7 +408,8 @@ export async function createClientTicket(
     clientId: string,
     title: string,
     description: string,
-    urgencyId?: string
+    urgencyId?: string,
+    departmentId?: string
 ): Promise<Result<void>> {
     return runAction('createClientTicket', async () => {
         const supabase = await getUserClient()
@@ -421,7 +428,7 @@ export async function createClientTicket(
             return { success: false, error: { code: 'UNAUTHORIZED', message: 'Client not found or access denied' } }
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         const teamId = membership.clients.team_id
 
         // 2. Get Defaults (User Client)
@@ -473,6 +480,7 @@ export async function createClientTicket(
                 status: 'todo', // Fallback or remove if status_id is enough? The schema might require status text or ID.
                 status_id: statusId,
                 urgency_id: urgencyId || null,
+                department_id: departmentId || null,
                 size_id: null,
                 created_by: user.id
             })

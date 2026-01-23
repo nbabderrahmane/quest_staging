@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { handleUnifiedLogin } from './actions'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
+import { logger } from '@/lib/logger'
 
 export default function LoginPage() {
     const router = useRouter()
@@ -17,26 +18,26 @@ export default function LoginPage() {
         setIsLoading(true)
         setError(null)
 
-        console.log('[Login Page] Submitting login...')
+        logger.info('Submitting login', { component: 'LoginPage' })
         const res = await handleUnifiedLogin(formData)
-        console.log('[Login Page] Login response:', res)
+        logger.info('Login response received', { component: 'LoginPage', success: res.success })
 
         if (res.success && 'requiresSelection' in res) {
             if (res.requiresSelection) {
-                console.log('[Login Page] REDIRECT → /select-dashboard (dual role)')
+                logger.info('Redirecting to selection', { component: 'LoginPage' })
                 router.push('/select-dashboard')
             } else if (res.isStaff) {
-                console.log('[Login Page] REDIRECT → /quest-board (staff only)')
+                logger.info('Redirecting to staff dashboard', { component: 'LoginPage' })
                 router.push('/quest-board')
             } else if (res.isClient) {
-                console.log('[Login Page] REDIRECT → /portal/dashboard (client only)')
+                logger.info('Redirecting to client portal', { component: 'LoginPage' })
                 router.push('/portal/dashboard')
             } else {
-                console.log('[Login Page] REDIRECT → / (no role)')
+                logger.info('Redirecting to home (no role)', { component: 'LoginPage' })
                 router.push('/')
             }
         } else if (!res.success && 'error' in res) {
-            console.log('[Login Page] LOGIN FAILED:', res.error)
+            logger.error('Login failed', { component: 'LoginPage', error: res.error })
             setError(res.error || 'Login failed')
             setIsLoading(false)
         }

@@ -42,7 +42,7 @@ export async function GET(request: Request) {
             const intendedDate = new Date(task.recurrence_next_date)
 
             // Calculate the NEXT trigger date (to update the parent)
-            let nextTriggerDate = new Date(intendedDate)
+            const nextTriggerDate = new Date(intendedDate)
             const interval = rule.interval || 1
 
             if (rule.frequency === 'daily') {

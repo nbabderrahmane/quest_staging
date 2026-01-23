@@ -133,12 +133,16 @@ export async function getQuestPrepData(teamId: string): Promise<{ success: boole
         }
     })
 
-    // 4. Get active quests for assignment
+    // 4. Get active quests for assignment (Upcoming quests only)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
     const { data: activeQuests } = await supabase
         .from('quests')
         .select('id, name')
         .eq('team_id', teamId)
-        .is('end_date', null)
+        .or('is_archived.is.null,is_archived.eq.false')
+        .gte('start_date', today.toISOString())
         .order('name')
 
     return {

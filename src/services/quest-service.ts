@@ -3,6 +3,7 @@ import { getUserClient } from '@/lib/supabase/factory'
 import { Result } from '@/lib/result'
 import { Database } from '@/lib/database.types'
 import { SupabaseClient } from '@supabase/supabase-js'
+import { logger } from '@/lib/logger'
 
 export class QuestService {
     /**
@@ -20,19 +21,20 @@ export class QuestService {
         endDate: string | null,
         excludeQuestId?: string
     ): Promise<Result<void>> {
-        const supabase = await getUserClient() as SupabaseClient<Database>
+        const supabase = await getUserClient() as SupabaseClient<Database, 'public'>
 
         const start = new Date(startDate)
         const end = endDate ? new Date(endDate) : null // null means Infinity
 
         // Let's implement robust in-memory check for simplicity and correctness with nullable fields.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: quests, error } = await (supabase.from('quests') as any)
+        const { data: quests, error } = await supabase.from('quests')
             .select('id, name, start_date, end_date')
             .eq('team_id', teamId)
             // Only check active/scheduled quests.
             // If user restores an archived quest, we should re-validate.
             .is('is_archived', false)
+
+        const questList = (quests || []) as { id: string; name: string; start_date: string | null; end_date: string | null }[]
 
         if (error) {
             return {
@@ -41,11 +43,10 @@ export class QuestService {
             }
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const overlappingQuest = (quests as any[]).find(q => {
+        const overlappingQuest = questList.find(q => {
             if (excludeQuestId && q.id === excludeQuestId) return false
 
-            const qStart = new Date(q.start_date)
+            const qStart = new Date(q.start_date || '')
             // const qEnd = q.end_date ? new Date(q.end_date) : null
 
             // Overlap Check Logic:
@@ -90,23 +91,23 @@ export class QuestService {
      * - Ignores archived quests.
      */
     static async processScheduledDeployments(teamId: string): Promise<void> {
-        const supabase = await getUserClient() as SupabaseClient<Database>
+        const supabase = await getUserClient() as SupabaseClient<Database, 'public'>
 
         // Fetch all candidates (non-archived)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: quests } = await (supabase.from('quests') as any)
+        const { data: quests } = await supabase.from('quests')
             .select('id, is_active, start_date, end_date')
             .eq('team_id', teamId)
             .is('is_archived', false)
+            .returns<any>()
+
 
         if (!quests) return
 
         const now = new Date().getTime()
-        const updates: Promise<any>[] = []
+        const updates: PromiseLike<unknown>[] = []
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        for (const q of (quests as any[])) {
-            const start = new Date(q.start_date).getTime()
+        for (const q of quests) {
+            const start = new Date(q.start_date || '').getTime()
             // If end_date is null, it never ends (Infinity)
             const end = q.end_date ? new Date(q.end_date).getTime() : Infinity
 
@@ -115,13 +116,11 @@ export class QuestService {
             // Detect state mismatch
             if (shouldBeActive && !q.is_active) {
                 // Deploy
-                console.log(`[QuestService] Auto-deploying quest ${q.id}`)
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                logger.info(`Auto-deploying quest ${q.id}`, { questId: q.id })
                 updates.push((supabase.from('quests') as any).update({ is_active: true }).eq('id', q.id))
             } else if (!shouldBeActive && q.is_active) {
                 // Recall or Pre-flight Wait
-                console.log(`[QuestService] Auto-recalling/holding quest ${q.id}`)
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                logger.info(`Auto-recalling/holding quest ${q.id}`, { questId: q.id })
                 updates.push((supabase.from('quests') as any).update({ is_active: false }).eq('id', q.id))
             }
         }

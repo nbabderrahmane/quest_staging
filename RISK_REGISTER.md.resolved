@@ -1,0 +1,47 @@
+# RISK_REGISTER.md
+> Categorized Risk Register with Mitigations
+
+---
+
+## 🔴 CRITICAL (P0) - Must Fix Before Deploy
+
+| ID | Risk | Impact | Likelihood | Evidence | Mitigation |
+|----|------|--------|------------|----------|------------|
+| R1 | Build fails - TypeScript error | Cannot deploy | 100% | `npm run build` output | Rename [createClient](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/admin/clients/actions.ts#101-159) function |
+| R2 | Missing export breaks client dialog | Feature broken | 100% | Lint error ID `4d7e88fc` | Implement or remove [updateClient](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/admin/clients/actions.ts#160-194) |
+| R3 | Hardcoded credentials in tests | Security leak | Medium | `tests/regression.spec.ts:8-9` | Move to env vars |
+| R4 | RLS policies unverified | Data breach | Unknown | SECURITY_STATUS.md:65 | Audit with `supabase inspect` |
+
+---
+
+## 🟠 HIGH (P1) - Fix Before Production
+
+| ID | Risk | Impact | Likelihood | Evidence | Mitigation |
+|----|------|--------|------------|----------|------------|
+| R5 | No error monitoring | Silent failures | High | No Sentry/APM detected | Add error boundary + APM |
+| R6 | No structured logging | Debug difficulty | High | console.log usage | Implement logger service |
+| R7 | No rollback strategy | Stuck on bad deploy | Medium | RUNBOOK.md missing rollback | Document rollback procedure |
+| R8 | SERVICE_ROLE in user actions | Privilege escalation | Low | [resetClientPassword](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/admin/clients/actions.ts#74-100) uses admin | Add explicit auth checks |
+| R9 | No health check endpoint | Silent outages | Medium | No `/api/health` found | Add health check |
+
+---
+
+## 🟡 MEDIUM (P2) - Fix Within Sprint
+
+| ID | Risk | Impact | Likelihood | Evidence | Mitigation |
+|----|------|--------|------------|----------|------------|
+| R10 | Stale documentation | Confusion | Medium | "Last updated: 2026-01-14" | Update after each change |
+| R11 | No unit tests | Regression risk | Medium | Only E2E tests found | Add unit test suite |
+| R12 | `any` types in code | Type safety gaps | Low | 10+ eslint errors | Replace with proper types |
+| R13 | Missing Portal E2E tests | Untested flows | Medium | No portal tests | Add portal test suite |
+| R14 | Middleware deprecation warning | Future breakage | Low | Build output warning | Migrate to "proxy" |
+
+---
+
+## 🟢 LOW (P3) - Backlog
+
+| ID | Risk | Impact | Likelihood | Evidence | Mitigation |
+|----|------|--------|------------|----------|------------|
+| R15 | Multiple lockfiles warning | Build inconsistency | Low | Build output warning | Remove parent lockfile |
+| R16 | Commented-out code | Confusion | Low | `sidebar-content.tsx:74` | Clean up or restore |
+| R17 | No performance tests | Slow pages undetected | Low | No Lighthouse CI | Add performance CI step |

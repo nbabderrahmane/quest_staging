@@ -9,6 +9,8 @@ import { BoardColumn } from "./board-column"
 import { TaskCard } from "./task-card"
 import { updateTaskStatus } from "@/app/(dashboard)/quest-board/actions"
 import { CreateTaskDialog } from "./create-task-dialog"
+import { CalendarView } from "@/components/dashboard/calendar-view"
+import { logger } from "@/lib/logger"
 
 interface CrewMember {
     user_id: string
@@ -31,6 +33,7 @@ interface QuestBoardProps {
 
 export function QuestBoard({ quest, initialTasks, statuses, sizes, urgencies, teamId, crew, userRole }: QuestBoardProps) {
     const [tasks, setTasks] = useState(initialTasks)
+    const [view, setView] = useState<'kanban' | 'calendar'>('kanban')
     const [activeId, setActiveId] = useState<string | null>(null)
 
     // URL State Management for Dialogs
@@ -81,7 +84,7 @@ export function QuestBoard({ quest, initialTasks, statuses, sizes, urgencies, te
         // Check if target is 'done'
         const targetStatus = statuses.find(s => s.id === newStatusId)
 
-        console.log('🎊 Confetti Debug Check:', {
+        logger.debug('Confetti Debug Check', {
             taskId,
             newStatusId,
             targetStatusName: targetStatus?.name,
@@ -89,7 +92,7 @@ export function QuestBoard({ quest, initialTasks, statuses, sizes, urgencies, te
         })
 
         if (targetStatus?.category === 'done') {
-            console.log('🎊 TRIGGERING CONFETTI!')
+            logger.info('TRIGGERING CONFETTI', { taskId, teamId })
             confetti({
                 particleCount: 150,
                 spread: 70,
@@ -129,6 +132,20 @@ export function QuestBoard({ quest, initialTasks, statuses, sizes, urgencies, te
                 {/* Board Header / Controls */}
                 <div className="flex items-center justify-between mb-4 bg-muted/5 p-4 border border-border/50">
                     <div className="flex items-center gap-4">
+                        <div className="flex bg-muted p-1 rounded-lg">
+                            <button
+                                onClick={() => setView('kanban')}
+                                className={`px-3 py-1.5 text-xs font-bold uppercase rounded-md transition-all ${view === 'kanban' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                            >
+                                Kanban
+                            </button>
+                            <button
+                                onClick={() => setView('calendar')}
+                                className={`px-3 py-1.5 text-xs font-bold uppercase rounded-md transition-all ${view === 'calendar' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                            >
+                                Calendar
+                            </button>
+                        </div>
                         <div className="text-xs font-mono text-muted-foreground mr-2">
                             PROTOCOL: <span className="text-primary font-bold">{quest.name}</span>
                         </div>
@@ -180,39 +197,52 @@ export function QuestBoard({ quest, initialTasks, statuses, sizes, urgencies, te
                     </div>
                 </div>
 
-                {/* Columns */}
-                <div className="flex h-full gap-4 overflow-x-auto pb-4">
-                    {statuses.map(status => (
-                        <BoardColumn
-                            key={status.id}
-                            status={status}
-                            tasks={filteredTasks.filter(t => t.status_id === status.id)}
-                            onAddTask={status.category === 'backlog' ? () => {
-                                const params = new URLSearchParams(searchParams?.toString())
-                                params.set('action', 'create-task')
-                                params.set('statusId', status.id)
-                                router.replace(`${pathname}?${params.toString()}`)
-                            } : undefined}
+                {view === 'calendar' ? (
+                    <div className="h-full overflow-hidden animate-in fade-in duration-300">
+                        <CalendarView
+                            tasks={filteredTasks}
+                            type="quest"
+                            questStartDate={quest.start_date || undefined}
+                            questEndDate={quest.end_date || undefined}
                         />
-                    ))}
-                </div>
+                    </div>
+                ) : (
+                    <>
+                        {/* Columns */}
+                        <div className="flex h-full gap-4 overflow-x-auto pb-4">
+                            {statuses.map(status => (
+                                <BoardColumn
+                                    key={status.id}
+                                    status={status}
+                                    tasks={filteredTasks.filter(t => t.status_id === status.id)}
+                                    onAddTask={status.category === 'backlog' ? () => {
+                                        const params = new URLSearchParams(searchParams?.toString())
+                                        params.set('action', 'create-task')
+                                        params.set('statusId', status.id)
+                                        router.replace(`${pathname}?${params.toString()}`)
+                                    } : undefined}
+                                />
+                            ))}
+                        </div>
 
-                {/* Drag Overlay */}
-                <DragOverlay>
-                    {activeTask ? <TaskCard task={activeTask} /> : null}
-                </DragOverlay>
+                        {/* Drag Overlay */}
+                        <DragOverlay>
+                            {activeTask ? <TaskCard task={activeTask} /> : null}
+                        </DragOverlay>
 
-                {/* Create Task Dialog (Floating + Controlled) */}
-                <CreateTaskDialog
-                    questId={quest.id}
-                    teamId={teamId}
-                    sizes={sizes}
-                    urgencies={urgencies}
-                    statuses={statuses}
-                    open={isCreateOpen}
-                    onOpenChange={setIsCreateOpen}
-                    defaultStatusId={newTaskStatusId}
-                />
+                        {/* Create Task Dialog (Floating + Controlled) */}
+                        <CreateTaskDialog
+                            questId={quest.id}
+                            teamId={teamId}
+                            sizes={sizes}
+                            urgencies={urgencies}
+                            statuses={statuses}
+                            open={isCreateOpen}
+                            onOpenChange={setIsCreateOpen}
+                            defaultStatusId={newTaskStatusId}
+                        />
+                    </>
+                )}
             </div>
         </DndContext>
     )

@@ -107,3 +107,29 @@ npm run lint
 # Run E2E tests (requires app running)
 npx playwright test
 ```
+
+## 8. Rollback Procedures
+
+If a deployment fails or introduces critical bugs, follow these steps to rollback.
+
+### Vercel Rollback
+
+1. Go to **Deployments** in the Vercel dashboard.
+2. Locate the last stable deployment before the current one.
+3. Click the three dots and select **Redeploy**.
+4. Confirm the redeployment.
+
+### Database Rollback
+
+If a database migration needs to be reverted:
+
+1. Identify the migration file in `/system/` that caused the issue.
+2. Write a manual SQL script to undo the changes (e.g., `DROP COLUMN`, `DROP TABLE`).
+3. Apply the script via the Supabase SQL Editor.
+4. If using Supabase CLI: `supabase db reset` (Warning: this will wipe and recreate the database).
+
+### Environment Variable Rollback
+
+1. Revert changes in the Vercel dashboard or `.env.local`.
+2. Redeploy the application to ensure the changes take effect.
+

@@ -158,7 +158,7 @@ export async function createTask(prevState: any, formData: FormData) {
         if (size) xpPoints = size.xp_points
     }
 
-    let recurrenceData: any = {}
+    const recurrenceData: any = {}
     if (isRecurring) {
         recurrenceData.is_recurring = true
         recurrenceData.recurrence_rule = {
@@ -174,7 +174,7 @@ export async function createTask(prevState: any, formData: FormData) {
         // If start date is today, and it's daily, next is tomorrow.
 
         const start = startDateStr ? new Date(startDateStr) : new Date()
-        let nextDate = new Date(start)
+        const nextDate = new Date(start)
         const interval = parseInt(intervalStr || '1')
 
         if (frequency === 'daily') {

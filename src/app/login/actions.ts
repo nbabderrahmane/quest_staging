@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { logger } from '@/lib/logger'
 
 export async function handleUnifiedLogin(formData: FormData) {
     const supabase = await createClient()
@@ -12,8 +13,7 @@ export async function handleUnifiedLogin(formData: FormData) {
     const email = formData.get('email') as string
     const password = formData.get('password') as string
 
-    console.log('========================================')
-    console.log('[handleUnifiedLogin] START - Email:', email)
+    logger.info('Unified login started', { action: 'handleUnifiedLogin', email })
 
     const { data: { user }, error } = await supabase.auth.signInWithPassword({
         email,
@@ -21,11 +21,11 @@ export async function handleUnifiedLogin(formData: FormData) {
     })
 
     if (error || !user) {
-        console.log('[handleUnifiedLogin] AUTH FAILED:', error?.message)
+        logger.warn('Login failed', { action: 'handleUnifiedLogin', error: error?.message })
         return { success: false, error: 'Invalid login credentials' }
     }
 
-    console.log('[handleUnifiedLogin] AUTH SUCCESS - User ID:', user.id)
+    logger.info('Auth success', { action: 'handleUnifiedLogin', userId: user.id })
 
     // Use Admin Client for all role checks (bypasses RLS)
     const supabaseAdmin = createAdminClient()
@@ -41,23 +41,17 @@ export async function handleUnifiedLogin(formData: FormData) {
     const clientMembers = clientMembersRes.data
     const invites = invitesRes.data
 
-    console.log('[handleUnifiedLogin] TEAM_MEMBERS query:', {
-        data: teamMembers,
-        error: teamMembersRes.error
-    })
-    console.log('[handleUnifiedLogin] CLIENT_MEMBERS query:', {
-        data: clientMembers,
-        error: clientMembersRes.error
-    })
-    console.log('[handleUnifiedLogin] INVITES query:', {
-        count: invites?.length,
-        error: invitesRes.error
+    logger.debug('Role queries completed', {
+        action: 'handleUnifiedLogin',
+        teamMembersCount: teamMembers?.length ?? 0,
+        clientMembersCount: clientMembers?.length ?? 0,
+        invitesCount: invites?.length ?? 0
     })
 
     // Auto-accept pending invites (run in background)
     let newClientMember = false
     if (invites && invites.length > 0) {
-        console.log('[handleUnifiedLogin] Processing', invites.length, 'pending invites')
+        logger.info('Processing pending invites', { action: 'handleUnifiedLogin', count: invites.length })
         for (const invite of invites) {
             await supabaseAdmin
                 .from('client_members')
@@ -81,8 +75,13 @@ export async function handleUnifiedLogin(formData: FormData) {
         requiresSelection: isStaff && isClient
     }
 
-    console.log('[handleUnifiedLogin] FINAL RESULT:', result)
-    console.log('========================================')
+    logger.info('Login completed', {
+        action: 'handleUnifiedLogin',
+        userId: user.id,
+        isStaff,
+        isClient,
+        requiresSelection: result.requiresSelection
+    })
 
     return result
 }

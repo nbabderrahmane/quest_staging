@@ -29,7 +29,7 @@ export type Database = {
                     created_at?: string
                 }
                 Relationships: []
-            }
+            },
             team_members: {
                 Row: {
                     id: string
@@ -66,7 +66,7 @@ export type Database = {
                         referencedColumns: ["id"]
                     }
                 ]
-            }
+            },
             profiles: {
                 Row: {
                     id: string
@@ -97,7 +97,7 @@ export type Database = {
                         referencedColumns: ["id"]
                     }
                 ]
-            }
+            },
             tasks: {
                 Row: {
                     id: string
@@ -118,6 +118,12 @@ export type Database = {
                     created_at: string
                     updated_at: string
                     created_by: string
+                    is_recurring: boolean
+                    recurrence_rule: Json | null
+                    recurrence_next_date: string | null
+                    recurrence_end_date: string | null
+                    parent_recurrence_id: string | null
+                    deadline_at: string | null
                 }
                 Insert: {
                     id?: string
@@ -138,6 +144,12 @@ export type Database = {
                     created_at?: string
                     updated_at?: string
                     created_by: string
+                    is_recurring?: boolean
+                    recurrence_rule?: Json | null
+                    recurrence_next_date?: string | null
+                    recurrence_end_date?: string | null
+                    parent_recurrence_id?: string | null
+                    deadline_at?: string | null
                 }
                 Update: {
                     id?: string
@@ -158,6 +170,12 @@ export type Database = {
                     created_at?: string
                     updated_at?: string
                     created_by?: string
+                    is_recurring?: boolean
+                    recurrence_rule?: Json | null
+                    recurrence_next_date?: string | null
+                    recurrence_end_date?: string | null
+                    parent_recurrence_id?: string | null
+                    deadline_at?: string | null
                 }
                 Relationships: [
                     {
@@ -167,7 +185,7 @@ export type Database = {
                         referencedColumns: ["id"]
                     }
                 ]
-            }
+            },
             quests: {
                 Row: {
                     id: string
@@ -209,7 +227,7 @@ export type Database = {
                     updated_at?: string
                 }
                 Relationships: []
-            }
+            },
             inbox_read_status: {
                 Row: {
                     id: string
@@ -255,7 +273,7 @@ export type Database = {
                         referencedColumns: ["id"]
                     }
                 ]
-            }
+            },
             api_keys: {
                 Row: {
                     id: string
@@ -289,13 +307,14 @@ export type Database = {
                         referencedColumns: ["id"]
                     }
                 ]
-            }
+            },
             clients: {
                 Row: {
                     id: string
                     team_id: string
                     name: string
                     logo_url: string | null
+                    default_analyst_id: string | null
                     created_at: string
                 }
                 Insert: {
@@ -303,6 +322,7 @@ export type Database = {
                     team_id: string
                     name: string
                     logo_url?: string | null
+                    default_analyst_id?: string | null
                     created_at?: string
                 }
                 Update: {
@@ -310,10 +330,11 @@ export type Database = {
                     team_id?: string
                     name?: string
                     logo_url?: string | null
+                    default_analyst_id?: string | null
                     created_at?: string
                 }
                 Relationships: []
-            }
+            },
             task_comments: {
                 Row: {
                     id: string
@@ -340,43 +361,49 @@ export type Database = {
                     created_at?: string
                 }
                 Relationships: []
-            }
+            },
             projects: {
                 Row: {
                     id: string
                     team_id: string
                     name: string
+                    default_analyst_id: string | null
                 }
                 Insert: {
                     id?: string
                     team_id: string
                     name: string
+                    default_analyst_id?: string | null
                 }
                 Update: {
                     id?: string
                     team_id?: string
                     name?: string
+                    default_analyst_id?: string | null
                 }
                 Relationships: []
-            }
+            },
             departments: {
                 Row: {
                     id: string
                     team_id: string
                     name: string
+                    default_analyst_id: string | null
                 }
                 Insert: {
                     id?: string
                     team_id: string
                     name: string
+                    default_analyst_id?: string | null
                 }
                 Update: {
                     id?: string
                     team_id?: string
                     name?: string
+                    default_analyst_id?: string | null
                 }
                 Relationships: []
-            }
+            },
             statuses: {
                 Row: {
                     id: string
@@ -400,7 +427,7 @@ export type Database = {
                     created_at?: string
                 }
                 Relationships: []
-            }
+            },
             sizes: {
                 Row: {
                     id: string

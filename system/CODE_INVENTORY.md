@@ -14,6 +14,7 @@
 | `/admin/*` | Admin management pages |
 | `/portal/*` | Client portal |
 | `/api/v1/tasks` | RESTful API |
+| `/api/health` | Health check endpoint |
 
 ### Key Modules
 | Module | Location | Purpose |
@@ -23,12 +24,15 @@
 | Role Service | `src/lib/role-service.ts` | Centralized RBAC |
 | Admin Client | `src/lib/supabase/admin.ts` | Service role DB access |
 | Auth Utils | `src/lib/auth-utils.ts`, `src/lib/auth/api-key.ts` | Authentication helpers |
+| Logger | `src/lib/logger.ts` | Structured JSON logging |
+| Error Boundary | `src/components/error-boundary.tsx` | React error catching |
 
 ### Component Library
 | Path | Contents |
 |---|---|
 | `src/components/ui/` | Reusable UI primitives (shadcn/ui based) |
 | `src/components/dashboard/` | Staff dashboard components |
+| `src/components/dashboard/calendar-view.tsx` | Reusable Calendar/Timeline component |
 | `src/components/admin/` | Admin page components |
 | `src/components/demo/` | Demo mode components |
 

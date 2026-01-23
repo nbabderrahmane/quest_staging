@@ -35,6 +35,7 @@ export default function PortalDashboard() {
     const [profilePhone, setProfilePhone] = useState('')
     const [isUpdatingProfile, setIsUpdatingProfile] = useState(false)
     const [profilePassword, setProfilePassword] = useState('')
+    const [newTicketDeptId, setNewTicketDeptId] = useState<string>('_none')
     const [isStaff, setIsStaff] = useState(false)
 
     const router = useRouter()
@@ -142,12 +143,19 @@ export default function PortalDashboard() {
 
         setIsCreatingTicket(true)
         try {
-            const res = await createClientTicket(clientId, newTicketTitle, newTicketDesc)
+            const res = await createClientTicket(
+                clientId,
+                newTicketTitle,
+                newTicketDesc,
+                undefined, // urgency
+                newTicketDeptId !== '_none' ? newTicketDeptId : undefined
+            )
             if (res.success) {
                 await loadDashboard()
                 setIsCreateOpen(false)
                 setNewTicketTitle('')
                 setNewTicketDesc('')
+                setNewTicketDeptId('_none')
             } else {
                 // @ts-ignore
                 throw new Error(res.error.message)
@@ -170,6 +178,16 @@ export default function PortalDashboard() {
             </div>
         )
     }
+
+    // Prepare Departments for Dialog
+    // Find departments for the active client
+    const targetClientId = selectedClientId || data.clients?.[0]?.id
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const clientDeptLinks = (data as any).clientDeptMap?.filter((l: any) => l.client_id === targetClientId) || []
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const validDeptIds = clientDeptLinks.map((l: any) => l.department_id)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const availableDepts = (data as any).departments?.filter((d: any) => validDeptIds.includes(d.id)) || []
 
     return (
         <>
@@ -338,7 +356,7 @@ export default function PortalDashboard() {
 
             {/* Create Ticket Modal */}
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                <DialogContent>
+                <DialogContent className="bg-slate-900 border-white/10 text-white">
                     <DialogHeader>
                         <DialogTitle>Create New Ticket</DialogTitle>
                     </DialogHeader>
@@ -349,6 +367,7 @@ export default function PortalDashboard() {
                                 value={newTicketTitle}
                                 onChange={e => setNewTicketTitle(e.target.value)}
                                 placeholder="e.g. Update Header Logo"
+                                className="bg-slate-800 border-white/10"
                             />
                         </div>
                         <div className="space-y-2">
@@ -357,9 +376,27 @@ export default function PortalDashboard() {
                                 value={newTicketDesc}
                                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewTicketDesc(e.target.value)}
                                 placeholder="Describe your request..."
-                                className="min-h-[100px]"
+                                className="min-h-[100px] bg-slate-800 border-white/10"
                             />
                         </div>
+
+                        {/* Department Selection */}
+                        {availableDepts.length > 0 && (
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Department (Optional)</label>
+                                <select
+                                    value={newTicketDeptId}
+                                    onChange={e => setNewTicketDeptId(e.target.value)}
+                                    className="w-full bg-slate-800 border-white/10 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-primary outline-none"
+                                >
+                                    <option value="_none">Select Department...</option>
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                    {availableDepts.map((d: any) => (
+                                        <option key={d.id} value={d.id}>{d.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
                     </div>
                     <DialogFooter>
                         <button

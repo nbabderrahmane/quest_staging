@@ -178,7 +178,7 @@ export async function createTask(
                     resource_type: 'task',
                     resource_id: result.data.task.id,
                     is_read: false
-                })
+                } as any)
             }
 
             revalidatePath('/admin/pipeline')
@@ -378,8 +378,10 @@ export async function addTaskComment(taskId: string, teamId: string, content: st
         }
 
         // NOTIFICATION LOGIC
+        // NOTIFICATION LOGIC
         // 1. Get Task Assignee
-        const { data: task } = await supabase.from('tasks').select('assigned_to, title').eq('id', taskId).single()
+        const { data: taskData } = await supabase.from('tasks').select('assigned_to, title').eq('id', taskId).single()
+        const task = taskData as { assigned_to: string | null; title: string } | null
 
         if (task) {
             const notifications = []

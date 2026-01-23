@@ -28,8 +28,11 @@ const SECTION_ICONS = {
     waiting: <Clock className="h-5 w-5 text-yellow-500" />,
 }
 
+import { CalendarView } from '@/components/dashboard/calendar-view'
+
 export function MyWorkClient({ initialNow, initialNext, initialWaiting, teamId, wipCount, wipLimit }: MyWorkClientProps) {
     const [isPending, setIsPending] = useState(false)
+    const [view, setView] = useState<'deck' | 'calendar'>('deck')
     const router = useRouter()
 
     const handleAction = async (action: Function, ...args: any[]) => {
@@ -141,81 +144,110 @@ export function MyWorkClient({ initialNow, initialNext, initialWaiting, teamId, 
     }
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* NOW Section */}
-            <div className="lg:col-span-4 space-y-6">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-orange-500/10 rounded-lg border border-orange-500/20">
-                        {SECTION_ICONS.now}
-                    </div>
-                    <div>
-                        <h2 className="text-xl font-black uppercase tracking-widest leading-none">Focus NOW</h2>
-                        <p className="text-[10px] text-muted-foreground uppercase font-bold mt-1">High Impact Targets</p>
-                    </div>
+        <div className="space-y-6">
+            {/* View Toggle Header */}
+            <div className="flex justify-end border-b border-border pb-4">
+                <div className="bg-muted p-1 rounded-lg flex items-center">
+                    <button
+                        onClick={() => setView('deck')}
+                        className={`px-3 py-1.5 text-xs font-bold uppercase rounded-md transition-all ${view === 'deck' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                        Captain's Deck
+                    </button>
+                    <button
+                        onClick={() => setView('calendar')}
+                        className={`px-3 py-1.5 text-xs font-bold uppercase rounded-md transition-all ${view === 'calendar' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                        Calendar
+                    </button>
                 </div>
+            </div>
 
-                {wipCount >= wipLimit && (
-                    <div className="p-4 bg-orange-500/10 border border-orange-500/30 rounded-xl flex items-start gap-3">
-                        <AlertTriangle className="h-5 w-5 text-orange-500 shrink-0" />
-                        <p className="text-xs font-bold text-orange-800 dark:text-orange-400">
-                            WIP limit reached ({wipLimit}). Termine ou bloque une mission avant d’en démarrer une autre.
-                        </p>
-                    </div>
-                )}
-
-                <div className="space-y-4">
-                    {initialNow.length === 0 ? (
-                        <div className="p-12 border-2 border-dashed border-border rounded-2xl flex flex-col items-center justify-center text-center opacity-50">
-                            <Target className="h-12 w-12 mb-4" />
-                            <p className="text-sm font-bold uppercase">No Active Targets</p>
+            {view === 'calendar' ? (
+                <div className="animate-in fade-in duration-300">
+                    <CalendarView
+                        type="personal"
+                        tasks={[...initialNow, ...initialNext, ...initialWaiting]}
+                    />
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    {/* NOW Section */}
+                    <div className="lg:col-span-4 space-y-6">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-orange-500/10 rounded-lg border border-orange-500/20">
+                                {SECTION_ICONS.now}
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-black uppercase tracking-widest leading-none">Focus NOW</h2>
+                                <p className="text-[10px] text-muted-foreground uppercase font-bold mt-1">High Impact Targets</p>
+                            </div>
                         </div>
-                    ) : (
-                        initialNow.map(task => <TaskCard key={task.id} task={task} isNow />)
-                    )}
-                </div>
-            </div>
 
-            {/* NEXT Section */}
-            <div className="lg:col-span-5 space-y-6 border-x border-border/40 px-0 lg:px-8">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                        {SECTION_ICONS.next}
-                    </div>
-                    <div>
-                        <h2 className="text-xl font-black uppercase tracking-widest leading-none">Deploy NEXT</h2>
-                        <p className="text-[10px] text-muted-foreground uppercase font-bold mt-1">Strategic Reserve</p>
-                    </div>
-                </div>
+                        {wipCount >= wipLimit && (
+                            <div className="p-4 bg-orange-500/10 border border-orange-500/30 rounded-xl flex items-start gap-3">
+                                <AlertTriangle className="h-5 w-5 text-orange-500 shrink-0" />
+                                <p className="text-xs font-bold text-orange-800 dark:text-orange-400">
+                                    WIP limit reached ({wipLimit}). Termine ou bloque une mission avant d’en démarrer une autre.
+                                </p>
+                            </div>
+                        )}
 
-                <div className="grid grid-cols-1 gap-4">
-                    {initialNext.length === 0 ? (
-                        <p className="text-sm text-center py-12 text-muted-foreground uppercase font-bold italic">Registry Empty</p>
-                    ) : (
-                        initialNext.map(task => <TaskCard key={task.id} task={task} />)
-                    )}
-                </div>
-            </div>
-
-            {/* WAITING Section */}
-            <div className="lg:col-span-3 space-y-6">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
-                        {SECTION_ICONS.waiting}
+                        <div className="space-y-4">
+                            {initialNow.length === 0 ? (
+                                <div className="p-12 border-2 border-dashed border-border rounded-2xl flex flex-col items-center justify-center text-center opacity-50">
+                                    <Target className="h-12 w-12 mb-4" />
+                                    <p className="text-sm font-bold uppercase">No Active Targets</p>
+                                </div>
+                            ) : (
+                                initialNow.map(task => <TaskCard key={task.id} task={task} isNow />)
+                            )}
+                        </div>
                     </div>
-                    <div>
-                        <h2 className="text-xl font-black uppercase tracking-widest leading-none">WAITING</h2>
-                        <p className="text-[10px] text-muted-foreground uppercase font-bold mt-1">Blocked Pipelines</p>
+
+                    {/* NEXT Section */}
+                    <div className="lg:col-span-5 space-y-6 border-x border-border/40 px-0 lg:px-8">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                                {SECTION_ICONS.next}
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-black uppercase tracking-widest leading-none">Deploy NEXT</h2>
+                                <p className="text-[10px] text-muted-foreground uppercase font-bold mt-1">Strategic Reserve</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4">
+                            {initialNext.length === 0 ? (
+                                <p className="text-sm text-center py-12 text-muted-foreground uppercase font-bold italic">Registry Empty</p>
+                            ) : (
+                                initialNext.map(task => <TaskCard key={task.id} task={task} />)
+                            )}
+                        </div>
+                    </div>
+
+                    {/* WAITING Section */}
+                    <div className="lg:col-span-3 space-y-6">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+                                {SECTION_ICONS.waiting}
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-black uppercase tracking-widest leading-none">WAITING</h2>
+                                <p className="text-[10px] text-muted-foreground uppercase font-bold mt-1">Blocked Pipelines</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            {initialWaiting.length === 0 ? (
+                                <p className="text-sm text-center py-12 text-muted-foreground uppercase font-bold italic">No Blockers Detected</p>
+                            ) : (
+                                initialWaiting.map(task => <TaskCard key={task.id} task={task} />)
+                            )}
+                        </div>
                     </div>
                 </div>
-
-                <div className="space-y-4">
-                    {initialWaiting.length === 0 ? (
-                        <p className="text-sm text-center py-12 text-muted-foreground uppercase font-bold italic">No Blockers Detected</p>
-                    ) : (
-                        initialWaiting.map(task => <TaskCard key={task.id} task={task} />)
-                    )}
-                </div>
-            </div>
+            )}
         </div>
     )
 }

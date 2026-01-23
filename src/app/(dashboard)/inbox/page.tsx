@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getInboxFeed, InboxItem } from './actions'
+import { getInboxFeed, InboxItem, markItemAsRead } from './actions'
 import { Archive, Bell, MessageSquare, Briefcase, RefreshCw, ChevronRight } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { TaskDetailPanel } from '@/components/dashboard/task-detail-panel'
@@ -39,9 +39,22 @@ export default function InboxPage() {
         setTimeout(() => setIsRefreshing(false), 500)
     }
 
-    const handleSelect = (item: InboxItem) => {
+    const handleSelect = async (item: InboxItem) => {
         setSelectedItemId(item.id)
         setSelectedResource({ id: item.resourceId, type: item.resourceType })
+
+        // Optimistic update
+        if (!item.isRead) {
+            setFeed(prev => prev.map(i => i.id === item.id ? { ...i, isRead: true } : i))
+
+            // Server action (fire and forget)
+            markItemAsRead(item.resourceId, item.resourceType).then(res => {
+                if (!res.success) {
+                    // Revert if failed? usually not worth the UX flicker for read status
+                    console.error('Failed to mark read', res.error)
+                }
+            })
+        }
     }
 
     return (
@@ -92,7 +105,7 @@ export default function InboxPage() {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex justify-between items-start mb-0.5">
-                                            <h3 className={`text-sm font-bold truncate pr-2 ${selectedItemId === item.id ? 'text-primary' : 'text-foreground'}`}>
+                                            <h3 className={`text-sm ${!item.isRead ? 'font-black' : 'font-medium'} truncate pr-2 ${selectedItemId === item.id ? 'text-primary' : 'text-foreground'}`}>
                                                 {item.title}
                                             </h3>
                                             <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono whitespace-nowrap opacity-70">

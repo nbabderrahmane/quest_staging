@@ -1,0 +1,91 @@
+# DEAD_CODE_AND_ORPHAN_MAP.md
+> Suspected Dead Code, Orphan Features, and Unused Exports
+
+---
+
+## 🔴 Confirmed Issues
+
+### 1. [updateClient](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/admin/clients/actions.ts#160-194) Export Missing
+| Attribute | Value |
+|-----------|-------|
+| **File** | `src/components/admin/clients/client-dialog.tsx:7` |
+| **Evidence** | Import `{ createClient, updateClient }` but [updateClient](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/admin/clients/actions.ts#160-194) not exported from actions |
+| **Confidence** | HIGH |
+| **Recommendation** | FINISH - Either implement [updateClient](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/admin/clients/actions.ts#160-194) or remove import |
+
+### 2. `updateCrewMember` Unused
+| Attribute | Value |
+|-----------|-------|
+| **File** | `src/app/(dashboard)/admin/crew/page.tsx:11` |
+| **Evidence** | Lint warning: "'updateCrewMember' is defined but never used" |
+| **Confidence** | HIGH |
+| **Recommendation** | DELETE import or FINISH integration |
+
+### 3. `WindowCard` Unused
+| Attribute | Value |
+|-----------|-------|
+| **File** | `src/app/(dashboard)/admin/crew/page.tsx:5` |
+| **Evidence** | Lint warning: "'WindowCard' is defined but never used" |
+| **Confidence** | HIGH |
+| **Recommendation** | DELETE import |
+
+---
+
+## 🟡 Suspected Orphans
+
+### 4. Developer API Route (Commented Out)
+| Attribute | Value |
+|-----------|-------|
+| **File** | `src/components/dashboard/sidebar-content.tsx:74` |
+| **Evidence** | `{/* <NavItem href="/admin/settings/developer" ... */}` |
+| **Confidence** | MEDIUM |
+| **Recommendation** | DELETE if deprecated, or FINISH and uncomment |
+
+### 5. `/api/archive` Route
+| Attribute | Value |
+|-----------|-------|
+| **File** | [src/app/api/archive/route.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/api/archive/route.ts) |
+| **Evidence** | Not linked from any UI, no test coverage |
+| **Confidence** | MEDIUM (could be internal/cron) |
+| **Recommendation** | VERIFY usage or DELETE |
+
+### 6. `/api/keys` Route
+| Attribute | Value |
+|-----------|-------|
+| **File** | [src/app/api/keys/route.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/api/keys/route.ts) |
+| **Evidence** | Not linked from any UI (Developer API commented out) |
+| **Confidence** | MEDIUM |
+| **Recommendation** | VERIFY or DELETE with Developer API cleanup |
+
+---
+
+## 🟢 Console.log Pollution (15+ files)
+
+These should be removed or replaced with structured logging:
+
+| File |
+|------|
+| [src/services/quest-service.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/services/quest-service.ts) |
+| [src/lib/logger.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/lib/logger.ts) |
+| [src/lib/db-check.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/lib/db-check.ts) |
+| [src/app/login/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/login/actions.ts) |
+| [src/app/login/page.tsx](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/login/page.tsx) |
+| [src/app/select-dashboard/page.tsx](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/select-dashboard/page.tsx) |
+| [src/app/api/archive/route.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/api/archive/route.ts) |
+| [src/app/(dashboard)/quest-board/quest-board-client.tsx](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/quest-board/quest-board-client.tsx) |
+| [src/app/(dashboard)/admin/pipeline/task-detail-drawer.tsx](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/admin/pipeline/task-detail-drawer.tsx) |
+| [src/app/(dashboard)/admin/pipeline/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/admin/pipeline/actions.ts) |
+| [src/app/actions/auth.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/actions/auth.ts) |
+| [src/app/(dashboard)/admin/clients/page.tsx](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/admin/clients/page.tsx) |
+| [src/components/dashboard/quest-boss-bar.tsx](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/components/dashboard/quest-boss-bar.tsx) |
+| [src/components/dashboard/quest-board.tsx](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/components/dashboard/quest-board.tsx) |
+
+---
+
+## 🟡 TODO/FIXME Comments
+
+| File | Comment Type |
+|------|-------------|
+| [src/app/(dashboard)/admin/analytics/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/admin/analytics/actions.ts) | TODO |
+| [src/app/(dashboard)/inbox/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28dashboard%29/inbox/actions.ts) | TODO |
+| [src/app/(portal)/actions.ts](file:///Users/abderrahmanenaciribennani/dev/ship-quest/src/app/%28portal%29/actions.ts) | TODO |

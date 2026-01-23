@@ -1,5 +1,31 @@
 # System Logs
 
+## 2026-01-22: Phase 2 Observability
+- **Created**: `/api/health` endpoint with database connectivity check
+- **Created**: `ErrorBoundary` component (`src/components/error-boundary.tsx`)
+  - Catches React rendering errors
+  - Logs to structured logger
+  - Shows user-friendly error UI
+- **Migrated**: `login/actions.ts` from console.log to structured logger
+- **Note**: Existing structured logger at `src/lib/logger.ts` was already in place
+- **Verification**: Build passes (35 routes including /api/health)
+
+## 2026-01-22: Phase 1 Security Hygiene
+- **Created**: `.env.example` documenting all required and optional environment variables
+- **Fixed**: Hardcoded test credentials in `tests/regression.spec.ts` and `tests/recurrence.spec.ts`
+  - Now use `process.env.TEST_USER_EMAIL` and `process.env.TEST_USER_PASSWORD`
+- **Audited**: SERVICE_ROLE usage confirmed safe (confined to factories and protected admin actions)
+- **Updated**: `SECURITY_STATUS.md` with Phase 1 audit results
+- **Verification**: Build passes, no regressions
+
+## 2026-01-22: Phase 0 Emergency Build Fix
+- **Fixed**: Build failure caused by `createClient` function name collision in `actions.ts`
+  - Renamed `createClient` → `createNewClient` in `src/app/(dashboard)/admin/clients/actions.ts`
+  - Updated import in `src/components/admin/clients/client-dialog.tsx`
+  - Removed unused `updateClient` import
+- **Issue Origin**: Client-Department feature implementation created function with same name as supabase import
+- **Verification**: `npm run build` succeeds (34 routes generated)
+
 ## 2026-01-14: Production Hardening Review
 - **Removed**: `server/mcp-remote` (will be rebuilt separately)
 - **Fixed**: Build failure caused by MCP SDK type resolution

@@ -15,7 +15,7 @@ export interface CreateTaskDTO {
     client_id?: string | null
     // Recurrence
     is_recurring?: boolean
-    recurrence_rule?: any
+    recurrence_rule?: Database['public']['Tables']['tasks']['Row']['recurrence_rule']
     recurrence_next_date?: string | Date
     recurrence_end_date?: string | Date
     deadline_at?: string | null
@@ -36,7 +36,7 @@ export class TaskService {
         teamId: string,
         userId: string,
         data: CreateTaskDTO
-    ): Promise<Result<{ task: any; questName: string | null }>> {
+    ): Promise<Result<{ task: Database['public']['Tables']['tasks']['Row']; questName: string | null }>> {
         if (!data.title?.trim()) {
             return {
                 success: false,
@@ -47,12 +47,12 @@ export class TaskService {
             }
         }
 
-        const supabase = await getUserClient() as SupabaseClient<Database>
+        const supabase = await getUserClient() as SupabaseClient<Database, 'public'>
 
         // 1. Get Backlog Status (Auto-assignment)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: backlogStatus, error: statusError } = await (supabase
-            .from('statuses') as any)
+
+        const { data: backlogStatus, error: statusError } = await supabase
+            .from('statuses')
             .select('id')
             .eq('team_id', teamId)
             .eq('category', 'backlog')
@@ -77,34 +77,28 @@ export class TaskService {
         if (!finalAssigneeId) {
             // Check Project Mapping
             if (data.project_id) {
-                const { data: project } = await (supabase.from('projects') as any)
+                const { data: project } = await supabase.from('projects')
                     .select('default_analyst_id')
                     .eq('id', data.project_id)
                     .single()
-                if (project?.default_analyst_id) {
-                    finalAssigneeId = project.default_analyst_id
+                    .throwOnError()
+                    .returns<any>()
+                if ((project as any)?.default_analyst_id) {
+                    finalAssigneeId = (project as any).default_analyst_id
                 }
             }
 
-            // Check Client Mapping
-            if (!finalAssigneeId && data.client_id) {
-                const { data: client } = await (supabase.from('clients') as any)
-                    .select('default_analyst_id')
-                    .eq('id', data.client_id)
-                    .single()
-                if (client?.default_analyst_id) {
-                    finalAssigneeId = client.default_analyst_id
-                }
-            }
+
 
             // Check Department Mapping
             if (!finalAssigneeId && data.department_id) {
-                const { data: dept } = await (supabase.from('departments') as any)
+                const { data: dept } = await supabase.from('departments')
                     .select('default_analyst_id')
                     .eq('id', data.department_id)
                     .single()
-                if (dept?.default_analyst_id) {
-                    finalAssigneeId = dept.default_analyst_id
+                    .returns<any>()
+                if ((dept as any)?.default_analyst_id) {
+                    finalAssigneeId = (dept as any).default_analyst_id
                 }
             }
         }
@@ -112,26 +106,25 @@ export class TaskService {
         // 3. Get Quest Name (if applicable)
         let questName: string | null = null
         if (data.quest_id) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const { data: quest } = await (supabase
-                .from('quests') as any)
+
+            const { data: quest } = await supabase
+                .from('quests')
                 .select('name')
                 .eq('id', data.quest_id)
                 .single()
-            questName = quest?.name || null
+            questName = (quest as any)?.name || null
         }
 
         // 3. Insert Task
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: newTask, error: insertError } = await (supabase
-            .from('tasks') as any)
+
+        const { data: newTask, error: insertError } = await (supabase.from('tasks') as any)
             .insert({
                 team_id: teamId,
                 created_by: userId,
                 title: data.title.trim(),
                 description: data.description?.trim() || null,
                 quest_id: data.quest_id || null,
-                status_id: backlogStatus.id,
+                status_id: (backlogStatus as any).id,
                 size_id: data.size_id || null,
                 urgency_id: data.urgency_id || null,
                 assigned_to: finalAssigneeId,
@@ -140,8 +133,8 @@ export class TaskService {
                 client_id: data.client_id || null,
                 is_recurring: data.is_recurring || false,
                 recurrence_rule: data.recurrence_rule || null,
-                recurrence_next_date: data.recurrence_next_date || null,
-                recurrence_end_date: data.recurrence_end_date || null,
+                recurrence_next_date: data.recurrence_next_date ? new Date(data.recurrence_next_date).toISOString() : null,
+                recurrence_end_date: data.recurrence_end_date ? new Date(data.recurrence_end_date).toISOString() : null,
                 deadline_at: data.deadline_at || null
             })
             .select() // Return the created object
@@ -172,18 +165,18 @@ export class TaskService {
         taskId: string,
         data: UpdateTaskDTO
     ): Promise<Result<null>> {
-        const supabase = await getUserClient() as SupabaseClient<Database>
+        const supabase = await getUserClient() as SupabaseClient<Database, 'public'>
 
         // Clean payload (remove undefined)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const updatePayload: any = {
+        const updatePayload: Database['public']['Tables']['tasks']['Update'] = {
             ...data,
+            recurrence_next_date: data.recurrence_next_date ? new Date(data.recurrence_next_date).toISOString() : undefined,
+            recurrence_end_date: data.recurrence_end_date ? new Date(data.recurrence_end_date).toISOString() : undefined,
             updated_at: new Date().toISOString()
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (supabase
-            .from('tasks') as any)
+
+        const { error } = await (supabase.from('tasks') as any)
             .update(updatePayload)
             .eq('id', taskId)
             .eq('team_id', teamId)
@@ -206,11 +199,11 @@ export class TaskService {
      * Delete a task.
      */
     static async delete(teamId: string, taskId: string): Promise<Result<null>> {
-        const supabase = await getUserClient() as SupabaseClient<Database>
+        const supabase = await getUserClient() as SupabaseClient<Database, 'public'>
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (supabase
-            .from('tasks') as any)
+
+        const { error } = await supabase
+            .from('tasks')
             .delete()
             .eq('id', taskId)
             .eq('team_id', teamId)
