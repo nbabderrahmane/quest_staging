@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { getInboxFeed, InboxItem, markItemAsRead, markItemAsUnread } from './actions'
-import { Archive, Bell, MessageSquare, Briefcase, RefreshCw, ChevronRight, Circle, CheckCircle2 } from 'lucide-react'
+import { Archive, Bell, MessageSquare, Briefcase, RefreshCw, ChevronRight, Circle, CheckCircle2, Terminal } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { TaskDetailPanel } from '@/components/dashboard/task-detail-panel'
 import { useNotifications } from '@/components/notification-provider'
@@ -77,34 +77,35 @@ export default function InboxPage() {
     }
 
     return (
-        <div className="flex h-screen overflow-hidden bg-background -m-8">
-            {/* Left Column: Feed List */}
+        <div className="flex bg-background h-[calc(100vh-8rem)] -m-8 overflow-hidden">
+            {/* List Column */}
             <div className={`
-                flex flex-col border-r border-border bg-card w-full md:w-[400px] shrink-0 transition-all duration-300
-                ${selectedResource ? 'hidden md:flex' : 'flex'} 
+                flex flex-col border-r border-border bg-white dark:bg-zinc-950 w-full md:w-[450px] shrink-0 transition-all duration-300
+                ${selectedItemId ? 'hidden md:flex' : 'flex'}
             `}>
                 {/* Header */}
-                <div className="border-b border-border p-4 bg-muted/10 flex justify-between items-center shrink-0 h-[60px]">
-                    <h1 className="text-lg font-black uppercase tracking-tight text-foreground flex items-center gap-2">
+                <div className="p-4 border-b border-border flex items-center justify-between h-[60px] bg-zinc-50/50 dark:bg-zinc-900/50">
+                    <div className="flex items-center gap-2">
                         <Archive className="h-5 w-5 text-primary" />
-                        Inbox
-                    </h1>
+                        <h1 className="font-bold text-lg tracking-tight text-foreground">Inbox</h1>
+                    </div>
                     <button
                         onClick={handleRefresh}
-                        className="p-2 hover:bg-muted rounded-full text-muted-foreground hover:text-primary transition-colors"
+                        className={`p-2 rounded-full hover:bg-primary/10 transition-colors ${isRefreshing ? 'animate-spin text-primary' : 'text-muted-foreground'}`}
+                        disabled={isRefreshing}
                     >
-                        <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                        <RefreshCw className="h-4 w-4" />
                     </button>
                 </div>
 
-                {/* Feed Items */}
-                <div className="flex-1 overflow-y-auto p-0 space-y-0">
+                {/* List Body */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-border/30">
                     {isLoading && !isRefreshing && feed.length === 0 ? (
-                        <div className="p-8 text-center text-xs font-mono animate-pulse text-muted-foreground">Scanning...</div>
+                        <div className="p-12 text-center text-muted-foreground animate-pulse font-mono text-xs uppercase tracking-widest">Scanning signals...</div>
                     ) : feed.length === 0 ? (
-                        <div className="p-8 text-center opacity-50 space-y-2">
-                            <Archive className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
-                            <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">No signals</p>
+                        <div className="p-12 text-center text-muted-foreground space-y-3">
+                            <Archive className="h-10 w-10 mx-auto opacity-10" />
+                            <p className="text-sm font-medium opacity-50">Empty transmission log.</p>
                         </div>
                     ) : (
                         feed.map((item) => (
@@ -112,51 +113,57 @@ export default function InboxPage() {
                                 key={item.id}
                                 onClick={() => handleSelect(item)}
                                 className={`
-                                    group relative p-4 border-b border-border hover:bg-muted/50 transition-all cursor-pointer select-none
-                                    ${selectedItemId === item.id ? 'bg-primary/5 border-l-4 border-l-primary pl-[12px]' : 'border-l-4 border-l-transparent'}
+                                    group relative flex px-4 py-3 cursor-pointer transition-all border-l-[3px]
+                                    ${selectedItemId === item.id
+                                        ? 'bg-primary/5 border-primary shadow-inner'
+                                        : 'bg-white dark:bg-transparent border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-800'}
+                                    ${!item.isRead ? 'z-10 bg-zinc-50/30' : ''}
                                 `}
                             >
-                                <div className="flex gap-3">
-                                    <div className="mt-0.5">
-                                        {item.type === 'assignment' && <Briefcase className="h-4 w-4 text-primary" />}
-                                        {item.type === 'comment' && <MessageSquare className="h-4 w-4 text-blue-500" />}
-                                        {item.type === 'notification' && <Bell className="h-4 w-4 text-orange-500" />}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex justify-between items-start mb-0.5">
-                                            <div className="flex items-center gap-2 min-w-0">
-                                                {!item.isRead && <div className="w-2 h-2 rounded-full bg-primary shrink-0" />}
-                                                <h3 className={`text-sm ${!item.isRead ? 'font-black' : 'font-medium'} truncate pr-2 ${selectedItemId === item.id ? 'text-primary' : 'text-foreground'}`}>
-                                                    {item.title}
-                                                </h3>
-                                            </div>
-                                            <div className="flex flex-col items-end gap-1 shrink-0">
-                                                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono whitespace-nowrap opacity-70">
-                                                    {new Date(item.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                                </span>
-                                                <button
-                                                    onClick={(e) => handleToggleRead(e, item)}
-                                                    className={`p-1 rounded hover:bg-muted transition-colors ${item.isRead ? 'text-muted-foreground' : 'text-primary'}`}
-                                                    title={item.isRead ? "Mark as unread" : "Mark as read"}
-                                                >
-                                                    {item.isRead ? <Circle className="h-3 w-3" /> : <CheckCircle2 className="h-3 w-3" />}
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed opacity-90">
-                                            {item.message}
-                                        </p>
+                                {/* Unread Indicator */}
+                                <div className="mt-1.5 mr-3 shrink-0">
+                                    {!item.isRead ? (
+                                        <div className="w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.6)]" />
+                                    ) : (
+                                        <div className="w-2.5 h-2.5 rounded-full bg-transparent" />
+                                    )}
+                                </div>
 
-                                        <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground/70">
-                                            {item.metadata?.statusName && (
-                                                <span className="px-1.5 py-px rounded bg-muted text-foreground/80 font-mono uppercase border border-border">
-                                                    {item.metadata.statusName}
-                                                </span>
-                                            )}
-                                            <span>•</span>
-                                            <span className="truncate max-w-[120px]">{item.metadata?.questName || 'General'}</span>
-                                        </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex justify-between items-baseline mb-0.5">
+                                        <span className={`text-[11px] uppercase tracking-widest ${!item.isRead ? 'font-black text-foreground' : 'font-semibold text-muted-foreground/60'}`}>
+                                            {item.actor?.name || 'System'}
+                                        </span>
+                                        <span className="text-[10px] font-mono text-muted-foreground/40 whitespace-nowrap ml-2">
+                                            {new Date(item.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                        </span>
                                     </div>
+
+                                    <h3 className={`text-sm ${!item.isRead ? 'font-bold text-foreground' : 'font-medium text-foreground/70'} truncate leading-snug mb-0.5`}>
+                                        {item.title}
+                                    </h3>
+
+                                    <p className={`text-xs truncate ${!item.isRead ? 'text-foreground/60' : 'text-muted-foreground/50'}`}>
+                                        {item.message}
+                                    </p>
+
+                                    {/* Item Meta Tags */}
+                                    <div className="mt-2 flex items-center gap-2 opacity-60">
+                                        {item.type === 'assignment' && <Briefcase className="h-3 w-3 text-primary" />}
+                                        {item.type === 'notification' && <Bell className="h-3 w-3 text-orange-400" />}
+                                        <span className="text-[9px] uppercase font-bold tracking-tighter text-muted-foreground/40">{item.metadata?.questName || 'General'}</span>
+                                    </div>
+                                </div>
+
+                                {/* Hover Actions */}
+                                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                        onClick={(e) => handleToggleRead(e, item)}
+                                        className="p-1.5 rounded bg-background shadow-sm border border-border hover:bg-muted text-muted-foreground transition-all"
+                                        title={item.isRead ? "Mark as unread" : "Mark as read"}
+                                    >
+                                        {item.isRead ? <Circle className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                                    </button>
                                 </div>
                             </div>
                         ))
@@ -164,37 +171,42 @@ export default function InboxPage() {
                 </div>
             </div>
 
-            {/* Right Column: Detail View */}
+            {/* Detail Column */}
             <div className={`
-                flex-1 bg-background flex flex-col min-w-0
-                ${!selectedResource ? 'hidden md:flex' : 'flex fixed inset-0 z-50 md:static'}
+                flex-1 flex flex-col min-w-0 bg-zinc-50 dark:bg-zinc-900/20
+                ${!selectedItemId ? 'hidden md:flex' : 'flex fixed inset-0 z-[100] md:static'}
             `}>
                 {selectedResource ? (
-                    selectedResource.type === 'task' ? (
-                        <TaskDetailPanel
-                            taskId={selectedResource.id}
-                            canEdit={true} // Allow edits from inbox
-                            onClose={() => setSelectedResource(null)}
-                        />
-                    ) : (
-                        <div className="h-full flex flex-col">
-                            <div className="p-4 border-b border-border md:hidden">
-                                <button onClick={() => setSelectedResource(null)} className="text-sm font-bold uppercase flex items-center gap-2">
-                                    <ChevronRight className="h-4 w-4 rotate-180" /> Back
-                                </button>
-                            </div>
-                            <div className="flex-1 flex items-center justify-center text-muted-foreground p-8 text-center">
-                                Feature for Ticket details in split view coming soon.
-                                <button onClick={() => router.push(`/portal/tickets/${selectedResource.id}`)} className="block mt-4 text-primary underline">
-                                    Open Ticket Page
-                                </button>
+                    <div className="h-full flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
+                        {/* Mobile Header */}
+                        <div className="p-4 border-b border-border bg-white dark:bg-black md:hidden">
+                            <button
+                                onClick={() => setSelectedItemId(null)}
+                                className="flex items-center gap-2 text-primary font-bold uppercase text-xs tracking-widest"
+                            >
+                                <ChevronRight className="h-4 w-4 rotate-180" /> Back to Log
+                            </button>
+                        </div>
+
+                        {/* Detail Content */}
+                        <div className="flex-1 overflow-auto custom-scrollbar md:p-6 pb-20">
+                            <TaskDetailPanel
+                                taskId={selectedResource.id}
+                                canEdit={true}
+                                onClose={() => setSelectedItemId(null)}
+                            />
+                        </div>
+                    </div>
+                ) : (
+                    <div className="h-full flex flex-col items-center justify-center p-12 text-center opacity-20 select-none">
+                        <div className="relative mb-6">
+                            <Archive className="h-20 w-20 text-primary" />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <Terminal className="h-8 w-8 text-primary animate-pulse" />
                             </div>
                         </div>
-                    )
-                ) : (
-                    <div className="h-full flex flex-col items-center justify-center text-muted-foreground opacity-30 select-none">
-                        <Archive className="h-16 w-16 mb-4" />
-                        <p className="font-black uppercase tracking-[0.2em]">Select Transmission</p>
+                        <h2 className="text-2xl font-black uppercase tracking-[0.25em] mb-2 text-foreground">Select Signal</h2>
+                        <p className="max-w-xs text-sm font-medium">Monitoring alliance frequencies. Select a mission beacon or intelligence report to begin analysis.</p>
                     </div>
                 )}
             </div>
