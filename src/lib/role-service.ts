@@ -17,6 +17,7 @@ export interface RoleContext {
     isOwner: boolean
     isAdmin: boolean
     isManager: boolean
+    isDeveloper: boolean
     canManageForge: boolean  // owner, admin
     canAssignTasks: boolean  // manager only
     canViewData: boolean     // all roles
@@ -87,6 +88,7 @@ export async function getRoleContext(teamIdOverride?: string): Promise<RoleConte
         isOwner: role === 'owner',
         isAdmin: role === 'admin',
         isManager: role === 'manager',
+        isDeveloper: role === 'developer',
         canManageForge: role === 'owner' || role === 'admin',
         canAssignTasks: role === 'manager',
         canViewData: role !== null,

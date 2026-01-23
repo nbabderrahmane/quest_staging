@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // Public routes that don't need auth check at all
-const PUBLIC_ROUTES = ['/login', '/portal/login', '/auth/callback', '/auth/signout', '/demo']
+const PUBLIC_ROUTES = ['/login', '/signup', '/portal/login', '/auth/callback', '/auth/signout', '/demo']
 
 export async function updateSession(request: NextRequest) {
     const path = request.nextUrl.pathname
@@ -77,6 +77,31 @@ export async function updateSession(request: NextRequest) {
         const url = request.nextUrl.clone()
         url.pathname = '/login'
         return NextResponse.redirect(url)
+    }
+    // 3. Onboarding Check (For non-portal users)
+    else if (user && !path.startsWith('/portal') && !path.startsWith('/auth') && !path.startsWith('/api')) {
+        // Check if user has any team memberships
+        const { count, error } = await supabase
+            .from('team_members')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+
+        const hasTeams = (count || 0) > 0
+
+        // Case A: No Teams -> Must be on /onboarding
+        if (!hasTeams) {
+            if (path !== '/onboarding') {
+                const url = request.nextUrl.clone()
+                url.pathname = '/onboarding'
+                return NextResponse.redirect(url)
+            }
+        }
+        // Case B: Has Teams -> Should not be on /onboarding
+        else if (path === '/onboarding') {
+            const url = request.nextUrl.clone()
+            url.pathname = '/'
+            return NextResponse.redirect(url)
+        }
     }
 
     return supabaseResponse

@@ -17,13 +17,14 @@ interface DashboardShellProps {
     user: { id: string; email?: string }
     profile: { phone?: string | null } | null
     unreadInboxCount?: number
+    currentSubTeamId?: string
 }
 
-export function DashboardShell({ children, teams, activeTeam, userRole, user, profile, unreadInboxCount = 0 }: DashboardShellProps) {
+export function DashboardShell({ children, teams, activeTeam, userRole, user, profile, unreadInboxCount = 0, currentSubTeamId }: DashboardShellProps) {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
     const [isHeroBarVisible, setIsHeroBarVisible] = useState(true)
 
-    const sidebarProps = { teams, activeTeam, userRole, user, profile, unreadInboxCount }
+    const sidebarProps = { teams, activeTeam, userRole, user, profile, unreadInboxCount, currentSubTeamId }
 
     return (
         <div className="flex h-screen bg-background text-foreground overflow-hidden">

@@ -36,6 +36,8 @@ interface Quest {
     is_active: boolean
     is_archived: boolean
     created_at: string
+    sub_team_id?: string | null
+    sub_team?: { id: string, name: string } | null
     creator?: { id: string; email: string; first_name: string | null; last_name: string | null } | null
     tasks?: {
         id: string
@@ -64,6 +66,7 @@ export default function QuestsPage() {
     const [newStartDate, setNewStartDate] = useState('')
     const [newEndDate, setNewEndDate] = useState('')
     const [isCreating, setIsCreating] = useState(false)
+    const [newSubTeamId, setNewSubTeamId] = useState<string>('')
 
     // Edit Modal State
     const [editOpen, setEditOpen] = useState(false)
@@ -73,6 +76,7 @@ export default function QuestsPage() {
     const [editBossSkin, setEditBossSkin] = useState('generic_monster')
     const [editStartDate, setEditStartDate] = useState('')
     const [editEndDate, setEditEndDate] = useState('')
+    const [editSubTeamId, setEditSubTeamId] = useState<string>('')
 
     // Confirmation Dialog State
     const [confirmOpen, setConfirmOpen] = useState(false)
@@ -83,6 +87,9 @@ export default function QuestsPage() {
         type: 'destructive' | 'default'
         confirmText: string
     } | null>(null)
+
+    // Squads State
+    const [availableSubTeams, setAvailableSubTeams] = useState<{ id: string, name: string }[]>([])
 
     const canManage = ['owner', 'admin', 'manager'].includes(userRole)
     const canDeploy = ['owner', 'admin', 'manager'].includes(userRole)
@@ -130,6 +137,16 @@ export default function QuestsPage() {
                 setBosses(bossData)
             }
 
+            // Fetch Squads
+            const { SubTeamService } = await import('@/services/sub-team-service')
+            const squads = await SubTeamService.getSubTeams(cleanTeamId)
+            setAvailableSubTeams(squads)
+
+            // Auto-select if only one squad exists
+            if (squads.length === 1) {
+                setNewSubTeamId(squads[0].id)
+            }
+
             setIsLoading(false)
         }
         load()
@@ -164,7 +181,8 @@ export default function QuestsPage() {
             description: newDescription || undefined,
             boss_skin: newBossSkin,
             start_date: newStartDate || undefined,
-            end_date: newEndDate || undefined
+            end_date: newEndDate || undefined,
+            sub_team_id: newSubTeamId || undefined
         })
         setIsCreating(false)
 
@@ -176,6 +194,9 @@ export default function QuestsPage() {
             setNewBossSkin('generic_monster')
             setNewStartDate('')
             setNewEndDate('')
+            if (availableSubTeams.length !== 1) {
+                setNewSubTeamId('')
+            }
             const questRes = await getQuestObjectives(teamId)
             if (questRes.success) {
                 setQuests(questRes.data)
@@ -192,6 +213,7 @@ export default function QuestsPage() {
         setEditBossSkin(quest.boss_skin || 'generic_monster')
         setEditStartDate(quest.start_date || '')
         setEditEndDate(quest.end_date || '')
+        setEditSubTeamId(quest.sub_team_id || '')
         setEditOpen(true)
     }
 
@@ -203,7 +225,8 @@ export default function QuestsPage() {
             description: editDescription || undefined,
             boss_skin: editBossSkin,
             start_date: editStartDate || undefined,
-            end_date: editEndDate || undefined
+            end_date: editEndDate || undefined,
+            sub_team_id: editSubTeamId || null
         })
 
         if (result.success) {
@@ -377,6 +400,7 @@ export default function QuestsPage() {
                                                     {quest.name}
                                                     {quest.is_active && <span className="text-[10px] bg-green-500/10 text-green-500 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Active</span>}
                                                     {quest.is_archived && <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Archived</span>}
+                                                    {quest.sub_team && <span className="text-[10px] bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">{quest.sub_team.name}</span>}
                                                 </h4>
                                                 {quest.description && (
                                                     <p className="text-sm text-muted-foreground mt-1">{quest.description}</p>
@@ -525,6 +549,19 @@ export default function QuestsPage() {
                             </label>
                             <BossSelector value={newBossSkin} onChange={setNewBossSkin} bosses={bosses} />
                         </div>
+                        <div>
+                            <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Squad Assignment</label>
+                            <select
+                                value={newSubTeamId}
+                                onChange={(e) => setNewSubTeamId(e.target.value)}
+                                className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            >
+                                <option value="">Central Operations (No Squad)</option>
+                                {availableSubTeams.map(s => (
+                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                ))}
+                            </select>
+                        </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Start Date</label>
@@ -596,6 +633,19 @@ export default function QuestsPage() {
                                 Nemesis (Boss)
                             </label>
                             <BossSelector value={editBossSkin} onChange={setEditBossSkin} bosses={bosses} />
+                        </div>
+                        <div>
+                            <label className="text-xs uppercase text-muted-foreground font-bold block mb-1">Squad Assignment</label>
+                            <select
+                                value={editSubTeamId}
+                                onChange={(e) => setEditSubTeamId(e.target.value)}
+                                className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            >
+                                <option value="">Central Operations (No Squad)</option>
+                                {availableSubTeams.map(s => (
+                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                ))}
+                            </select>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>

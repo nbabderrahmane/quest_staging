@@ -11,13 +11,14 @@ interface NavItemProps {
     icon?: React.ReactNode
     badge?: number // Unread count
     onClick?: () => void
+    exact?: boolean
 }
 
-export function NavItem({ href, children, icon, badge, onClick }: NavItemProps) {
+export function NavItem({ href, children, icon, badge, onClick, exact }: NavItemProps) {
     const pathname = usePathname()
-    // Exact match for root, or starts with for nested
-    const isActive = href === '/'
-        ? pathname === '/'
+    // Exact match for root, or starts with for nested (unless exact is true)
+    const isActive = (href === '/' || exact)
+        ? pathname === href
         : pathname.startsWith(href)
 
     return (

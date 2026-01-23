@@ -8,6 +8,16 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { Team } from '@/lib/types'
 import { revalidatePath } from 'next/cache'
+import { createAdminClient } from '@/lib/supabase/admin'
+
+function generateCode(length = 6) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+    let result = ''
+    for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    return result
+}
 
 export async function getUserTeams(): Promise<Team[]> {
     const supabase = await getUserClient()
@@ -48,12 +58,20 @@ export async function createTeam(formData: FormData) {
         redirect('/login')
     }
 
+    const domain = userData.user.email?.split('@')[1]
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('teams') as any)
         .insert({
             name,
             slug,
-            created_by: userData.user.id
+            created_by: userData.user.id,
+            domain,
+            join_code_admin: `ADM-${generateCode()}`,
+            join_code_manager: `MGR-${generateCode()}`,
+            join_code_analyst: `AST-${generateCode()}`,
+            join_code_developer: `DEV-${generateCode()}`,
+            join_code_member: `MBR-${generateCode()}`
         })
         .select()
         .single()
@@ -70,6 +88,27 @@ export async function createTeam(formData: FormData) {
         user_id: userData.user.id,
         role: 'owner'
     })
+
+    // Create default "General" squad
+    try {
+        const { data: squad, error: squadError } = await (supabase.from('sub_teams') as any)
+            .insert({
+                org_id: data.id,
+                name: 'General'
+            })
+            .select()
+            .single()
+
+        if (!squadError && squad) {
+            // Join creator to General squad
+            await (supabase.from('sub_team_members') as any).insert({
+                sub_team_id: squad.id,
+                user_id: userData.user.id
+            })
+        }
+    } catch (squadErr) {
+        console.error('Non-critical: Failed to create default squad', squadErr)
+    }
 
     const cookieStore = await cookies()
     cookieStore.set('selected_team', data.id)
@@ -157,4 +196,119 @@ export async function uploadTeamLogo(formData: FormData): Promise<Result<{ url: 
         revalidatePath('/')
         return { success: true, data: { url: publicUrl } }
     })
+}
+
+export async function getMatchingAlliances(domain: string): Promise<Team[]> {
+    const supabaseAdmin = createAdminClient()
+    const { data, error } = await supabaseAdmin
+        .from('teams')
+        .select('*')
+        .eq('domain', domain)
+
+    if (error) return []
+    return data as Team[]
+}
+
+export async function joinAllianceByCode(code: string): Promise<{ success: boolean; error?: string }> {
+    const supabase = await getUserClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, error: 'Unauthorized' }
+
+    const supabaseAdmin = createAdminClient()
+
+    // Find team and role by code
+    const roles = ['admin', 'manager', 'analyst', 'developer', 'member']
+    let targetTeamId = null
+    let targetRole = 'member'
+
+    const upperCode = code.toUpperCase().trim()
+
+    for (const role of roles) {
+        const { data: team } = await supabaseAdmin
+            .from('teams')
+            .select('id')
+            .eq(`join_code_${role}`, upperCode)
+            .single()
+
+        if (team) {
+            targetTeamId = team.id
+            targetRole = role
+            break
+        }
+    }
+
+    if (!targetTeamId) {
+        return { success: false, error: 'Invalid join code. Authorization denied.' }
+    }
+
+    // Join team
+    const { error: joinError } = await supabaseAdmin
+        .from('team_members')
+        .insert({
+            team_id: targetTeamId,
+            user_id: user.id,
+            role: targetRole
+        })
+
+    if (joinError) {
+        if (joinError.code === '23505') return { success: false, error: 'You are already a member of this alliance.' }
+        return { success: false, error: joinError.message }
+    }
+
+    // Join General squad if it exists
+    const { data: generalSquad } = await supabaseAdmin
+        .from('sub_teams')
+        .select('id')
+        .eq('org_id', targetTeamId)
+        .eq('name', 'General')
+        .single()
+
+    if (generalSquad) {
+        await supabaseAdmin
+            .from('sub_team_members')
+            .insert({
+                sub_team_id: generalSquad.id,
+                user_id: user.id
+            })
+    }
+
+    const cookieStore = await cookies()
+    cookieStore.set('selected_team', targetTeamId)
+
+    revalidatePath('/', 'layout')
+    return { success: true }
+}
+
+export async function generateAllianceCodes(teamId: string): Promise<{ success: boolean; error?: string }> {
+    const supabase = await getUserClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, error: 'Unauthorized' }
+
+    // Check permissions (Owner/Admin only)
+    const { data: membership } = await (supabase.from('team_members') as any)
+        .select('role')
+        .eq('team_id', teamId)
+        .eq('user_id', user.id)
+        .single()
+
+    if (!membership || !['owner', 'admin'].includes(membership.role)) {
+        return { success: false, error: 'Only Commanders can generate security codes.' }
+    }
+
+    const supabaseAdmin = createAdminClient()
+    const { error } = await supabaseAdmin
+        .from('teams')
+        .update({
+            join_code_admin: `ADM-${generateCode()}`,
+            join_code_manager: `MGR-${generateCode()}`,
+            join_code_analyst: `AST-${generateCode()}`,
+            join_code_developer: `DEV-${generateCode()}`,
+            join_code_member: `MBR-${generateCode()}`
+        })
+        .eq('id', teamId)
+
+    if (error) return { success: false, error: error.message }
+
+    revalidatePath('/')
+    return { success: true }
 }

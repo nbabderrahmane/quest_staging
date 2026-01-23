@@ -27,6 +27,7 @@ interface Task {
     project?: { id: string; name: string } | null
     department?: { id: string; name: string } | null
     client?: { id: string; name: string } | null
+    sub_team?: { id: string; name: string } | null
     was_dropped?: boolean
     deadline_at?: string | null
     importance_score?: number
@@ -110,6 +111,8 @@ export default function PipelinePage() {
     const [clientFilter, setClientFilter] = useState<string>('')
     const [quickFilter, setQuickFilter] = useState<'all' | 'mine' | 'unclaimed' | 'needs_info' | 'triage'>('all')
     const [quadrantFilter, setQuadrantFilter] = useState<string>('')
+    const [subTeamFilter, setSubTeamFilter] = useState<string>('_all')
+    const [subTeamOptions, setSubTeamOptions] = useState<Option[]>([])
 
     const canManage = ['owner', 'admin', 'manager'].includes(userRole)
     const canCreate = ['owner', 'admin', 'manager', 'analyst'].includes(userRole)
@@ -156,16 +159,18 @@ export default function PipelinePage() {
             }
 
             // Fetch quests, projects, departments for dropdowns
-            const [questData, projectData, departmentData, clientData] = await Promise.all([
+            const [questData, projectData, departmentData, clientData, subTeamData] = await Promise.all([
                 getQuestsForDropdown(cleanTeamId),
                 getProjectsForDropdown(cleanTeamId),
                 getDepartmentsForDropdown(cleanTeamId),
-                getClientsForDropdown(cleanTeamId)
+                getClientsForDropdown(cleanTeamId),
+                supabase.from('sub_teams').select('id, name').eq('org_id', cleanTeamId).order('name')
             ])
             setQuestOptions(questData)
             setProjectOptions(projectData)
             setDepartmentOptions(departmentData)
             setClientOptions(clientData)
+            if (subTeamData.data) setSubTeamOptions(subTeamData.data as Option[])
 
             // Fetch sizes
             const { data: sizesData } = await supabase
@@ -302,6 +307,11 @@ export default function PipelinePage() {
         if (clientFilter && clientFilter !== '_all') {
             if (clientFilter === '_none' && task.client) return false
             if (clientFilter !== '_none' && task.client?.id !== clientFilter) return false
+        }
+        // Sub-Team filter
+        if (subTeamFilter && subTeamFilter !== '_all') {
+            if (subTeamFilter === '_none' && task.sub_team) return false
+            if (subTeamFilter !== '_none' && task.sub_team?.id !== subTeamFilter) return false
         }
         return true
     })
@@ -468,6 +478,19 @@ export default function PipelinePage() {
                         ))}
                     </select>
                 </div>
+                <div>
+                    <select
+                        value={subTeamFilter}
+                        onChange={(e) => setSubTeamFilter(e.target.value)}
+                        className="px-3 py-2 bg-background border border-border rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
+                    >
+                        <option value="_all">All Squads</option>
+                        <option value="_none">No Squad</option>
+                        {subTeamOptions.map(s => (
+                            <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
             {/* Task List */}
@@ -541,6 +564,11 @@ export default function PipelinePage() {
                                                 {task.client && (
                                                     <span className="text-[10px] font-mono text-cyan-500 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20 truncate max-w-[100px]">
                                                         {task.client.name}
+                                                    </span>
+                                                )}
+                                                {task.sub_team && (
+                                                    <span className="text-[10px] font-mono text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 truncate max-w-[100px]">
+                                                        {task.sub_team.name}
                                                     </span>
                                                 )}
                                             </div>

@@ -11,6 +11,7 @@ export interface CreateTaskDTO {
     urgency_id?: string | null
     assigned_to?: string | null
     project_id?: string | null
+    sub_team_id?: string | null
     department_id?: string | null
     client_id?: string | null
     // Recurrence
@@ -129,6 +130,7 @@ export class TaskService {
                 urgency_id: data.urgency_id || null,
                 assigned_to: finalAssigneeId,
                 project_id: data.project_id || null,
+                sub_team_id: data.sub_team_id || null,
                 department_id: data.department_id || null,
                 client_id: data.client_id || null,
                 is_recurring: data.is_recurring || false,

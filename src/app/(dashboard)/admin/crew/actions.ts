@@ -49,11 +49,33 @@ export async function getCrewMembers(teamId: string): Promise<Result<any[]>> {
             profiles.forEach((p: any) => profileMap.set(p.id, p))
         }
 
-        // Step 3: Merge
+        // Step 3: Fetch Squad Memberships for this team
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: squadMemberships } = await (supabase.from('sub_team_members') as any)
+            .select('user_id, sub_team:sub_teams(id, name)')
+            .in('user_id', userIds)
+        // We need to filter by sub_teams in THIS org ideally, but sub_team_members is linked to sub_team_id
+        // We can filter in memory or rely on the join
+
+        // Map user_id -> Squad[]
+        const squadMap = new Map<string, any[]>()
+        if (squadMemberships) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            squadMemberships.forEach((sm: any) => {
+                const current = squadMap.get(sm.user_id) || []
+                if (sm.sub_team) {
+                    current.push(sm.sub_team)
+                }
+                squadMap.set(sm.user_id, current)
+            })
+        }
+
+        // Step 4: Merge
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const enrichedMembers = members.map((member: any) => ({
             ...member,
-            profiles: profileMap.get(member.user_id) || null
+            profiles: profileMap.get(member.user_id) || null,
+            squads: squadMap.get(member.user_id) || []
         }))
 
         return { success: true, data: enrichedMembers }
@@ -65,7 +87,8 @@ export async function inviteCrewMember(
     email: string,
     role: string,
     password: string,
-    profileData?: { firstName?: string; lastName?: string; telephone?: string }
+    profileData?: { firstName?: string; lastName?: string; telephone?: string },
+    subTeamIds?: string[]
 ): Promise<Result<void>> {
     return runAction('inviteCrewMember', async () => {
         // 1. Role Check
@@ -142,6 +165,24 @@ export async function inviteCrewMember(
 
         if (insertError) {
             return { success: false, error: { code: 'DB_ERROR', message: formatCrewError(insertError.code, insertError.message) } }
+        }
+
+        // 4. Assign to Sub-Teams (Squads)
+        if (subTeamIds && subTeamIds.length > 0) {
+            const squadInserts = subTeamIds.map(stId => ({
+                sub_team_id: stId,
+                user_id: userId,
+                role: 'member' // Default squad role
+            }))
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error: squadError } = await (supabaseAdmin.from('sub_team_members') as any)
+                .insert(squadInserts)
+
+            if (squadError) {
+                console.error('Squad assignment failed', squadError)
+                // Non-fatal? Or warn?
+            }
         }
 
         revalidatePath('/admin/crew')
@@ -359,7 +400,8 @@ export async function updateUserTeams(
     targetUserId: string,
     targetTeamIds: string[],
     role: string,
-    telephone?: string
+    telephone?: string,
+    targetSubTeamIds?: string[]
 ): Promise<Result<void>> {
     return runAction('updateUserTeams', async () => {
         const supabase = await getUserClient()
@@ -426,12 +468,54 @@ export async function updateUserTeams(
 
             if (deleteError) {
                 console.error('updateUserTeams: Delete failed', deleteError)
-                // Continue but warn? Or fail? Let's fail safety.
                 return { success: false, error: { code: 'DB_ERROR', message: 'Failed to remove from old teams.' } }
             }
         }
 
-        // Also update telephone if provided (Profile update)
+        // 3. Squad Membership Management
+        if (targetSubTeamIds !== undefined) {
+            // Find all squads belonging to managed teams
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data: managedSquads } = await (supabaseAdmin.from('sub_teams') as any)
+                .select('id')
+                .in('org_id', managedIds)
+
+            const managedSquadIds = (managedSquads || []).map((s: any) => s.id)
+
+            // Remove existing squad memberships within managed teams
+            if (managedSquadIds.length > 0) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const { error: squadDeleteError } = await (supabaseAdmin.from('sub_team_members') as any)
+                    .delete()
+                    .eq('user_id', targetUserId)
+                    .in('sub_team_id', managedSquadIds)
+
+                if (squadDeleteError) {
+                    console.error('updateUserTeams: Squad Delete failed', squadDeleteError)
+                    return { success: false, error: { code: 'DB_ERROR', message: 'Failed to update squad memberships.' } }
+                }
+            }
+
+            // Insert new squad memberships
+            if (targetSubTeamIds.length > 0) {
+                const squadInserts = targetSubTeamIds.map(sid => ({
+                    sub_team_id: sid,
+                    user_id: targetUserId,
+                    role: 'member'
+                }))
+
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const { error: squadInsertError } = await (supabaseAdmin.from('sub_team_members') as any)
+                    .insert(squadInserts)
+
+                if (squadInsertError) {
+                    console.error('updateUserTeams: Squad Insert failed', squadInsertError)
+                    return { success: false, error: { code: 'DB_ERROR', message: 'Failed to assign squads.' } }
+                }
+            }
+        }
+
+        // 4. Also update telephone if provided (Profile update)
         if (telephone !== undefined) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             await (supabaseAdmin.from('profiles') as any)
@@ -439,6 +523,7 @@ export async function updateUserTeams(
                 .eq('id', targetUserId)
         }
 
+        revalidatePath('/admin/crew')
         return { success: true, data: undefined }
     })
 }

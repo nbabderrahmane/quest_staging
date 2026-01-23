@@ -27,6 +27,7 @@ export async function getQuestObjectives(
             .select(`
                 *,
                 creator:profiles!created_by(id, email, first_name, last_name),
+                sub_team:sub_teams!sub_team_id(id, name),
                 tasks (
                     id,
                     title,
@@ -62,6 +63,7 @@ export async function createQuestObjective(
         boss_skin?: string
         start_date?: string
         end_date?: string
+        sub_team_id?: string
     }
 ): Promise<Result<void>> {
     return runAction('createQuestObjective', async () => {
@@ -98,6 +100,7 @@ export async function createQuestObjective(
                 boss_skin: data.boss_skin || 'generic_monster',
                 start_date: data.start_date || new Date().toISOString(),
                 end_date: data.end_date,
+                sub_team_id: data.sub_team_id,
                 created_by: user.id
             })
 
@@ -212,6 +215,7 @@ export async function updateQuestObjective(
         boss_skin: string
         start_date: string | null
         end_date: string | null
+        sub_team_id: string | null
         is_active: boolean
     }>
 ): Promise<Result<void>> {

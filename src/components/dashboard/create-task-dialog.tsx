@@ -9,6 +9,7 @@ import { createTask } from "@/app/(dashboard)/admin/pipeline/actions"
 import { useState, useEffect } from "react"
 import { Plus, Calendar, Repeat, Target, Loader2, Settings } from "lucide-react"
 import { getClientDepartments } from '@/app/(dashboard)/admin/clients/actions'
+import { SubTeamService, SubTeam } from '@/services/sub-team-service'
 
 interface Option {
     id: string
@@ -112,6 +113,32 @@ export function CreateTaskDialog({
         fetchClientDepts()
     }, [selectedClientId])
 
+    // Sub-Teams Logic
+    const [subTeams, setSubTeams] = useState<SubTeam[]>([])
+    const [selectedSubTeamId, setSelectedSubTeamId] = useState<string>('_none')
+
+    useEffect(() => {
+        async function loadSubTeams() {
+            if (!teamId) return
+            const data = await SubTeamService.getSubTeams(teamId)
+            setSubTeams(data)
+
+            // Try to set default from cookie if available
+            const cookieValue = document.cookie
+                .split('; ')
+                .find(row => row.startsWith('selected_sub_team='))
+                ?.split('=')[1]
+
+            if (cookieValue && data.some(s => s.id === cookieValue)) {
+                setSelectedSubTeamId(cookieValue)
+            } else if (data.length > 0) {
+                // Default to first (usually General)
+                setSelectedSubTeamId(data[0].id)
+            }
+        }
+        loadSubTeams()
+    }, [teamId])
+
     // Reset when opening
     useEffect(() => {
         if (open) {
@@ -179,6 +206,7 @@ export function CreateTaskDialog({
                 urgency_id: selectedUrgencyId || undefined,
                 assigned_to: (selectedAssignee && selectedAssignee !== '_none') ? selectedAssignee : undefined,
                 project_id: (selectedProjectId && selectedProjectId !== '_none') ? selectedProjectId : undefined,
+                sub_team_id: (selectedSubTeamId && selectedSubTeamId !== '_none') ? selectedSubTeamId : undefined,
                 department_id: (selectedDepartmentId && selectedDepartmentId !== '_none') ? selectedDepartmentId : undefined,
                 client_id: (selectedClientId && selectedClientId !== '_none') ? selectedClientId : undefined,
                 // Recurrence Fields
@@ -346,23 +374,37 @@ export function CreateTaskDialog({
                                 </div>
                             </div>
 
-                            <div className="space-y-1.5">
-                                <label className="text-xs uppercase text-muted-foreground font-bold">Assign Operator</label>
-                                <Select value={selectedAssignee} onValueChange={setSelectedAssignee}>
-                                    <SelectTrigger className="bg-background border-input h-9 text-xs">
-                                        <SelectValue placeholder="Unassigned" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="_none">Unassigned</SelectItem>
-                                        {crew.map(member => (
-                                            <SelectItem key={member.user_id} value={member.user_id}>
-                                                {member.first_name || member.last_name
-                                                    ? `${member.first_name || ''} ${member.last_name || ''}`.trim()
-                                                    : member.email || 'Unknown'}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs uppercase text-muted-foreground font-bold">Assign Squad</label>
+                                    <Select value={selectedSubTeamId} onValueChange={setSelectedSubTeamId}>
+                                        <SelectTrigger className="bg-background border-input h-9 text-xs">
+                                            <SelectValue placeholder="Select squad..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="_none">General</SelectItem>
+                                            {subTeams.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs uppercase text-muted-foreground font-bold">Assign Operator</label>
+                                    <Select value={selectedAssignee} onValueChange={setSelectedAssignee}>
+                                        <SelectTrigger className="bg-background border-input h-9 text-xs">
+                                            <SelectValue placeholder="Unassigned" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="_none">Unassigned</SelectItem>
+                                            {crew.map(member => (
+                                                <SelectItem key={member.user_id} value={member.user_id}>
+                                                    {member.first_name || member.last_name
+                                                        ? `${member.first_name || ''} ${member.last_name || ''}`.trim()
+                                                        : member.email || 'Unknown'}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
 
                             <div className="space-y-1.5">

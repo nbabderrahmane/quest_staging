@@ -10,7 +10,7 @@ import { logger } from '@/lib/logger'
 export async function handleUnifiedLogin(formData: FormData) {
     const supabase = await createClient()
 
-    const email = formData.get('email') as string
+    const email = (formData.get('email') as string)?.toLowerCase()
     const password = formData.get('password') as string
 
     logger.info('Unified login started', { action: 'handleUnifiedLogin', email })
@@ -22,7 +22,8 @@ export async function handleUnifiedLogin(formData: FormData) {
 
     if (error || !user) {
         logger.warn('Login failed', { action: 'handleUnifiedLogin', error: error?.message })
-        return { success: false, error: 'Invalid login credentials' }
+        // Return actual error message for debugging purposes
+        return { success: false, error: error?.message || 'Invalid login credentials' }
     }
 
     logger.info('Auth success', { action: 'handleUnifiedLogin', userId: user.id })
@@ -91,17 +92,62 @@ export async function handleUnifiedLogin(formData: FormData) {
 export async function signup(formData: FormData) {
     const supabase = await createClient()
 
-    const data = {
-        email: formData.get('email') as string,
-        password: formData.get('password') as string,
+    const email = (formData.get('email') as string)?.trim().toLowerCase()
+    const password = (formData.get('password') as string)
+    const firstName = (formData.get('firstName') as string)?.trim()
+    const lastName = (formData.get('lastName') as string)?.trim()
+
+    if (!email || !password) {
+        return { success: false, error: 'Missing credentials' }
     }
 
-    const { error } = await supabase.auth.signUp(data)
+    logger.info('Signup attempt', { action: 'signup', email })
 
-    if (error) {
-        redirect('/login?error=Could not authenticate user')
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+            data: {
+                first_name: firstName,
+                last_name: lastName
+            }
+        }
+    })
+
+    logger.info('Signup response', {
+        action: 'signup',
+        success: !authError,
+        hasUser: !!authData?.user,
+        hasSession: !!authData?.session,
+        error: authError?.message
+    })
+
+    if (authError) {
+        logger.error('Signup error', { action: 'signup', error: authError.message })
+        return { success: false, error: authError.message }
+    }
+
+    if (authData.user) {
+        // Create Profile record manually if trigger fails or for robustness
+        const supabaseAdmin = createAdminClient()
+        const { error: profileError } = await supabaseAdmin
+            .from('profiles')
+            .upsert({
+                id: authData.user.id,
+                email: email,
+                first_name: firstName,
+                last_name: lastName,
+                updated_at: new Date().toISOString()
+            })
+
+        if (profileError) {
+            logger.error('Profile creation error during signup', { userId: authData.user.id, error: profileError })
+            // Don't fail the whole signup if profile creation has a minor issue, 
+            // but log it for debugging
+        }
     }
 
     revalidatePath('/', 'layout')
-    redirect('/')
+    // We don't use redirect() here because the client-side handleSubmit handles it
+    return { success: true, hasSession: !!authData.session }
 }

@@ -19,9 +19,36 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     try {
         const teams = await getUserTeams()
 
-        // Determine Active Team
+        // Determine Context
         const cookieStore = await cookies()
         const selectedTeamId = cookieStore.get('selected_team')?.value
+        const selectedSubTeamId = cookieStore.get('selected_sub_team')?.value
+
+        // Context Gate logic: if multiple teams and none selected, or if team has squads and none selected
+        if (teams.length > 0) {
+            const hasMultipleTeams = teams.length > 1
+            const activeTeam = teams.find(t => t.id === selectedTeamId)
+
+            // If No Active Team and multiple teams, show gate
+            if (!activeTeam && hasMultipleTeams) {
+                const { DashboardGate } = await import('@/components/dashboard/dashboard-gate')
+                return <DashboardGate teams={teams} />
+            }
+
+            // If selected team exists, check for squads
+            const targetTeam = activeTeam || teams[0]
+            if (targetTeam && !selectedSubTeamId) {
+                const { data: squads } = await supabase
+                    .from('sub_teams')
+                    .select('id, name')
+                    .eq('org_id', targetTeam.id)
+
+                if (squads && squads.length > 0) {
+                    const { DashboardGate } = await import('@/components/dashboard/dashboard-gate')
+                    return <DashboardGate teams={teams} />
+                }
+            }
+        }
 
         let activeTeam = teams.find(t => t.id === selectedTeamId)
         if (!activeTeam && teams.length > 0) {
@@ -85,6 +112,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
                 user={{ id: user.id, email: user.email }}
                 profile={profile}
                 unreadInboxCount={unreadCount}
+                currentSubTeamId={selectedSubTeamId}
             >
                 {children}
             </DashboardShell>

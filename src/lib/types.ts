@@ -1,10 +1,19 @@
-export type Role = 'owner' | 'admin' | 'manager' | 'member' | 'analyst'
+export type Role = 'owner' | 'admin' | 'manager' | 'member' | 'analyst' | 'developer'
 
 export interface Team {
     id: string
     name: string
     created_at: string
     logo_url?: string | null
+    description?: string | null
+    website?: string | null
+    contact_email?: string | null
+    domain?: string | null
+    join_code_admin?: string | null
+    join_code_manager?: string | null
+    join_code_analyst?: string | null
+    join_code_developer?: string | null
+    join_code_member?: string | null
 }
 
 export interface TeamMember {
@@ -97,6 +106,7 @@ export interface Quest {
     created_at: string
     // Expanded Relations
     status?: QuestStatus
+    sub_team?: { id: string; name: string } | null
 }
 
 export interface Task {
@@ -109,6 +119,7 @@ export interface Task {
     size_id: string
     urgency_id: string
     client_id?: string | null
+    sub_team_id?: string | null
     needs_info?: boolean
     assigned_to?: string | null // DB Column
     assignee_id?: string | null // Legacy Type compatibility
@@ -123,6 +134,7 @@ export interface Task {
     client?: Client
     project?: Project
     department?: Department
+    sub_team?: { id: string; name: string }
     quest?: { id: string; name: string }
     // Eisenhower Overlay
     importance_score?: number

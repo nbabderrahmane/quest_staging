@@ -55,6 +55,11 @@ export function TaskCard({ task }: TaskCardProps) {
                                 {task.size.name} ({task.xp_points} XP)
                             </span>
                         )}
+                        {task.sub_team && (
+                            <span className="text-[10px] font-mono text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 truncate max-w-[100px]">
+                                {task.sub_team.name}
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>

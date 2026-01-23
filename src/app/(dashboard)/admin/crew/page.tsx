@@ -6,10 +6,11 @@ import { WindowCard } from '@/components/ui/window-card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Shield, User, Crown, Briefcase, Eye, Trash2, Edit, KeyRound, UserPlus } from 'lucide-react'
+import { Shield, User, Crown, Briefcase, Eye, Trash2, Edit, KeyRound, UserPlus, Terminal } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import { getCrewMembers, updateCrewMember, removeCrewMember, resetCrewPassword, inviteCrewMember, toggleCrewActive, updateUserTeams, getUserMemberships } from './actions'
 import { getUserTeams } from '@/app/teams/actions'
+import { SubTeamService } from '@/services/sub-team-service'
 
 
 interface CrewMember {
@@ -24,6 +25,7 @@ interface CrewMember {
         last_name: string | null
         telephone?: string | null
     }
+    squads?: { id: string, name: string }[]
 }
 
 const ROLE_CONFIG: Record<string, { label: string, icon: any, color: string }> = {
@@ -32,6 +34,7 @@ const ROLE_CONFIG: Record<string, { label: string, icon: any, color: string }> =
     manager: { label: 'Manager', icon: Briefcase, color: 'text-blue-500' },
     member: { label: 'Member', icon: User, color: 'text-muted-foreground' },
     analyst: { label: 'Analyst', icon: Eye, color: 'text-green-500' },
+    developer: { label: 'Developer', icon: Terminal, color: 'text-orange-500' },
 }
 
 export default function CrewPage() {
@@ -60,6 +63,7 @@ export default function CrewPage() {
     const [editRole, setEditRole] = useState('')
     const [editTelephone, setEditTelephone] = useState('')
     const [editTeamIds, setEditTeamIds] = useState<string[]>([])
+    const [editSubTeamIds, setEditSubTeamIds] = useState<string[]>([])
 
     // Password Reset Modal State
     const [resetOpen, setResetOpen] = useState(false)
@@ -188,6 +192,31 @@ export default function CrewPage() {
         }
     }
 
+    const [inviteSubTeamIds, setInviteSubTeamIds] = useState<string[]>([])
+    const [availableSubTeams, setAvailableSubTeams] = useState<{ id: string, name: string, org_id: string }[]>([])
+
+    // Fetch Sub-Teams when target teams change
+    useEffect(() => {
+        async function fetchSubTeams() {
+            if (!canManage) return
+            if (inviteTeamIds.length === 0) {
+                setAvailableSubTeams([])
+                return
+            }
+            // Fetch for all selected teams
+            // We can do this in parallel or iterate
+            let allSubTeams: any[] = []
+            // Using service (which is client safe)
+            for (const tid of inviteTeamIds) {
+                if (!tid || tid === 'undefined') continue
+                const subs = await SubTeamService.getSubTeams(tid)
+                allSubTeams = [...allSubTeams, ...subs]
+            }
+            setAvailableSubTeams(allSubTeams)
+        }
+        fetchSubTeams()
+    }, [inviteTeamIds, canManage])
+
     if (isLoading) {
         return <div className="p-8 text-muted-foreground animate-pulse font-mono">Loading Crew Manifest...</div>
     }
@@ -202,11 +231,15 @@ export default function CrewPage() {
         const errors = []
 
         for (const tid of inviteTeamIds) {
+            // Filter sub-teams for this team
+            const relevantSubTeams = inviteSubTeamIds.filter(stid => availableSubTeams.find(s => s.id === stid && s.org_id === tid))
+
             const result = await inviteCrewMember(tid, inviteEmail, inviteRole, invitePassword, {
                 firstName: inviteFirstName || undefined,
                 lastName: inviteLastName || undefined,
                 telephone: inviteTelephone || undefined
-            })
+            }, relevantSubTeams) // Pass sub-teams
+
             if (result.success) successCount++
             else errors.push(result.error.message)
         }
@@ -221,6 +254,7 @@ export default function CrewPage() {
             setInviteTelephone('')
             setInvitePassword('')
             setInviteRole('analyst')
+            setInviteSubTeamIds([])
             // Refresh crew list
             if (teamId) {
                 const crewRes = await getCrewMembers(teamId)
@@ -243,19 +277,30 @@ export default function CrewPage() {
         if (result.success && result.data) {
             setEditTeamIds(result.data.map((m: any) => m.team_id))
         }
+        setEditSubTeamIds(member.squads?.map(s => s.id) || [])
     }
 
     const handleEditSave = async () => {
         if (!editMember || !teamId) return
 
-        // Update Teams & Role
-        const result = await updateUserTeams(editMember.user_id, editTeamIds, editRole, editTelephone)
+        // Update Teams, Role & Squads
+        const result = await updateUserTeams(editMember.user_id, editTeamIds, editRole, editTelephone, editSubTeamIds)
 
         if (result.success) {
             // Update local state if user is still in the CURRENT team
             if (editTeamIds.includes(teamId)) {
+                // Find names for updated squads
+                const updatedSquads = availableSubTeams
+                    .filter(s => editSubTeamIds.includes(s.id))
+                    .map(s => ({ id: s.id, name: s.name }))
+
                 setCrew(prev => prev.map(m => m.user_id === editMember.user_id
-                    ? { ...m, role: editRole, profiles: { ...m.profiles, telephone: editTelephone } as any }
+                    ? {
+                        ...m,
+                        role: editRole,
+                        profiles: { ...m.profiles, telephone: editTelephone } as any,
+                        squads: updatedSquads
+                    }
                     : m
                 ))
             } else {
@@ -401,6 +446,7 @@ export default function CrewPage() {
                                             <SelectItem value="admin">Admin</SelectItem>
                                             <SelectItem value="manager">Manager</SelectItem>
                                             <SelectItem value="analyst">Analyst</SelectItem>
+                                            <SelectItem value="developer">Developer</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -452,6 +498,17 @@ export default function CrewPage() {
                                                                 <span>• {member.profiles.telephone}</span>
                                                             )}
                                                         </div>
+
+                                                        {/* Squads List */}
+                                                        {member.squads && member.squads.length > 0 && (
+                                                            <div className="flex flex-wrap gap-1 mt-1">
+                                                                {member.squads.map((s: any) => (
+                                                                    <span key={s.id} className="text-[10px] uppercase font-bold px-1.5 py-0.5 bg-blue-500/10 text-blue-600 rounded border border-blue-500/20">
+                                                                        {s.name}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
 
@@ -529,6 +586,14 @@ export default function CrewPage() {
                                 options={recruitableTeams}
                             />
                         </div>
+                        <div>
+                            <label className="text-xs uppercase text-slate-600 font-bold block mb-2">Squad Assignment(s)</label>
+                            <TeamMultiSelect
+                                value={editSubTeamIds}
+                                onChange={setEditSubTeamIds}
+                                options={availableSubTeams}
+                            />
+                        </div>
                         <div className="space-y-2">
                             <label className="text-xs uppercase text-muted-foreground font-bold">Rank Assignment</label>
                             <Select value={editRole} onValueChange={setEditRole}>
@@ -584,30 +649,34 @@ export default function CrewPage() {
             </Dialog>
 
             {/* Error Toast */}
-            {error && (
-                <div className="fixed bottom-20 right-4 z-50 max-w-sm p-4 bg-red-50 border border-red-200 text-red-800 text-sm rounded-lg shadow-lg">
-                    <div className="flex items-start justify-between gap-2">
-                        <div>
-                            <p className="uppercase font-bold text-red-600 mb-1">Error</p>
-                            <p>{error}</p>
+            {
+                error && (
+                    <div className="fixed bottom-20 right-4 z-50 max-w-sm p-4 bg-red-50 border border-red-200 text-red-800 text-sm rounded-lg shadow-lg">
+                        <div className="flex items-start justify-between gap-2">
+                            <div>
+                                <p className="uppercase font-bold text-red-600 mb-1">Error</p>
+                                <p>{error}</p>
+                            </div>
+                            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">✕</button>
                         </div>
-                        <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">✕</button>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Success Toast */}
-            {success && (
-                <div className="fixed bottom-20 right-4 z-50 max-w-sm p-4 bg-green-50 border border-green-200 text-green-800 text-sm rounded-lg shadow-lg">
-                    <div className="flex items-start justify-between gap-2">
-                        <div>
-                            <p className="uppercase font-bold text-green-600 mb-1">Success</p>
-                            <p>{success}</p>
+            {
+                success && (
+                    <div className="fixed bottom-20 right-4 z-50 max-w-sm p-4 bg-green-50 border border-green-200 text-green-800 text-sm rounded-lg shadow-lg">
+                        <div className="flex items-start justify-between gap-2">
+                            <div>
+                                <p className="uppercase font-bold text-green-600 mb-1">Success</p>
+                                <p>{success}</p>
+                            </div>
+                            <button onClick={() => setSuccess(null)} className="text-green-400 hover:text-green-600">✕</button>
                         </div>
-                        <button onClick={() => setSuccess(null)} className="text-green-400 hover:text-green-600">✕</button>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     )
 }

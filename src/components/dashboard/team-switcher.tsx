@@ -65,12 +65,13 @@ export default function TeamSwitcher({ teams = [], userRole = 'member' }: { team
                 onClick={() => setIsOpen(!isOpen)}
                 className="flex w-full items-center justify-between rounded bg-sidebar-accent/50 border border-sidebar-border p-2 text-sm hover:bg-sidebar-accent transition-colors"
             >
-                <span className="truncate font-mono text-sidebar-foreground">{selectedTeam?.name || 'Select Team'}</span>
+                <span className="truncate font-mono text-sidebar-foreground">{selectedTeam?.name || 'Select Organization'}</span>
                 <ChevronsUpDown className="h-4 w-4 text-sidebar-foreground/50" />
             </button>
 
             {isOpen && (
                 <div className="absolute left-0 top-12 w-full rounded border border-sidebar-border bg-sidebar p-1 shadow-xl z-50">
+                    <div className="px-2 py-1 text-[10px] uppercase text-sidebar-foreground/50 font-bold tracking-wider">Organizations</div>
                     {teams.map(team => (
                         <div
                             key={team.id}
@@ -87,12 +88,12 @@ export default function TeamSwitcher({ teams = [], userRole = 'member' }: { team
                             <form action={createTeam}>
                                 <input
                                     name="name"
-                                    placeholder="New Team Name"
+                                    placeholder="New Organization Name"
                                     className="mb-1 w-full rounded bg-black/50 border border-sidebar-border p-2 text-xs text-white font-mono"
                                     required
                                 />
                                 <button className="flex w-full items-center justify-center gap-1 rounded bg-primary p-2 text-xs font-bold uppercase tracking-wider hover:bg-primary/80 transition-colors">
-                                    <PlusCircle className="h-3 w-3" /> Create Alliance
+                                    <PlusCircle className="h-3 w-3" /> Create Organization
                                 </button>
                             </form>
                         </div>

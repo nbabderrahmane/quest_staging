@@ -146,8 +146,13 @@ export function QuestBoard({ quest, initialTasks, statuses, sizes, urgencies, te
                                 Calendar
                             </button>
                         </div>
-                        <div className="text-xs font-mono text-muted-foreground mr-2">
+                        <div className="text-xs font-mono text-muted-foreground mr-2 flex items-center gap-2">
                             PROTOCOL: <span className="text-primary font-bold">{quest.name}</span>
+                            {quest.sub_team && (
+                                <span className="text-[10px] bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">
+                                    {quest.sub_team.name}
+                                </span>
+                            )}
                         </div>
 
                         {/* Assignee Filter - Hidden for Analysts */}

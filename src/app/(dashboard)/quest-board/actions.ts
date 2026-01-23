@@ -10,10 +10,10 @@ export async function getActiveQuest(teamId: string) {
     const supabase = await createClient()
     const { data, error } = await supabase
         .from('quests')
-        .select('*')
+        .select('*, sub_team:sub_teams(id, name)')
         .eq('team_id', teamId)
         .eq('is_active', true)
-        .single() // Only one active quest allowed per team logic
+        .single()
 
     // suppress error if no active quest, just return null
     if (error && error.code !== 'PGRST116') {
@@ -26,7 +26,7 @@ export async function getQuests(teamId: string) {
     const supabase = await createClient()
     const { data, error } = await supabase
         .from('quests')
-        .select('*')
+        .select('*, sub_team:sub_teams(id, name)')
         .eq('team_id', teamId)
         .order('created_at', { ascending: false })
 
@@ -106,7 +106,8 @@ export async function getTasks(questId: string, teamId: string) {
                 size:sizes(id, name, xp_points),
                 urgency:urgencies(id, name, color, weight),
                 quest:quests(id, name),
-                client:clients(id, name)
+                client:clients(id, name),
+                sub_team:sub_teams(id, name)
             `)
             .eq('quest_id', questId)
             .eq('team_id', teamId)

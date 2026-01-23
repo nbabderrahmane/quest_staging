@@ -110,6 +110,13 @@ export default function LoginPage() {
                     </div>
                 </form>
 
+                <div className="text-center text-xs text-muted-foreground">
+                    Don't have an account?{' '}
+                    <Link href="/signup" className="text-primary font-bold hover:underline">
+                        SIGN UP
+                    </Link>
+                </div>
+
                 {/* Demo Mode CTA */}
                 <div className="pt-4 border-t border-sidebar-border">
                     <p className="text-xs text-center text-muted-foreground mb-3">

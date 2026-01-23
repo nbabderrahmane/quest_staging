@@ -27,6 +27,7 @@ export async function getTasks(teamId: string, filters?: { statusCategory?: stri
             quest:quests!quest_id(id, name),
             project:projects!project_id(id, name),
             department:departments!department_id(id, name),
+            sub_team:sub_teams!sub_team_id(id, name),
             client:clients!client_id(id, name, logo_url)
         `)
         .eq('team_id', teamId)
@@ -144,6 +145,7 @@ export async function createTask(
         urgency_id?: string
         assigned_to?: string
         project_id?: string
+        sub_team_id?: string
         department_id?: string
         client_id?: string
         is_recurring?: boolean
@@ -207,6 +209,7 @@ export async function updateTask(
         assigned_to: string | null
 
         project_id: string | null
+        sub_team_id: string | null
         department_id: string | null
         client_id: string | null
         deadline_at?: string | null
