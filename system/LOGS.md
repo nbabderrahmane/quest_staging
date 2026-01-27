@@ -10,6 +10,7 @@
 - **Fix**: Recurring Tasks
   - Improved recurrence engine to find "Next Future Sprint" if current date falls in a gap.
 - **Refactoring**: Updated `src/app/(dashboard)/inbox/actions.ts` to include `isDone` metadata for improved frontend rendering.
+- **Fix**: Resolved build type error in `admin/reporting/page.tsx` by adding explicit return type to `getQuestsForReporting`.
 
 ## 2026-01-22: Phase 2 Observability
 - **Created**: `/api/health` endpoint with database connectivity check

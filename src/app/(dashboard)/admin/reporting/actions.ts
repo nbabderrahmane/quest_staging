@@ -105,7 +105,7 @@ export async function exportAnalyticsToCSV(
     })
 }
 
-export async function getQuestsForReporting(teamId: string) {
+export async function getQuestsForReporting(teamId: string): Promise<{ id: string; name: string }[]> {
     const supabase = await getUserClient()
     const { data } = await supabase
         .from('quests')
@@ -113,5 +113,11 @@ export async function getQuestsForReporting(teamId: string) {
         .eq('team_id', teamId)
         .order('start_date', { ascending: false })
         .limit(50)
-    return data || []
+
+    // Explicit map to ensure type safety
+    if (!data) return []
+    return data.map((q: any) => ({
+        id: q.id,
+        name: q.name
+    }))
 }
