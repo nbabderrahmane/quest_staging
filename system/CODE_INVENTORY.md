@@ -15,11 +15,12 @@
 | `/portal/*` | Client portal |
 | `/api/v1/tasks` | RESTful API |
 | `/api/health` | Health check endpoint |
+| `/api/cron/recurrence` | Cron job for recurring tasks |
 
 ### Key Modules
 | Module | Location | Purpose |
 |---|---|---|
-| Server Actions | `src/app/actions/`, `src/app/(portal)/actions.ts` | Business logic |
+| Server Actions | `src/app/actions/`, `src/app/(portal)/actions.ts`, `src/app/(dashboard)/admin/reporting/actions.ts` | Business logic |
 | API Routes | `src/app/api/v1/` | External API layer |
 | Role Service | `src/lib/role-service.ts` | Centralized RBAC |
 | Admin Client | `src/lib/supabase/admin.ts` | Service role DB access |

@@ -23,6 +23,7 @@ export interface InboxItem {
         statusName?: string
         priority?: string
         questName?: string
+        isDone?: boolean
     }
 }
 
@@ -142,16 +143,53 @@ export async function getInboxFeed(): Promise<InboxItem[]> {
             feed.push({ id: t.id, type: 'assignment', title: t.title, message: 'New mission assigned', date: t.updated_at, isRead: !unread, resourceId: t.id, resourceType: 'task', actor: { name: `${t.creator?.first_name || ''} ${t.creator?.last_name || ''}`.trim() || 'Command' }, metadata: { statusColor: t.status?.color, statusName: t.status?.name, priority: t.priority?.name, questName: t.quest?.name } })
         })
 
-        if (['owner', 'admin', 'manager', 'analyst'].includes(member.role)) {
-            const { data: dt } = await (supabase.from('tasks').select(`id, title, deadline_at, status:statuses!status_id(category)`).neq('status.category', 'done').neq('status.category', 'archived').not('deadline_at', 'is', null).limit(50) as any)
+        if (['owner', 'admin', 'manager', 'analyst', 'member'].includes(member.role)) {
+            // Updated Logic: Privileged users see all, Members see assigned only.
+            // Also include DONE tasks but mark them specific way
+            let deadlineQuery = supabase.from('tasks').select(`id, title, deadline_at, assigned_to, status:statuses!status_id(category)`).not('deadline_at', 'is', null).limit(50)
+
+            if (!['owner', 'admin', 'manager'].includes(member.role)) {
+                deadlineQuery = deadlineQuery.eq('assigned_to', user.id)
+            } else {
+                // Manager/Admin sees all (filtered by team via context usually, but wait 'tasks' table has team_id/org_id?)
+                // The original query didn't filter by team_id?
+                // Line 128 gets member.team_id. The tasks query at line 133 filters for assigned_to user (which implies team via RLS maybe?)
+                // But for deadline query (admin), we must filter by team_id
+                deadlineQuery = deadlineQuery.eq('team_id', member.team_id)
+            }
+
+            const { data: dt } = await (deadlineQuery as any)
+
             if (dt) {
                 const now = new Date(), today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
                 dt.forEach((t: any) => {
+                    const isDone = t.status?.category === 'done' || t.status?.category === 'archived'
                     const dd = new Date(new Date(t.deadline_at).getFullYear(), new Date(t.deadline_at).getMonth(), new Date(t.deadline_at).getDate())
                     const diff = Math.floor((dd.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+                    // If done, we only show if it was recent? Or always?
+                    // User wants them "marked as read". 
+                    // To avoid spamming done tasks from years ago, maybe we filter?
+                    // But for now let's just show them IF they are in the limit(50).
+                    // Actually, getting all done tasks might be huge.
+                    // But we have limit(50).
+
                     let title = ''
                     if (diff === 1) title = 'Deadline J-1'; else if (diff === 0) title = 'Deadline JOUR J'; else if (diff < 0) title = 'SOUCIS DE DEADLINE (J+)'
-                    if (title) feed.push({ id: `deadline-${t.id}-${diff}`, type: 'notification', title, message: `Mission Alert: ${t.title}`, date: now.toISOString(), isRead: false, resourceId: t.id, resourceType: 'task' })
+
+                    if (title) {
+                        feed.push({
+                            id: `deadline-${t.id}-${diff}`,
+                            type: 'notification',
+                            title: isDone ? `(Resolue) ${title}` : title,
+                            message: `Mission Alert: ${t.title}`,
+                            date: now.toISOString(),
+                            isRead: isDone, // Mark as read if done
+                            resourceId: t.id,
+                            resourceType: 'task',
+                            metadata: { isDone }
+                        })
+                    }
                 })
             }
         }

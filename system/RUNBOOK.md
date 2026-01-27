@@ -133,3 +133,14 @@ If a database migration needs to be reverted:
 1. Revert changes in the Vercel dashboard or `.env.local`.
 2. Redeploy the application to ensure the changes take effect.
 
+## 9. Feature Guides & Troubleshooting
+
+### Mission Reporting
+- **Usage**: Go to `/admin/reporting`. Select "Date Range" for time-based export or "By Sprint" to export specific quest deliverables.
+- **Troubleshooting**: If report is empty, ensure tasks in that range/sprint are marked as "Done".
+
+### Recurring Tasks
+- **Mechanism**: Handled by `/api/cron/recurrence` endpoint, typically verified via Cron job (e.g., Vercel Cron or GitHub Actions).
+- **Failure Mode**: If tasks don't appear, check if the "Next Recurrence Date" falls on a weekend or gap between sprints. The system attempts to find the *next future sprint*, but if no sprints are planned, it may fall back to the generic backlog or fail if no active quest exists.
+
+

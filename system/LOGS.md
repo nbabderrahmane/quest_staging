@@ -1,5 +1,16 @@
 # System Logs
 
+## 2026-01-27: Bug Fixes & Refinements
+- **Feature**: Sprint-based Reporting
+  - Added "By Sprint" mode to Mission Reporting page.
+  - Implemented `getQuestsForReporting` and updated `exportAnalyticsToCSV` to filter by Quest ID.
+- **Fix**: Notification Logic
+  - Modified Inbox Feed to show "Done" task deadline alerts (marked as read and resolved).
+  - Implemented privacy filtering: Non-privileged users see only their assigned deadline alerts.
+- **Fix**: Recurring Tasks
+  - Improved recurrence engine to find "Next Future Sprint" if current date falls in a gap.
+- **Refactoring**: Updated `src/app/(dashboard)/inbox/actions.ts` to include `isDone` metadata for improved frontend rendering.
+
 ## 2026-01-22: Phase 2 Observability
 - **Created**: `/api/health` endpoint with database connectivity check
 - **Created**: `ErrorBoundary` component (`src/components/error-boundary.tsx`)

@@ -12,6 +12,9 @@ export default function ReportingPage() {
     const [teamId, setTeamId] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState<string | null>(null)
+    const [reportType, setReportType] = useState<'range' | 'sprint'>('range')
+    const [quests, setQuests] = useState<{ id: string; name: string }[]>([])
+    const [selectedQuest, setSelectedQuest] = useState<string>('')
 
     useEffect(() => {
         // Init dates to current month
@@ -26,18 +29,35 @@ export default function ReportingPage() {
             .find(row => row.startsWith('selected_team='))
             ?.split('=')[1]?.trim()
 
-        if (selectedTeamCookie) setTeamId(selectedTeamCookie)
+        if (selectedTeamCookie) {
+            setTeamId(selectedTeamCookie)
+            import('./actions').then(mod => {
+                mod.getQuestsForReporting(selectedTeamCookie).then(data => {
+                    setQuests(data)
+                    // If quests exist, select first one by default? No, let user choose.
+                    if (data.length > 0) setSelectedQuest(data[0].id)
+                })
+            })
+        }
     }, [])
 
 
     const handleExport = async () => {
-        if (!teamId || !startDate || !endDate) return
+        if (!teamId) return
+        if (reportType === 'range' && (!startDate || !endDate)) return
+        if (reportType === 'sprint' && !selectedQuest) return
+
         setIsLoading(true)
         setError(null)
         setSuccess(null)
 
         try {
-            const result = await exportAnalyticsToCSV(teamId, startDate, endDate)
+            // If Sprint mode, use wide date range to catch all tasks in that sprint
+            const start = reportType === 'sprint' ? '2000-01-01' : startDate
+            const end = reportType === 'sprint' ? '2100-01-01' : endDate
+            const questFilter = reportType === 'sprint' ? selectedQuest : undefined
+
+            const result = await exportAnalyticsToCSV(teamId, start, end, questFilter)
 
             if (!result.success) {
                 setError(result.error.message)
@@ -79,40 +99,74 @@ export default function ReportingPage() {
                     Report Configuration
                 </div>
 
-                <div className="grid grid-cols-2 gap-6 mb-8">
-                    <div>
-                        <label className="block text-xs uppercase font-bold text-muted-foreground mb-2">Start Date</label>
-                        <div className="relative">
-                            <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <input
-                                type="date"
-                                value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary text-sm font-mono"
-                            />
-                        </div>
-                    </div>
-                    <div>
-                        <label className="block text-xs uppercase font-bold text-muted-foreground mb-2">End Date</label>
-                        <div className="relative">
-                            <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <input
-                                type="date"
-                                value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary text-sm font-mono"
-                            />
-                        </div>
-                    </div>
+                {/* Report Type Selector */}
+                <div className="flex bg-muted/50 p-1 rounded-lg mb-6">
+                    <button
+                        onClick={() => setReportType('range')}
+                        className={`flex-1 py-1.5 text-xs font-bold uppercase tracking-wide rounded-md transition-all ${reportType === 'range' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'
+                            }`}
+                    >
+                        Date Range
+                    </button>
+                    <button
+                        onClick={() => setReportType('sprint')}
+                        className={`flex-1 py-1.5 text-xs font-bold uppercase tracking-wide rounded-md transition-all ${reportType === 'sprint' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'
+                            }`}
+                    >
+                        By Sprint
+                    </button>
                 </div>
+
+                {reportType === 'range' ? (
+                    <div className="grid grid-cols-2 gap-6 mb-8">
+                        <div>
+                            <label className="block text-xs uppercase font-bold text-muted-foreground mb-2">Start Date</label>
+                            <div className="relative">
+                                <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <input
+                                    type="date"
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary text-sm font-mono"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs uppercase font-bold text-muted-foreground mb-2">End Date</label>
+                            <div className="relative">
+                                <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <input
+                                    type="date"
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary text-sm font-mono"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="mb-8">
+                        <label className="block text-xs uppercase font-bold text-muted-foreground mb-2">Select Sprint / Quest</label>
+                        <select
+                            value={selectedQuest}
+                            onChange={(e) => setSelectedQuest(e.target.value)}
+                            className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                        >
+                            {quests.map(q => (
+                                <option key={q.id} value={q.id}>{q.name}</option>
+                            ))}
+                            {quests.length === 0 && <option value="">No quests found</option>}
+                        </select>
+                    </div>
+                )}
 
                 <div className="flex items-center justify-between pt-4 border-t border-border">
                     <div className="text-xs text-muted-foreground italic">
-                        Exports all 'Done' tasks within range.
+                        {reportType === 'range' ? "Exports all 'Done' tasks within range." : "Exports all tasks in selected sprint."}
                     </div>
                     <button
                         onClick={handleExport}
-                        disabled={isLoading || !teamId}
+                        disabled={isLoading || !teamId || (reportType === 'range' && (!startDate || !endDate)) || (reportType === 'sprint' && !selectedQuest)}
                         className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-bold uppercase tracking-wider rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transform active:scale-95"
                     >
                         {isLoading ? (

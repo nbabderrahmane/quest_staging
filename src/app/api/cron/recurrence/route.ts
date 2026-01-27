@@ -76,16 +76,30 @@ export async function GET(request: Request) {
             let targetQuestId = textDateQuest?.id
 
             if (!targetQuestId) {
-                // Fallback: Get any active quest
-                const { data: activeQuest } = await supabase
+                // Fallback 1: Find nearest FUTURE quest (e.g. next sprint starting tomorrow)
+                const { data: nextQuest } = await supabase
                     .from('quests')
                     .select('id')
                     .eq('team_id', task.team_id)
-                    .eq('is_active', true)
+                    .gt('start_date', intendedDate.toISOString())
+                    .order('start_date', { ascending: true })
                     .limit(1)
                     .maybeSingle()
 
-                targetQuestId = activeQuest?.id
+                targetQuestId = nextQuest?.id
+
+                // Fallback 2: Get any currently active quest (if we are in the middle of one but dates slightly off)
+                if (!targetQuestId) {
+                    const { data: activeQuest } = await supabase
+                        .from('quests')
+                        .select('id')
+                        .eq('team_id', task.team_id)
+                        .eq('is_active', true)
+                        .limit(1)
+                        .maybeSingle()
+
+                    targetQuestId = activeQuest?.id
+                }
             }
 
             // Extreme Fallback: Existing Quest ID (even if closed, better than error)

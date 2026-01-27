@@ -9,7 +9,8 @@ import { Result } from '@/lib/result'
 export async function exportAnalyticsToCSV(
     teamId: string,
     startDate: string,
-    endDate: string
+    endDate: string,
+    questId?: string
 ): Promise<Result<{ csv: string; filename: string }>> {
     return runAction('exportAnalyticsToCSV', async () => {
         const ctx = await getRoleContext(teamId)
@@ -21,7 +22,7 @@ export async function exportAnalyticsToCSV(
         noStore()
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const query = (supabase.from('tasks') as any)
+        let query = (supabase.from('tasks') as any)
             .select(`
                 id,
                 title,
@@ -38,6 +39,10 @@ export async function exportAnalyticsToCSV(
             .eq('team_id', teamId)
             .gte('updated_at', startDate)
             .lte('updated_at', endDate + 'T23:59:59.999Z')
+
+        if (questId && questId !== 'all') {
+            query = query.eq('quest_id', questId)
+        }
 
         const { data: tasks, error } = await query
 
@@ -98,4 +103,15 @@ export async function exportAnalyticsToCSV(
             }
         }
     })
+}
+
+export async function getQuestsForReporting(teamId: string) {
+    const supabase = await getUserClient()
+    const { data } = await supabase
+        .from('quests')
+        .select('id, name, start_date')
+        .eq('team_id', teamId)
+        .order('start_date', { ascending: false })
+        .limit(50)
+    return data || []
 }
