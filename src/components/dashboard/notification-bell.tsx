@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Bell } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { Notification, NotificationService } from '@/services/notification-service'
+import { getInboxFeed, markItemAsRead, InboxItem } from '@/app/(dashboard)/inbox/actions'
 import { useNotifications } from '@/components/notification-provider'
 import {
     Popover,
@@ -18,12 +18,18 @@ import { formatDistanceToNow } from 'date-fns'
 export function NotificationBell({ userId }: { userId: string }) {
     const { unreadCount: count, refreshCount: fetchCount } = useNotifications()
     const [isOpen, setIsOpen] = useState(false)
-    const [notifications, setNotifications] = useState<Notification[]>([])
+    const [notifications, setNotifications] = useState<InboxItem[]>([])
     const router = useRouter()
 
     const fetchNotifications = async () => {
-        const data = await NotificationService.getNotifications(20)
-        setNotifications(data)
+        try {
+            const data = await getInboxFeed()
+            // Filter to show relevant items (maybe exclude very old assignments if they are read?)
+            // For now, mirroring inbox exactly as requested.
+            setNotifications(data)
+        } catch (e) {
+            console.error('Failed to fetch notifications', e)
+        }
     }
 
     // Load data when opening
@@ -33,21 +39,32 @@ export function NotificationBell({ userId }: { userId: string }) {
         }
     }, [isOpen])
 
-    const handleMarkRead = async (id: string, resourceId: string) => {
-        await NotificationService.markAsRead(id)
+    const handleMarkRead = async (id: string, resourceId: string, type: 'task' | 'ticket' = 'task') => {
+        await markItemAsRead(id, type)
         await fetchCount() // Ensure global count is updated
-        setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n))
+        setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n))
         setIsOpen(false)
         router.refresh()
-        // Navigate
-        // TODO: Handle different resource types. Default task.
-        router.push(`/quest-board?taskId=${resourceId}`)
+
+        // Navigation Logic
+        if (type === 'task') {
+            // If it's a deadline alert (id starts with deadline-), extract real ID?
+            // resourceId is already the real task ID from getInboxFeed
+            router.push(`/quest-board?taskId=${resourceId}`)
+        }
     }
 
     const handleMarkAllRead = async () => {
-        await NotificationService.markAllAsRead()
+        // Warning: mark all read might be slow if individual calls.
+        // For now, try to mark visible ones?
+        // Or add a bulk mark endpoint?
+        // Iterating for now (client-side feeling)
+        const unread = notifications.filter(n => !n.isRead)
+        for (const n of unread) {
+            await markItemAsRead(n.id, n.resourceType)
+        }
         await fetchCount()
-        setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
         router.refresh()
     }
 
@@ -81,16 +98,16 @@ export function NotificationBell({ userId }: { userId: string }) {
                             {notifications.map((n) => (
                                 <button
                                     key={n.id}
-                                    onClick={() => handleMarkRead(n.id, n.resource_id)}
+                                    onClick={() => handleMarkRead(n.id, n.resourceId, n.resourceType)}
                                     className={`
                                         flex flex-col gap-1 p-4 text-left border-b last:border-0 hover:bg-muted/50 transition-colors
-                                        ${!n.is_read ? 'bg-primary/5' : ''}
+                                        ${!n.isRead ? 'bg-primary/5' : ''}
                                     `}
                                 >
                                     <div className="flex justify-between items-start w-full">
                                         <span className="font-medium text-sm line-clamp-1 text-foreground/90">{n.title}</span>
                                         <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">
-                                            {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                                            {formatDistanceToNow(new Date(n.date), { addSuffix: true })}
                                         </span>
                                     </div>
                                     <p className="text-xs text-muted-foreground line-clamp-2">

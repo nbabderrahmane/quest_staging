@@ -105,16 +105,29 @@ export async function GET(request: Request) {
             // Extreme Fallback: Existing Quest ID (even if closed, better than error)
             if (!targetQuestId) targetQuestId = task.quest_id
 
-            // 4. Find Backlog Status
-            const { data: backlogStatus } = await supabase
+            // 4. Find Target Status (Prevent creating tasks in 'Done' or 'Archived' state)
+            const { data: statuses } = await supabase
                 .from('statuses')
-                .select('id')
+                .select('id, category')
                 .eq('team_id', task.team_id)
-                .eq('category', 'backlog')
-                .limit(1)
-                .maybeSingle()
 
-            const targetStatusId = backlogStatus?.id || task.status_id
+            // Try to find status in this order: 'todo' -> 'backlog' -> current (if valid)
+            const todoStatus = statuses?.find(s => s.category === 'todo')
+            const backlogStatus = statuses?.find(s => s.category === 'backlog')
+            const currentStatus = statuses?.find(s => s.id === task.status_id)
+
+            let targetStatusId = task.status_id
+
+            // If current status is Done/Archived, force Todo or Backlog
+            if (currentStatus?.category === 'done' || currentStatus?.category === 'archived') {
+                targetStatusId = todoStatus?.id || backlogStatus?.id || task.status_id
+            }
+            // If explicit backlog status was preferred in previous logic, keep it? 
+            // Better: Prefer 'Todo' for active sprints, 'Backlog' if no active sprint? 
+            // Let's stick to: Prefer Todo (Ready to work), fallback to Backlog.
+            if (todoStatus) targetStatusId = todoStatus.id
+            else if (backlogStatus) targetStatusId = backlogStatus.id
+
 
             // 5. Create Child Task
             const { error: insertError } = await supabase.from('tasks').insert({

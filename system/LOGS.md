@@ -11,6 +11,10 @@
   - Improved recurrence engine to find "Next Future Sprint" if current date falls in a gap.
 - **Refactoring**: Updated `src/app/(dashboard)/inbox/actions.ts` to include `isDone` metadata for improved frontend rendering.
 - **Fix**: Resolved build type error in `admin/reporting/page.tsx` by adding explicit return type to `getQuestsForReporting`.
+- **Infrastructure**: Excluded `tests/` and `playwright.config.ts` from `tsconfig.json` and `.gitignore` to prevent Vercel deployment failures.
+- **Fix**: Recurrence - Added `vercel.json` to enable Cron Jobs. Forced recurring tasks to 'Todo' status.
+- **Docs**: Created `RECURRENCE_GUIDE.md` explaining the recurrence engine.
+- **Fix**: Notification Bell now fetches the same data as the Inbox feed (Assignments + Deadline Alerts) instead of just the raw `notifications` table.
 
 ## 2026-01-22: Phase 2 Observability
 - **Created**: `/api/health` endpoint with database connectivity check
