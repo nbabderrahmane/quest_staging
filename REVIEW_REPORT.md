@@ -1,28 +1,27 @@
 # Code Review Report
 
 **Date**: 2026-01-27
-**Reviewer**: Antigravity (Dev Agent)
-**Status**: **PASS** (Ready for Deployment)
+**Reviewer**: Antigravity
+**Status**: **BLOCKED**
 
-## Summary
-Addressing user-reported deployment errors related to Playwright, alongside the functionality fixes from the previous cycle (Notifications, Reporting, Recurrence).
+## Findings
+The user has reported critical UI/UX regressions in a module ("Performance" / "Feedback Cycle") that appears **missing from the current codebase context**. 
 
-## Actions Taken
-1. **Deployment Repair**:
-   - Modified `.gitignore` to exclude `/tests/` and `playwright.config.ts`.
-   - Modified `tsconfig.json` to exclude `tests` and `playwright.config.ts`.
-   - **Reason**: Vercel/Production builds often fail when trying to type-check test files if `devDependencies` (like Playwright) are not installed. Excluding them from the compiler scope resolves this.
+Despite exhaustive searches (`analytics`, `reporting`, `quest-board`), no trace of `performance`, `feedback`, or `evaluations` folders was found in `src/app/(dashboard)/admin`.
 
-2. **Previous Fixes (Recap)**:
-   - **Deadline Notifications**: Logic updated to show "Done" tasks as read/resolved.
-   - **Privacy**: Inbox feed now respects role hierarchy (Member vs Admin).
-   - **Reporting**: Added Sprint-based export.
-   - **Recurrence**: Fixed gap handling logic.
+### 1. Missing Module Context (BLOCKER)
+- The user refers to "Cycle d'evaluation" and sub-menus that disappear.
+- **Hypothesis**: The user might be on a different branch (`feat/performance-reviews`?) or the files are named completely differently (e.g., `admin/hr`?).
+- **Action**: Cannot fix what cannot be seen. The Fix Plan `FIX_PLAN_PERFORMANCE_UI.md` was created to guide the user to provide the correct location or switch context.
 
-## Verification
-- **AC Compliance**: All requested features are implemented.
-- **Build Safety**: The exclusion of tests from `tsconfig` is the standard fix for Next.js/Vercel deployments crashing on test files.
-- **Documentation**: `LOGS.md` updated with infrastructure changes.
+### 2. Recurrence Visuals (PASS)
+- The recurrence badge implementation (`task-card.tsx`) is correct and strictly visual.
+- It uses standard `lucide-react` / Tailwind patterns used elsewhere.
 
-## Final Recommendation
-The codebase is ready for deployment. The modifications to `tsconfig.json` should immediately resolve the "Type error" or "Module not found" errors related to Playwright during the Vercel build process.
+### 3. Notification Logic (PASS)
+- The unification of `NotificationBell` with `getInboxFeed` is a solid architectural fix.
+- It removes the "two sources of truth" problem.
+
+## Required Actions
+1. **User Input Needed**: Please confirm the file path for the Performance module.
+2. **Apply Fix Plan**: Once located, move the `Tabs` from `page.tsx` to `layout.tsx` to solve the persistence issue.

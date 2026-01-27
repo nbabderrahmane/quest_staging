@@ -15,6 +15,7 @@
 - **Fix**: Recurrence - Added `vercel.json` to enable Cron Jobs. Forced recurring tasks to 'Todo' status.
 - **Docs**: Created `RECURRENCE_GUIDE.md` explaining the recurrence engine.
 - **Fix**: Notification Bell now fetches the same data as the Inbox feed (Assignments + Deadline Alerts) instead of just the raw `notifications` table.
+- **Visual**: Added "Recurrent" badge to Task Cards in the Quest Board (`task-card.tsx`).
 
 ## 2026-01-22: Phase 2 Observability
 - **Created**: `/api/health` endpoint with database connectivity check

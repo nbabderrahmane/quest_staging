@@ -50,6 +50,11 @@ export function TaskCard({ task }: TaskCardProps) {
 
                 <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
                     <div className="flex items-center gap-1">
+                        {task.is_recurring && (
+                            <span className="text-[10px] text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20 flex items-center gap-1" title="Tâche récurrente">
+                                <span className="animate-spin-slow">↻</span> Recurrent
+                            </span>
+                        )}
                         {task.size && (
                             <span className="bg-muted px-1 py-0.5 font-mono text-[10px] font-bold text-foreground inline-block">
                                 {task.size.name} ({task.xp_points} XP)

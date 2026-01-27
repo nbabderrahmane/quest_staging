@@ -141,4 +141,7 @@ export interface Task {
     urgency_score?: number
     quadrant?: 'Q1' | 'Q2' | 'Q3' | 'Q4'
     priority_score?: number
+    // Recurrence
+    is_recurring?: boolean
+    recurrence_rule?: any
 }
